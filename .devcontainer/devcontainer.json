@@ -1,0 +1,22 @@
+{
+  "name": "Agent Harness (Rust)",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bookworm",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces && rustc --version && cargo --version"
+}

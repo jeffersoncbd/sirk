@@ -1,0 +1,17 @@
+[package]
+name = "new-harness"
+version = "0.1.0"
+edition = "2024"
+description = "A provider-neutral CLI for coding-agent harnesses"
+
+[lib]
+name = "new_harness"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+
+[[bin]]
+name = "new-harness"
+path = "src/main.rs"

@@ -1,0 +1,9 @@
+version: 1
+
+steps:
+  - agent: to-introduce-oneself
+    output: intro
+
+  - agent: greet
+    input: |
+      {{ outputs.intro }}
