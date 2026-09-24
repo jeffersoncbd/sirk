@@ -17,4 +17,4 @@ PATH_WITHOUT_EXT="${FILE_PATH%.*}"
 DOC_PATH="docs/${PATH_WITHOUT_EXT}"
 
 # 4. Exibe no stdout
-echo "${DOC_PATH}.md"
+printf '%s' "${DOC_PATH}.md"
