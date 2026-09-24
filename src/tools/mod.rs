@@ -3,9 +3,10 @@ pub mod custom;
 pub mod new_agent;
 pub mod read;
 pub mod tree;
+pub mod write;
 
 pub fn supports(name: &str) -> bool {
-    matches!(name, "TREE" | "READ")
+    matches!(name, "TREE" | "READ" | "WRITE")
 }
 
 /// Only standalone tool requests are interpreted as control messages.

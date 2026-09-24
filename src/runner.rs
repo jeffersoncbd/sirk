@@ -301,7 +301,22 @@ where
             }
             if let Some(Block::Input(argument)) = history.steps[index].last() {
                 let result = if let Some(tool) = &step.tool {
-                    crate::tools::execute_with_input(tool, argument, &history.snapshot.directory)?
+                    if tool == "WRITE" {
+                        let path = step.render_path(outputs, locals)?;
+                        crate::tools::write::write(
+                            &history.snapshot.directory,
+                            &path,
+                            argument,
+                            step.force(),
+                        )?;
+                        String::new()
+                    } else {
+                        crate::tools::execute_with_input(
+                            tool,
+                            argument,
+                            &history.snapshot.directory,
+                        )?
+                    }
                 } else {
                     let tool = step.custom_tool.as_deref().unwrap();
                     let arguments = crate::tools::custom::arguments(argument)?;
@@ -823,6 +838,31 @@ mod tests {
         assert_eq!(
             outputs,
             continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap()
+        );
+    }
+    #[test]
+    fn write_step_creates_a_file_and_is_not_repeated_after_resume() {
+        let project = Project::new();
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- tool: WRITE\n  path: generated.txt\n  input: generated content\n  output: written\n",
+        )
+        .unwrap();
+        let outputs = run_with(&workflow, &project.0, |_| {
+            panic!("WRITE does not invoke harnesses")
+        })
+        .unwrap();
+        assert_eq!(outputs["written"], "");
+        let target = project.0.join("generated.txt");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "generated content");
+        fs::write(&target, "changed after completion").unwrap();
+        let mut history = History::open(&project.log()).unwrap();
+        assert_eq!(
+            continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap(),
+            outputs
+        );
+        assert_eq!(
+            fs::read_to_string(target).unwrap(),
+            "changed after completion"
         );
     }
     #[test]

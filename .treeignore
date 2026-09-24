@@ -1,11 +1,14 @@
-/.agents
-/.devcontainer
+/.agents/
+/.devcontainer/
+/docs/
+/tools/
+
+/AGENTS.md
+/build.sh
+/README.md
+/*.yml
 
 .gitignore
 .treeignore
-AGENTS.md
-build.sh
 Cargo.lock
-*.yml
-new-harness
-README.md
+mod.rs

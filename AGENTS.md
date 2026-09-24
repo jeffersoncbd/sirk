@@ -78,6 +78,7 @@ available in its environment, and does not stop on build failure.
 | `src/tools/mod.rs` | Agent-callable tool recognition, shared dispatch, TREE JSON rendering. |
 | `src/tools/tree.rs` | Git-backed listing and additional `.treeignore` filtering. |
 | `src/tools/read.rs` | UTF-8 file reads within the execution directory. |
+| `src/tools/write.rs` | Workflow-only creation and explicit replacement of project-local files. |
 | `src/tools/custom.rs` | Project-local Bash script resolution, positional arguments, and stdout capture. |
 | `src/tools/new_agent.rs` | Standalone model-generated agent creation and validation. |
 
@@ -119,6 +120,9 @@ Check the installed harness CLI's help before changing flags.
 - READ returns exact UTF-8 contents, including empty text, without headers.
   It accepts only regular files whose resolved paths stay within the execution
   directory. TREE ignore rules are not READ access rules.
+- WRITE is YAML-only and is never advertised to agents. It creates missing
+  parent directories and writes text to a regular path inside the execution
+  directory; existing files fail unless the workflow explicitly sets `force: true`.
 - CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
   require a string-array input, pass each item as one positional argument, and
   use exact UTF-8 stdout as the result. Keep script execution in `BashService`.

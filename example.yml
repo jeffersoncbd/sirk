@@ -16,3 +16,11 @@ steps:
         input:
           - "{{ loop.item }}"
         output: doc_name
+
+      - agent: code-explainer
+        input: "{{ loop.content }}"
+        output: explain
+
+      - tool: WRITE
+        path: "{{ loop.doc_name }}"
+        input: "{{ loop.explain }}"

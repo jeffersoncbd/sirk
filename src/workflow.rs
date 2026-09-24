@@ -26,6 +26,10 @@ pub struct Step {
     pub custom_tool: Option<String>,
     #[serde(default)]
     pub input: StepInput,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub force: Option<bool>,
     pub output: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iter: Vec<Step>,
@@ -103,6 +107,19 @@ impl Step {
     ) -> Result<String, String> {
         self.input.render(outputs, locals)
     }
+
+    pub fn render_path(
+        &self,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<String, String> {
+        let path = self.path.as_deref().ok_or("WRITE requires a path")?;
+        render_scoped(path, outputs, locals)
+    }
+
+    pub fn force(&self) -> bool {
+        self.force.unwrap_or(false)
+    }
 }
 
 impl Workflow {
@@ -136,8 +153,21 @@ fn validate_steps(
 ) -> Result<(), String> {
     for (index, step) in steps.iter().enumerate() {
         let is_loop = step.tool.as_deref() == Some("LOOP");
+        let is_write = step.tool.as_deref() == Some("WRITE");
         if !is_loop && !step.iter.is_empty() {
             return Err("iter is only accepted on LOOP steps".into());
+        }
+        if !is_write && step.path.is_some() {
+            return Err(format!(
+                "step {}: path is only accepted on WRITE",
+                index + 1
+            ));
+        }
+        if !is_write && step.force.is_some() {
+            return Err(format!(
+                "step {}: force is only accepted on WRITE",
+                index + 1
+            ));
         }
         match (&step.agent, &step.tool, &step.custom_tool) {
             (Some(agent), None, None) if crate::agents::valid_id(agent) => (),
@@ -169,6 +199,17 @@ fn validate_steps(
                         index + 1
                     ));
                 }
+                if tool == "WRITE" {
+                    if !matches!(step.input, StepInput::Text(_)) {
+                        return Err(format!(
+                            "step {}: WRITE input must be text content",
+                            index + 1
+                        ));
+                    }
+                    if step.path.as_ref().is_none_or(|path| path.trim().is_empty()) {
+                        return Err(format!("step {}: WRITE requires a path", index + 1));
+                    }
+                }
             }
             (None, None, Some(tool)) if crate::tools::custom::valid_name(tool) => {
                 if !matches!(step.input, StepInput::Array(_)) {
@@ -188,6 +229,10 @@ fn validate_steps(
         step.input
             .render(outputs, locals.as_deref())
             .map_err(|error| format!("step {}: {error}", index + 1))?;
+        if let Some(path) = &step.path {
+            render_scoped(path, outputs, locals.as_deref())
+                .map_err(|error| format!("step {}: {error}", index + 1))?;
+        }
         if is_loop {
             let mut child_outputs = outputs.clone();
             let mut child_locals = BTreeMap::from([("item".into(), String::new())]);
@@ -355,11 +400,30 @@ mod tests {
             "tool: TREE\n  input: unsupported",
             "tool: READ",
             "tool: READ\n  input: ' '",
+            "tool: WRITE\n  input: content",
+            "tool: WRITE\n  path: output.txt\n  input: [content]",
+            "tool: READ\n  path: output.txt\n  input: source.txt",
+            "agent: planner\n  force: false",
         ] {
             let workflow: Workflow =
                 serde_yaml::from_str(&format!("version: 1\nsteps:\n- {step}\n")).unwrap();
             assert!(workflow.validate().is_err(), "{step}");
         }
+    }
+    #[test]
+    fn validates_write_steps_and_renders_their_paths() {
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- agent: planner\n  output: filename\n- tool: WRITE\n  path: 'docs/{{ outputs.filename }}.md'\n  input: content\n  force: true\n  output: written\n",
+        )
+        .unwrap();
+        workflow.validate().unwrap();
+        assert_eq!(
+            workflow.steps[1]
+                .render_path(&BTreeMap::from([("filename".into(), "guide".into())]), None)
+                .unwrap(),
+            "docs/guide.md"
+        );
+        assert!(workflow.steps[1].force());
     }
     #[test]
     fn validates_custom_tools_and_renders_each_argument_separately() {

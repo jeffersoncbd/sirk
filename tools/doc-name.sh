@@ -14,7 +14,7 @@ FILE_PATH="$1"
 PATH_WITHOUT_EXT="${FILE_PATH%.*}"
 
 # 3. Adiciona o prefixo "doc/" e altera a extensão para ".md"
-DOC_PATH="doc/${PATH_WITHOUT_EXT}"
+DOC_PATH="docs/${PATH_WITHOUT_EXT}"
 
 # 4. Exibe no stdout
 echo "${DOC_PATH}.md"

@@ -8,7 +8,7 @@ invokes existing harness CLIs through Bash; it does not call model APIs directly
 `new-harness` is a temporary project name.
 
 Currently supported: Codex, sequential workflows, user questions, TREE, READ,
-project-local custom tools, scoped LOOP iterations, model-generated agent
+WRITE, project-local custom tools, scoped LOOP iterations, model-generated agent
 definitions, and transcript-based resumption. OpenCode and Claude Code are
 planned, not implemented.
 
@@ -230,6 +230,39 @@ Spaces are supported. Relative paths resolve from the execution directory;
 absolute paths must remain inside it. Symlinks resolving outside it are rejected.
 Ignore rules affect TREE listings, not explicit READ requests. Git is not
 required. Workflow paths can reference earlier outputs.
+
+### WRITE
+
+Creates a UTF-8 file inside the execution directory. It is workflow-only and is
+not advertised to agents:
+
+```yaml
+- tool: WRITE
+  path: docs/overview.md
+  input: |
+    # Overview
+    Generated documentation.
+  output: written
+```
+
+`path` is required, may use output references, and any missing parent directories
+inside the execution directory are created automatically. `input` is the exact
+text written, including empty text. The default is safe creation: WRITE fails
+when the target already exists. Set `force: true` to replace the existing regular
+file:
+
+```yaml
+- tool: WRITE
+  path: docs/overview.md
+  input: "Replacement content"
+  force: true
+```
+
+WRITE rejects paths outside the execution directory, directories, and an existing
+target that is a symlink.
+It has an empty result, so `output` is normally omitted unless a later template
+needs an explicit empty value. A failed WRITE stays pending in the transcript for
+resume.
 
 ### CUSTOM-TOOL
 
