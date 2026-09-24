@@ -6,7 +6,7 @@ use crate::{
     history::{Block, History, Snapshot},
     input::{TerminalInput, UserInput},
     services::{BashService, Invocation},
-    workflow::{Step, Workflow, loop_items, loop_target, render_scoped},
+    workflow::{Step, Workflow, loop_items, loop_target},
 };
 use std::{collections::BTreeMap, path::Path};
 
@@ -143,7 +143,7 @@ fn validate_blocks(history: &History) -> Result<(), String> {
                         return Ok(false);
                     }
                 }
-            } else if !validate_step_blocks(blocks, step.tool.is_some())? {
+            } else if !validate_step_blocks(blocks, step.is_tool_step())? {
                 return Ok(false);
             }
         }
@@ -251,7 +251,7 @@ where
             }
             if step.tool.as_deref() == Some("LOOP") {
                 if self.history.steps[index].is_empty() {
-                    let argument = render_scoped(&step.input, outputs, locals.as_ref())?;
+                    let argument = step.render_input(outputs, locals.as_ref())?;
                     loop_items(&argument)?;
                     self.history.steps[index].push(Block::Input(argument));
                     self.history.save()?;
@@ -294,18 +294,19 @@ where
         locals: Option<&BTreeMap<String, String>>,
     ) -> Result<String, String> {
         let history = &mut self.history;
-        if let Some(tool) = &step.tool {
+        if step.is_tool_step() {
             if history.steps[index].is_empty() {
-                history.steps[index].push(Block::Input(render_scoped(
-                    &step.input,
-                    outputs,
-                    locals,
-                )?));
+                history.steps[index].push(Block::Input(step.render_input(outputs, locals)?));
                 history.save()?;
             }
             if let Some(Block::Input(argument)) = history.steps[index].last() {
-                let result =
-                    crate::tools::execute_with_input(tool, argument, &history.snapshot.directory)?;
+                let result = if let Some(tool) = &step.tool {
+                    crate::tools::execute_with_input(tool, argument, &history.snapshot.directory)?
+                } else {
+                    let tool = step.custom_tool.as_deref().unwrap();
+                    let arguments = crate::tools::custom::arguments(argument)?;
+                    crate::tools::custom::execute(tool, &arguments, &history.snapshot.directory)?
+                };
                 print!("{result}");
                 history.steps[index].push(Block::Output(result));
                 history.save()?;
@@ -319,7 +320,7 @@ where
             .find(|a| Some(&a.id) == step.agent.as_ref())
             .unwrap()
             .clone();
-        let initial = render_scoped(&step.input, outputs, locals)?;
+        let initial = step.render_input(outputs, locals)?;
         if history.steps[index].is_empty() {
             history.steps[index].push(match &agent.ask {
                 Some(ask) => Block::Ask(ask.clone()),
@@ -789,6 +790,40 @@ mod tests {
             std::os::unix::fs::symlink(path, project.0.join("external")).unwrap();
             assert!(crate::tools::read::read(&project.0, "external").is_err());
         }
+    }
+    #[test]
+    fn custom_tool_passes_list_items_as_arguments_and_restores_its_output() {
+        let project = Project::new();
+        fs::create_dir(project.0.join("tools")).unwrap();
+        fs::write(
+            project.0.join("tools/combine.sh"),
+            "printf '%s|%s|%s' \"$1\" \"$2\" \"$PWD\"\n",
+        )
+        .unwrap();
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- custom-tool: combine\n  input:\n  - spaces and 'quotes'\n  - '$(exit 19); `exit 20`'\n  output: combined\n- agent: second\n  input: '{{ outputs.combined }}'\n  output: final\n",
+        )
+        .unwrap();
+        let outputs = run_with(&workflow, &project.0, |invocation| {
+            let prompt = invocation.arguments.last().unwrap();
+            assert!(prompt.contains("spaces and 'quotes'|$(exit 19); `exit 20`|"));
+            assert!(prompt.contains(project.0.to_str().unwrap()));
+            Ok("Done".into())
+        })
+        .unwrap();
+        assert_eq!(
+            outputs["combined"],
+            format!(
+                "spaces and 'quotes'|$(exit 19); `exit 20`|{}",
+                project.0.display()
+            )
+        );
+        fs::remove_file(project.0.join("tools/combine.sh")).unwrap();
+        let mut history = History::open(&project.log()).unwrap();
+        assert_eq!(
+            outputs,
+            continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap()
+        );
     }
     #[test]
     fn loop_reads_items_with_local_outputs_and_resumes_at_pending_iteration() {

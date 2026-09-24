@@ -1,4 +1,5 @@
 //! Shared tool dispatch for workflow steps and agent requests.
+pub mod custom;
 pub mod new_agent;
 pub mod read;
 pub mod tree;

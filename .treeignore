@@ -1,7 +1,11 @@
 /.agents
 /.devcontainer
 
-.treeignore
 .gitignore
+.treeignore
+AGENTS.md
+build.sh
 Cargo.lock
+*.yml
 new-harness
+README.md

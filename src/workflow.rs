@@ -18,25 +18,53 @@ pub struct Step {
     pub agent: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_input")]
-    pub input: String,
+    #[serde(
+        default,
+        rename = "custom-tool",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub custom_tool: Option<String>,
+    #[serde(default)]
+    pub input: StepInput,
     pub output: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iter: Vec<Step>,
 }
 
-fn deserialize_input<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<String, D::Error> {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Input {
-        Text(String),
-        Array(Vec<String>),
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum StepInput {
+    Text(String),
+    Array(Vec<String>),
+}
+
+impl Default for StepInput {
+    fn default() -> Self {
+        Self::Text(String::new())
     }
-    match Input::deserialize(deserializer)? {
-        Input::Text(text) => Ok(text),
-        Input::Array(items) => serde_json::to_string(&items).map_err(serde::de::Error::custom),
+}
+
+impl StepInput {
+    fn render(
+        &self,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<String, String> {
+        match self {
+            Self::Text(text) => render_scoped(text, outputs, locals),
+            Self::Array(items) => items
+                .iter()
+                .map(|item| render_scoped(item, outputs, locals))
+                .collect::<Result<Vec<_>, _>>()
+                .and_then(|items| serde_json::to_string(&items).map_err(|error| error.to_string())),
+        }
+    }
+
+    fn text(&self) -> Option<&str> {
+        match self {
+            Self::Text(text) => Some(text),
+            Self::Array(_) => None,
+        }
     }
 }
 
@@ -60,7 +88,20 @@ impl Step {
         self.agent
             .as_deref()
             .or(self.tool.as_deref())
+            .or(self.custom_tool.as_deref())
             .unwrap_or("invalid")
+    }
+
+    pub fn is_tool_step(&self) -> bool {
+        self.tool.is_some() || self.custom_tool.is_some()
+    }
+
+    pub fn render_input(
+        &self,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<String, String> {
+        self.input.render(outputs, locals)
     }
 }
 
@@ -98,38 +139,54 @@ fn validate_steps(
         if !is_loop && !step.iter.is_empty() {
             return Err("iter is only accepted on LOOP steps".into());
         }
-        match (&step.agent, &step.tool) {
-            (Some(agent), None) if crate::agents::valid_id(agent) => (),
-            (None, Some(tool)) if tool == "LOOP" => {
+        match (&step.agent, &step.tool, &step.custom_tool) {
+            (Some(agent), None, None) if crate::agents::valid_id(agent) => (),
+            (None, Some(tool), None) if tool == "LOOP" => {
                 if step.iter.is_empty() {
                     return Err("LOOP requires a nonempty iter list".into());
                 }
                 if step.output.is_some() {
                     return Err("LOOP has no aggregate output; store results inside iter".into());
                 }
-                if !step.input.contains("{{") {
-                    loop_items(&step.input)?;
+                if let Some(input) = step.input.text()
+                    && !input.contains("{{")
+                {
+                    loop_items(input)?;
                 }
             }
-            (None, Some(tool)) if crate::tools::supports(tool) => {
-                if tool == "TREE" && !step.input.is_empty() {
+            (None, Some(tool), None) if crate::tools::supports(tool) => {
+                if tool == "TREE" && step.input.text() != Some("") {
                     return Err(format!("step {}: TREE does not accept input", index + 1));
                 }
-                if tool == "READ" && step.input.trim().is_empty() {
+                if tool == "READ"
+                    && step
+                        .input
+                        .text()
+                        .is_none_or(|input| input.trim().is_empty())
+                {
                     return Err(format!(
                         "step {}: READ requires a file path in input",
                         index + 1
                     ));
                 }
             }
+            (None, None, Some(tool)) if crate::tools::custom::valid_name(tool) => {
+                if !matches!(step.input, StepInput::Array(_)) {
+                    return Err(format!(
+                        "step {}: CUSTOM-TOOL input must be a list of strings",
+                        index + 1
+                    ));
+                }
+            }
             _ => {
                 return Err(format!(
-                    "step {} must specify either a valid agent or a supported tool (TREE, READ, LOOP)",
+                    "step {} must specify exactly one valid agent, tool (TREE, READ, LOOP), or custom-tool",
                     index + 1
                 ));
             }
         }
-        render_scoped(&step.input, outputs, locals.as_deref())
+        step.input
+            .render(outputs, locals.as_deref())
             .map_err(|error| format!("step {}: {error}", index + 1))?;
         if is_loop {
             let mut child_outputs = outputs.clone();
@@ -298,6 +355,34 @@ mod tests {
             "tool: TREE\n  input: unsupported",
             "tool: READ",
             "tool: READ\n  input: ' '",
+        ] {
+            let workflow: Workflow =
+                serde_yaml::from_str(&format!("version: 1\nsteps:\n- {step}\n")).unwrap();
+            assert!(workflow.validate().is_err(), "{step}");
+        }
+    }
+    #[test]
+    fn validates_custom_tools_and_renders_each_argument_separately() {
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- agent: planner\n  output: value\n- custom-tool: format-name\n  input:\n  - '{{ outputs.value }}'\n  - literal argument\n  output: formatted\n",
+        )
+        .unwrap();
+        workflow.validate().unwrap();
+        let rendered = workflow.steps[1]
+            .render_input(
+                &BTreeMap::from([("value".into(), "quotes \" and {{ untouched }}".into())]),
+                None,
+            )
+            .unwrap();
+        assert_eq!(
+            crate::tools::custom::arguments(&rendered).unwrap(),
+            ["quotes \" and {{ untouched }}", "literal argument"]
+        );
+        for step in [
+            "custom-tool: invalid/name\n  input: []",
+            "custom-tool: valid\n  input: text",
+            "agent: planner\n  custom-tool: valid\n  input: []",
+            "tool: READ\n  custom-tool: valid\n  input: []",
         ] {
             let workflow: Workflow =
                 serde_yaml::from_str(&format!("version: 1\nsteps:\n- {step}\n")).unwrap();

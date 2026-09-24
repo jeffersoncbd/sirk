@@ -8,8 +8,9 @@ invokes existing harness CLIs through Bash; it does not call model APIs directly
 `new-harness` is a temporary project name.
 
 Currently supported: Codex, sequential workflows, user questions, TREE, READ,
-scoped LOOP iterations, model-generated agent definitions, and transcript-based
-resumption. OpenCode and Claude Code are planned, not implemented.
+project-local custom tools, scoped LOOP iterations, model-generated agent
+definitions, and transcript-based resumption. OpenCode and Claude Code are
+planned, not implemented.
 
 Development instructions and architecture are in [AGENTS.md](AGENTS.md).
 Agent definitions used by workflows are separate files in `.agents/`.
@@ -138,9 +139,10 @@ steps:
     input: "{{ outputs.intro }}"
 ```
 
-Each step specifies exactly one of `agent` or `tool`. Steps run in order.
-All referenced agents, including those inside loops, are validated before
-execution. Unknown YAML fields and references to unavailable outputs are rejected.
+Each step specifies exactly one of `agent`, `tool`, or `custom-tool`. Steps run
+in order. All referenced agents, including those inside loops, are validated
+before execution. Unknown YAML fields and references to unavailable outputs are
+rejected.
 
 For agent steps, `input` is optional. Omit it or use `input: ""` when no extra
 input is needed. `null` is not accepted. Tool input requirements depend on the
@@ -228,6 +230,31 @@ Spaces are supported. Relative paths resolve from the execution directory;
 absolute paths must remain inside it. Symlinks resolving outside it are rejected.
 Ignore rules affect TREE listings, not explicit READ requests. Git is not
 required. Workflow paths can reference earlier outputs.
+
+### CUSTOM-TOOL
+
+CUSTOM-TOOL runs a Bash script from the execution directory's `tools/` folder.
+The `custom-tool` value is the script name without `.sh`, using ASCII letters,
+digits, underscores, or hyphens. For example, `custom-tool: doc-name` runs
+`tools/doc-name.sh`:
+
+```yaml
+- custom-tool: doc-name
+  input:
+    - "{{ loop.item }}"
+  output: doc_name
+```
+
+Input must be a YAML list of strings. Each rendered item is passed as a distinct
+positional argument in order: the first item is `$1`, the second is `$2`, and so
+on. Arguments are passed literally, including spaces and shell metacharacters.
+An empty list runs the script without positional arguments.
+
+Scripts run with Bash from the execution directory and do not need the executable
+permission bit. Their exact UTF-8 stdout becomes the step result and can be saved
+with `output`. Stderr remains visible. A missing script, invalid UTF-8 stdout, or
+nonzero exit stops the workflow and leaves the invocation pending for resume.
+CUSTOM-TOOL is YAML-only and is not advertised to agents.
 
 ### LOOP
 

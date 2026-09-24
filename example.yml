@@ -7,11 +7,12 @@ steps:
   - tool: LOOP
     input: "{{ outputs.tree }}"
     iter:
+
       - tool: READ
         input: "{{ loop.item }}"
         output: content
-      - agent: code-explainer
-        input: |
-          "Código de um projeto Rust:"
-          "{{ loop.content }}"
-        output: explain
+
+      - custom-tool: doc-name
+        input:
+          - "{{ loop.item }}"
+        output: doc_name
