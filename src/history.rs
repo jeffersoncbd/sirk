@@ -9,6 +9,7 @@ use std::{
 };
 const TITLE: &str = "NEW HARNESS — CONVERSATION HISTORY v2\n---\n";
 const SEPARATOR: &str = "============================================================";
+type ParsedHistory = (Snapshot, Vec<Vec<Block>>, Vec<String>);
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -23,11 +24,13 @@ pub enum Block {
     Ask(String),
     Input(String),
     Output(String),
+    Tree(String),
+    Read(String),
 }
 impl Block {
     pub fn text(&self) -> &str {
         match self {
-            Self::Ask(s) | Self::Input(s) | Self::Output(s) => s,
+            Self::Ask(s) | Self::Input(s) | Self::Output(s) | Self::Tree(s) | Self::Read(s) => s,
         }
     }
     fn marker(&self) -> &str {
@@ -35,6 +38,8 @@ impl Block {
             Self::Ask(_) => "==> ASK",
             Self::Input(_) => "==> INPUT",
             Self::Output(_) => "<== OUTPUT",
+            Self::Tree(_) => "==> TREE",
+            Self::Read(_) => "==> READ",
         }
     }
 }
@@ -43,6 +48,7 @@ pub struct History {
     pub path: PathBuf,
     pub snapshot: Snapshot,
     pub steps: Vec<Vec<Block>>,
+    pub labels: Vec<String>,
     _lock: File,
 }
 impl Drop for History {
@@ -52,8 +58,10 @@ impl Drop for History {
     }
 }
 fn reserved(line: &str) -> bool {
-    matches!(line, "==> ASK" | "==> INPUT" | "<== OUTPUT" | SEPARATOR)
-        || line.starts_with("Step ")
+    matches!(
+        line,
+        "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | SEPARATOR
+    ) || line.starts_with("Step ")
         || line.starts_with('\\')
 }
 impl History {
@@ -70,6 +78,7 @@ impl History {
             path,
             snapshot,
             steps: Vec::new(),
+            labels: Vec::new(),
             _lock: lock,
         };
         history.save()?;
@@ -91,15 +100,16 @@ impl History {
         let path = path.canonicalize().map_err(|e| e.to_string())?;
         let lock = Self::lock(&path)?;
         let source = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        let (snapshot, steps) = Self::parse(&source)?;
+        let (snapshot, steps, labels) = Self::parse(&source)?;
         Ok(Self {
             path,
             snapshot,
             steps,
+            labels,
             _lock: lock,
         })
     }
-    fn parse(source: &str) -> Result<(Snapshot, Vec<Vec<Block>>), String> {
+    fn parse(source: &str) -> Result<ParsedHistory, String> {
         let source = source
             .strip_prefix(TITLE)
             .ok_or("unsupported history format; only v2 transcripts can be resumed")?;
@@ -109,6 +119,7 @@ impl History {
         let snapshot: Snapshot = serde_yaml::from_str(metadata)
             .map_err(|e| format!("invalid history configuration: {e}"))?;
         let mut steps: Vec<Vec<Block>> = Vec::new();
+        let mut labels = Vec::new();
         let mut active: Option<(&str, Vec<String>)> = None;
         fn finish(
             active: &mut Option<(&str, Vec<String>)>,
@@ -122,6 +133,8 @@ impl History {
                 let block = match marker {
                     "==> ASK" => Block::Ask(value),
                     "==> INPUT" => Block::Input(value),
+                    "==> TREE" => Block::Tree(value),
+                    "==> READ" => Block::Read(value),
                     _ => Block::Output(value),
                 };
                 steps
@@ -131,22 +144,17 @@ impl History {
             }
             Ok(())
         }
-        for line in body.lines() {
+        for line in body.split_terminator('\n') {
             if line == SEPARATOR
                 || line.starts_with("Step ")
-                || matches!(line, "==> ASK" | "==> INPUT" | "<== OUTPUT")
+                || matches!(
+                    line,
+                    "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ"
+                )
             {
                 finish(&mut active, &mut steps)?;
                 if line.starts_with("Step ") {
-                    let index = steps.len();
-                    let step = snapshot
-                        .workflow
-                        .steps
-                        .get(index)
-                        .ok_or("unexpected extra step")?;
-                    if line != format!("Step {} — {}", index + 1, step.agent) {
-                        return Err("invalid step header or execution order".into());
-                    }
+                    labels.push(line.to_owned());
                     steps.push(Vec::new());
                 } else if line != SEPARATOR {
                     active = Some((line, Vec::new()));
@@ -158,17 +166,20 @@ impl History {
             }
         }
         finish(&mut active, &mut steps)?;
-        Ok((snapshot, steps))
+        Ok((snapshot, steps, labels))
     }
     pub fn save(&self) -> Result<(), String> {
         let metadata = serde_yaml::to_string(&self.snapshot).map_err(|e| e.to_string())?;
         let mut source = format!("{TITLE}{metadata}---\n");
         for (index, blocks) in self.steps.iter().enumerate() {
-            source.push_str(&format!(
-                "{SEPARATOR}\nStep {} — {}\n\n",
-                index + 1,
-                self.snapshot.workflow.steps[index].agent
-            ));
+            let label = self.labels.get(index).cloned().unwrap_or_else(|| {
+                format!(
+                    "Step {} — {}",
+                    index + 1,
+                    self.snapshot.workflow.steps[index].name()
+                )
+            });
+            source.push_str(&format!("{SEPARATOR}\n{label}\n\n"));
             for block in blocks {
                 source.push_str(block.marker());
                 source.push('\n');
@@ -217,7 +228,7 @@ mod tests {
             "hello\n==> INPUT\n<== OUTPUT\nStep 2 — fake\n\\literal\n\n".into(),
         )]);
         history.save().unwrap();
-        let (_, steps) = History::parse(&fs::read_to_string(&history.path).unwrap()).unwrap();
+        let (_, steps, _) = History::parse(&fs::read_to_string(&history.path).unwrap()).unwrap();
         assert_eq!(history.steps, steps);
         assert!(History::open(&history.path).is_err());
         drop(history);

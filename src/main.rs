@@ -19,6 +19,14 @@ fn main() -> ExitCode {
 fn run(arguments: Vec<String>) -> Result<(), String> {
     match arguments.as_slice() {
         [] => interactive(),
+        [command] if matches!(command.as_str(), "--newAgent" | "--new-agent") => {
+            let path = new_harness::tools::new_agent::create(
+                &env::current_dir().map_err(|e| e.to_string())?,
+                &mut new_harness::input::TerminalInput,
+            )?;
+            println!("Agent created: {}", path.display());
+            Ok(())
+        }
         [command, path] if command == "run" => run_workflow(Path::new(path)),
         [command, path] if command == "resume" => resume_workflow(Path::new(path)),
         [command] if matches!(command.as_str(), "help" | "--help" | "-h") => {
@@ -71,7 +79,6 @@ fn run_workflow(path: &Path) -> Result<(), String> {
         .and_then(|directory| directory.canonicalize())
         .map_err(|error| format!("could not resolve current working directory: {error}"))?;
     runner::run(&workflow, &working_directory)?;
-    println!("\nWorkflow completed successfully.");
     Ok(())
 }
 
@@ -81,12 +88,11 @@ fn print_usage() {
 
 fn resume_workflow(path: &Path) -> Result<(), String> {
     runner::resume(path)?;
-    println!("\nWorkflow completed successfully.");
     Ok(())
 }
 
 fn usage() -> &'static str {
-    "Usage:\n  new-harness\n  new-harness run <workflow.yml>\n  new-harness resume <history.log>\n\nWith no arguments, opens an interactive workflow session.\n\nWorkflow commands:\n  run <workflow.yml>    Start a workflow\n  resume <history.log>  Resume an editable transcript\n  <workflow.yml>        Start a workflow directly\n  /help                Show this help\n  /quit                Leave the session\n\nDuring a question, /cancel pauses execution for later resumption.\n"
+    "Usage:\n  new-harness\n  new-harness --newAgent\n  new-harness run <workflow.yml>\n  new-harness resume <history.log>\n\n--newAgent (alias --new-agent) creates an agent interactively.\nWith no arguments, opens an interactive workflow session.\n\nWorkflow commands:\n  run <workflow.yml>    Start a workflow\n  resume <history.log>  Resume an editable transcript\n  <workflow.yml>        Start a workflow directly\n  /help                Show this help\n  /quit                Leave the session\n\nDuring a question, /cancel cancels input. Workflow history can be resumed.\n"
 }
 
 #[cfg(test)]

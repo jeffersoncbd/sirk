@@ -7,6 +7,7 @@ pub struct Agent {
     pub id: String,
     pub adapter: String,
     pub instructions: String,
+    #[serde(default, deserialize_with = "deserialize_model")]
     pub model: Option<String>,
     pub json: bool,
     pub ask: Option<String>,
@@ -16,10 +17,17 @@ pub struct Agent {
 #[serde(deny_unknown_fields)]
 struct Metadata {
     adapter: String,
+    #[serde(default, deserialize_with = "deserialize_model")]
     model: Option<String>,
     #[serde(default)]
     json: bool,
     ask: Option<String>,
+}
+
+fn deserialize_model<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    Ok(Option::<String>::deserialize(deserializer)?.map(|model| model.trim().to_lowercase()))
 }
 
 pub fn valid_id(id: &str) -> bool {
@@ -47,7 +55,7 @@ impl Agent {
             .map_err(|error| format!("invalid agent file `{}`: {error}", path.display()))
     }
 
-    fn parse(id: &str, source: &str) -> Result<Self, String> {
+    pub(crate) fn parse(id: &str, source: &str) -> Result<Self, String> {
         let mut lines = source.lines();
         if lines.next() != Some("---") {
             return Err("expected YAML front matter starting with `---`".to_owned());
@@ -102,6 +110,19 @@ mod tests {
         assert!(!agent.json);
     }
 
+    #[test]
+    fn normalizes_models_from_markdown_and_saved_snapshots() {
+        let agent = Agent::parse(
+            "planner",
+            "---\nadapter: codex\nmodel: ' GPT-6-Astra '\n---\nPlan.",
+        )
+        .unwrap();
+        assert_eq!(agent.model.as_deref(), Some("gpt-6-astra"));
+        let mut snapshot = serde_yaml::to_string(&agent).unwrap();
+        snapshot = snapshot.replace("gpt-6-astra", "GPT-6-Astra");
+        let restored: Agent = serde_yaml::from_str(&snapshot).unwrap();
+        assert_eq!(restored.model.as_deref(), Some("gpt-6-astra"));
+    }
     #[test]
     fn rejects_malformed_definitions_and_paths() {
         for source in [

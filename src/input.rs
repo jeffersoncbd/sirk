@@ -19,11 +19,11 @@ impl UserInput for TerminalInput {
                 .map_err(|e| e.to_string())?
                 == 0
             {
-                return Err("input closed; resume the history file to continue".into());
+                return Err("input closed".into());
             }
             let answer = line.trim_end_matches(['\r', '\n']);
             if answer == "/cancel" {
-                return Err("input cancelled; resume the history file to continue".into());
+                return Err("input cancelled".into());
             }
             if !answer.trim().is_empty() {
                 return Ok(answer.to_owned());

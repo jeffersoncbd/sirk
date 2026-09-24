@@ -1,9 +1,17 @@
 version: 1
 
 steps:
-  - agent: to-introduce-oneself
-    output: intro
+  - tool: TREE
+    output: tree
 
-  - agent: greet
-    input: |
-      {{ outputs.intro }}
+  - tool: LOOP
+    input: "{{ outputs.tree }}"
+    iter:
+      - tool: READ
+        input: "{{ loop.item }}"
+        output: content
+      - agent: code-explainer
+        input: |
+          "Código de um projeto Rust:"
+          "{{ loop.content }}"
+        output: explain

@@ -19,6 +19,11 @@ pub struct ProcessOutput {
     pub stdout: String,
 }
 
+pub(crate) struct BinaryProcessOutput {
+    pub status: ExitStatus,
+    pub stdout: Vec<u8>,
+}
+
 impl Default for BashService {
     fn default() -> Self {
         Self::new("bash")
@@ -43,6 +48,21 @@ impl BashService {
         invocation: &Invocation,
         output: &mut impl Write,
     ) -> io::Result<ProcessOutput> {
+        let result = self.execute_bytes_to(invocation, output)?;
+        let stdout = String::from_utf8(result.stdout)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        Ok(ProcessOutput {
+            status: result.status,
+            stdout,
+        })
+    }
+
+    /// Capture binary output, including Git's NUL-delimited filesystem paths.
+    pub(crate) fn execute_bytes_to(
+        &self,
+        invocation: &Invocation,
+        output: &mut impl Write,
+    ) -> io::Result<BinaryProcessOutput> {
         let mut child = Command::new(&self.executable)
             .args(["-lc", &self.render(invocation)])
             .current_dir(&invocation.working_directory)
@@ -76,10 +96,10 @@ impl BashService {
             return Err(error);
         }
         let status = child.wait()?;
-        let stdout = String::from_utf8(captured?)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-
-        Ok(ProcessOutput { status, stdout })
+        Ok(BinaryProcessOutput {
+            status,
+            stdout: captured?,
+        })
     }
 
     pub fn render(&self, invocation: &Invocation) -> String {

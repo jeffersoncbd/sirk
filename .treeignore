@@ -1,0 +1,7 @@
+/.agents
+/.devcontainer
+
+.treeignore
+.gitignore
+Cargo.lock
+new-harness
