@@ -78,6 +78,11 @@ impl Agent {
         if metadata.adapter.trim().is_empty() {
             return Err("`adapter` cannot be empty".to_owned());
         }
+        if metadata.json {
+            return Err(
+                "`json: true` is not supported until event normalization exists".to_owned(),
+            );
+        }
         let instructions = lines.collect::<Vec<_>>().join("\n").trim().to_owned();
         if instructions.is_empty() {
             return Err("Markdown instructions cannot be empty".to_owned());
@@ -131,6 +136,7 @@ mod tests {
             "---\nadapter: codex\n---",
             "---\nadapter: codex\nunknown: true\n---\nReview",
             "---\nadapter: codex\nwrite: true\n---\nReview",
+            "---\nadapter: codex\njson: true\n---\nReview",
         ] {
             assert!(Agent::parse("reviewer", source).is_err());
         }

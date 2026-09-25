@@ -6,13 +6,15 @@ Cargo.toml - Configura a crate Rust, seus alvos de compilação, metadados e dep
 src/adapters/codex.rs - Adapta requisições genéricas do harness para invocações seguras do comando `codex exec`.
 
 src/agents.rs - Define, valida e carrega agentes a partir de arquivos Markdown com metadados YAML e instruções.
+
 src/harness.rs - Define a abstração comum para adaptar CLIs de agentes, construir execuções e tratar suas respostas e erros.
 
 
 src/history.rs - Gerencia a criação, leitura, gravação e bloqueio de históricos persistentes de execução no formato v2.
 src/input.rs - Define a interface de entrada do usuário e lê respostas do terminal, validando cancelamentos e entradas vazias.
 src/lib.rs - Organiza e expõe publicamente os principais módulos da crate Rust, sem implementar lógica de negócio.
-src/main.rs - Gerencia a CLI do new-harness, iniciando sessões, executando workflows e retomando históricos.
+src/main.rs - Ponto de entrada que interpreta comandos e executa ou retoma workflows em modo interativo ou direto.
+
 src/runner.rs - Coordena a execução, retomada e persistência de workflows sequenciais com agentes e ferramentas.
 
 src/services/bash.rs - Executa processos Bash com argumentos seguros, transmite e captura suas saídas textual ou binária.

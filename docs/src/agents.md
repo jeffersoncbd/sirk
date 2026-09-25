@@ -1,66 +1,45 @@
 ### Resumo
 
-Este arquivo define o modelo `Agent` e o mecanismo para carregar e interpretar agentes descritos em arquivos Markdown com front matter YAML. Ele valida o identificador do agente, lê o arquivo, extrai seus metadados e armazena as instruções Markdown.
+O arquivo `src/agents.rs` define o modelo de dados e o carregamento de agentes descritos em arquivos Markdown com front matter YAML. Ele valida identificadores, interpreta metadados, normaliza modelos e rejeita definições inválidas.
 
 ### Funcionamento
 
-O arquivo espera definições no formato:
+Um agente é lido a partir de um arquivo `<id>.md`. O identificador precisa conter apenas letras, dígitos, `_` ou `-`, evitando caminhos inválidos ou traversal.
 
-```text
----
-adapter: codex
-model: algum-modelo
-json: true
-ask: pergunta opcional
----
-Instruções do agente em Markdown.
-```
+O conteúdo deve começar e terminar com `---`, delimitando o front matter YAML. Esse bloco é desserializado com `serde_yaml`, aceitando apenas campos conhecidos. O campo `model` é opcional e tem espaços removidos e letras convertidas para minúsculas.
 
-O fluxo principal é:
+Após o front matter, o restante do arquivo é tratado como instruções Markdown. Essas instruções são normalizadas removendo espaços externos e não podem estar vazias. O campo `json: true` é explicitamente rejeitado.
 
-1. `Agent::load` valida o identificador recebido.
-2. Monta o caminho `<directory>/<id>.md`.
-3. Lê o arquivo como UTF-8.
-4. Passa o conteúdo para `Agent::parse`.
-5. `parse` verifica o delimitador inicial e final `---`.
-6. Converte o front matter YAML em `Metadata`.
-7. Valida se `adapter` e as instruções Markdown não estão vazios.
-8. Cria e retorna um `Agent`.
-
-O campo `model` é normalizado: espaços nas extremidades são removidos e o valor é convertido para minúsculas, tanto ao ler arquivos Markdown quanto ao desserializar snapshots salvos.
+Erros de leitura, parsing, metadados inválidos, identificadores incorretos e instruções ausentes são convertidos em mensagens `String` usando `Result` e o operador `?`. Não há uso de `unsafe`, concorrência ou comunicação externa além da leitura local de arquivos.
 
 ### Componentes principais
 
-- `Agent`: struct pública que representa um agente carregado. Contém:
-  - `id`: identificador do agente.
-  - `adapter`: adaptador responsável por executá-lo.
-  - `instructions`: conteúdo Markdown.
-  - `model`: modelo opcional normalizado.
-  - `json`: indica se há saída em JSON.
-  - `ask`: pergunta opcional associada ao agente.
+- `Agent`: struct pública serializável e desserializável que representa um agente, incluindo:
+  - `id`: identificador;
+  - `adapter`: adaptador associado;
+  - `instructions`: instruções Markdown;
+  - `model`: modelo opcional normalizado;
+  - `json`: configuração de saída JSON;
+  - `ask`: configuração opcional adicional.
 
-- `Metadata`: struct privada usada somente para desserializar o front matter YAML. Usa `deny_unknown_fields`, rejeitando propriedades não reconhecidas.
+- `Metadata`: struct privada usada apenas para interpretar o front matter YAML. Usa `deny_unknown_fields` para rejeitar propriedades não declaradas.
 
-- `deserialize_model`: função auxiliar que desserializa e normaliza o campo `model`.
+- `deserialize_model`: função privada de desserialização que transforma o modelo opcional para sua forma normalizada.
 
-- `valid_id`: função pública que aceita apenas identificadores não vazios contendo letras ASCII, dígitos, `_` ou `-`.
+- `valid_id`: função pública que valida os identificadores permitidos.
 
-- `Agent::load`: função pública que valida o ID, lê o arquivo correspondente e transforma erros de leitura ou parsing em mensagens contextualizadas.
+- `Agent::load`: função pública que valida o identificador, lê o arquivo correspondente e delega o parsing para `Agent::parse`.
 
-- `Agent::parse`: função interna ao crate (`pub(crate)`) que interpreta diretamente o conteúdo de um arquivo, separando metadados YAML das instruções Markdown.
+- `Agent::parse`: função `pub(crate)` que interpreta o conteúdo textual, separa o YAML das instruções Markdown, valida os campos e constrói um `Agent`.
 
-- Módulo `tests`: verifica suporte a finais de linha CRLF, normalização de modelos, rejeição de metadados desconhecidos, conteúdo incompleto e IDs potencialmente usados para atravessar diretórios.
+- Módulo `tests`: contém testes unitários para CRLF, normalização de modelos, serialização de snapshots e rejeição de definições inválidas.
 
-### Dependências e integrações
+### integrações
 
-- `std::fs` e `std::path::Path`: leitura dos arquivos e construção segura dos caminhos.
-- `serde`: serialização e desserialização de `Agent` e `Metadata`.
-- `serde_yaml`: interpretação do front matter YAML.
-- O arquivo integra-se com o restante do projeto por meio do campo `adapter`, cujo comportamento não é definido aqui.
+O arquivo expõe publicamente:
 
-### Observações
+- A struct `Agent`, com suporte a `Serialize` e `Deserialize`.
+- A função `valid_id`.
+- O método `Agent::load`.
 
-- O tratamento de erros usa `Result`, mensagens próprias e o operador `?`; não há `panic!` no código de produção.
-- IDs inválidos são rejeitados antes da construção do caminho, evitando nomes com separadores de diretório ou extensões arbitrárias.
-- O parser preserva a estrutura Markdown, removendo apenas espaços e quebras de linha nas extremidades.
-- O arquivo não mostra como os agentes são executados; ele apenas os representa e carrega suas definições.
+Também disponibiliza `Agent::parse` dentro da própria crate por meio de `pub(crate)`. Internamente, depende de `std::fs` e `std::path::Path` para acessar arquivos e de `serde`/`serde_yaml` para serialização, desserialização e validação do front matter.
