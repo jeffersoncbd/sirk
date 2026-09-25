@@ -11,7 +11,7 @@ pub fn supports(name: &str) -> bool {
     matches!(name, "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "EDIT")
 }
 
-/// Only standalone tool requests are interpreted as control messages.
+/// Only standalone tool requests are interpreted as control messages
 pub fn request(text: &str) -> Option<(&str, &str)> {
     let text = text.trim();
     if text == "TREE" {

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 pub use bash::{BashService, ProcessOutput};
 
-/// A command description shared by any feature that uses Bash.
+/// A command description shared by any feature that uses Bash
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Invocation {
     pub program: String,

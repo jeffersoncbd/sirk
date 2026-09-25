@@ -24,7 +24,7 @@ pub fn resolve(name: &str) -> Option<Box<dyn HarnessAdapter>> {
 }
 
 pub const AVAILABLE: &[&str] = &["codex", "ollama", "ollama-web", "opencode", "openrouter"];
-
+// tests
 #[cfg(test)]
 mod tests {
     use super::*;

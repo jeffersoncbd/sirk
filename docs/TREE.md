@@ -51,3 +51,9 @@ src/adapters/ollama_web.rs - Adapta solicitações do harness para chamadas HTTP
 
 src/adapters/openrouter.rs - Implementa o adaptador OpenRouter, criando requisições curl e interpretando respostas JSON da API.
 
+src/adapters/mod.rs - Registra, reexporta e resolve adaptadores de harness por nome, listando as opções disponíveis.
+
+src/services/mod.rs - Define invocações estruturadas e expõe os serviços e resultados da execução de comandos Bash.
+
+src/tools/mod.rs - Centraliza o reconhecimento, despacho e formatação das ferramentas de leitura, listagem e status do Git.
+
