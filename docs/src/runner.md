@@ -1,96 +1,54 @@
 ### Resumo
 
-Este arquivo implementa o motor de execução de workflows da aplicação. Ele inicia workflows, carrega agentes, executa etapas de agentes ou ferramentas, mantém o histórico persistido e permite retomar execuções interrompidas com validação de consistência.
+O arquivo `src/runner.rs` implementa o motor de execução de workflows sequenciais. Ele coordena agentes, ferramentas, entradas do usuário, histórico persistente e retomada de execuções interrompidas.
 
 ### Funcionamento
 
-A execução começa por `run`, `run_with` ou `run_interactive_with`:
+A execução começa validando o `Workflow`, canonicalizando o diretório e carregando as configurações dos agentes definidos nos passos. Em seguida, cria um `Snapshot` com o workflow, diretório e agentes, valida esse estado e inicializa um `History`.
 
-1. O workflow é validado.
-2. O diretório de trabalho é canonicalizado.
-3. As configurações dos agentes referenciados são carregadas de `.agents`.
-4. É criado um `Snapshot` contendo diretório, workflow e agentes.
-5. O histórico é criado e a execução é delegada a `continue_with`.
+O `Engine` percorre os passos em ordem e mantém um cursor alinhado ao histórico. Cada passo é registrado antes ou depois de sua execução, permitindo retomar a execução sem repetir etapas concluídas.
 
-`continue_with` valida novamente o snapshot e os blocos já registrados no histórico. Em seguida, cria um `Engine`, que percorre as etapas e salva cada alteração no histórico antes ou depois de operações relevantes. Isso permite continuar a partir da última etapa pendente sem repetir etapas concluídas.
+O arquivo trata diferentes tipos de passos:
 
-O mecanismo suporta:
+- Agentes: constroem prompts com instruções, entradas, respostas anteriores e resultados de `TREE`/`READ`. Podem fazer perguntas ao usuário através de respostas `ASK:`.
+- Ferramentas: executam operações como `TREE`, `READ`, `WRITE`, ferramentas customizadas e `EDIT`.
+- `LOOP`: percorre arrays de strings, criando escopos locais com `loop.item` e preservando resultados por iteração.
+- `IF`: avalia uma condição e executa apenas o ramo correspondente.
+- `EDIT`: prepara, valida e aplica alterações de arquivos de forma recuperável, registrando o diff no histórico.
 
-- etapas de agentes, executadas por meio de um adapter e de uma `Invocation`;
-- ferramentas internas, como `TREE`, `READ`, `WRITE`, `EDIT` e ferramentas customizadas;
-- estruturas condicionais `IF`;
-- iterações `LOOP`, com variáveis locais como `loop.item`;
-- perguntas ao usuário através de `ASK:`;
-- solicitações de `TREE` e `READ` feitas pelo agente;
-- persistência e recuperação após falhas;
-- edição de arquivos com preparação, validação de versão e commit recuperável.
+O histórico é validado antes da retomada. Registros inconsistentes, passos removidos ou resultados editados com etapas posteriores são rejeitados. Resultados e entradas são salvos progressivamente; falhas deixam o ponto pendente para uma execução posterior.
 
-Cada resposta, entrada do usuário, resultado de ferramenta e resultado de agente é registrado como um `Block` no histórico. O histórico também armazena rótulos como `Step 1.2 — nome`, permitindo detectar quando registros foram removidos ou alterados de forma incompatível.
+Erros são propagados por `Result<String, String>` e pelo operador `?`. Também há validações explícitas para agentes inexistentes, adaptadores desconhecidos, respostas vazias, arquivos inválidos e histórico incompatível. A execução externa é feita por `BashService` através de `Invocation`, verificando o status do processo.
 
 ### Componentes principais
 
-- `execute`: executa uma `Invocation` usando `BashService`. Retorna a saída padrão apenas quando o processo termina com sucesso.
+- `execute`: executa uma `Invocation` usando `BashService`, captura a saída e rejeita processos com status de erro.
+- `run`: inicia uma execução interativa usando entrada do terminal.
+- `resume`: abre um histórico existente e continua sua execução.
+- `run_with`: executa sem interação, rejeitando perguntas que exigiriam entrada do usuário.
+- `run_interactive_with`: valida o workflow, carrega agentes e cria o snapshot inicial.
+- `validate_snapshot`: verifica diretório, agentes, adaptadores, configurações `ask` e compatibilidade com histórico.
+- `all_steps`: percorre recursivamente passos normais, loops e ramificações condicionais.
+- `validate_blocks`, `validate_edit_blocks` e `validate_step_blocks`: verificam se os registros persistidos correspondem à estrutura esperada do workflow.
+- `continue_with`: valida o histórico e inicia o `Engine`.
+- `Engine::run_steps`: percorre passos, controla IDs hierárquicos, escopos locais, loops, condições e propagação de outputs.
+- `Engine::run_step`: executa passos de edição, ferramentas e agentes, atualizando o histórico.
+- `question`: reconhece respostas de agentes no formato `ASK:`.
+- Módulo `tests`: contém testes de retomada, perguntas, ferramentas, loops, condições, edições, arquivos e recuperação após falhas.
 
-- `run`: inicia uma execução usando `TerminalInput` para interação com o usuário.
+### integrações
 
-- `resume`: abre um arquivo de histórico e continua sua execução.
+O arquivo expõe as funções públicas `run`, `resume`, `run_with`, `run_interactive_with` e `continue_with`, que retornam `BTreeMap<String, String>` com os outputs finais ou um erro textual.
 
-- `run_with`: versão não interativa, usando uma implementação `NoInput` que falha caso seja necessária entrada do usuário. É especialmente útil para testes.
+Ele integra os módulos internos de:
 
-- `run_interactive_with`: valida o workflow, carrega agentes, cria o snapshot e inicia o histórico.
+- `adapters`, para resolver adaptadores e criar invocações de agentes;
+- `agents`, para carregar configurações;
+- `harness`, para representar requisições aos agentes;
+- `history`, para snapshots, blocos e persistência;
+- `input`, para entrada interativa;
+- `services`, para execução de processos externos;
+- `workflow`, para passos, loops, condições e templates;
+- `tools`, para leitura, escrita, edição, execução de ferramentas e solicitações `TREE`/`READ`.
 
-- `validate_snapshot`: verifica se o workflow, diretório, agentes e adapters continuam válidos. Também rejeita agentes configurados para JSON ou com perguntas vazias, pois esse modo não é compatível com conversas retomáveis.
-
-- `question`: identifica respostas de agentes no formato `ASK: pergunta`.
-
-- `all_steps`: percorre recursivamente etapas normais, de loops e de branches condicionais para localizar todos os agentes.
-
-- `validate_blocks`: verifica se o histórico corresponde à estrutura atual do workflow e se não existem registros posteriores a uma etapa editada.
-
-- `validate_edit_blocks`: valida históricos de operações `EDIT`, incluindo o `Pending` serializado e o diff produzido.
-
-- `validate_step_blocks`: valida a sequência de entradas, saídas, perguntas e resultados de `TREE`/`READ` em uma conversa.
-
-- `continue_with`: ponto principal de retomada. Valida o estado persistido, executa todas as etapas pendentes e retorna os outputs finais em um `BTreeMap`.
-
-- `Engine`: estrutura interna que mantém:
-  - o `History` mutável;
-  - a função de execução externa;
-  - a fonte de entrada do usuário;
-  - o cursor da etapa atual.
-
-- `Engine::run_steps`: percorre etapas, gerencia IDs hierárquicos, escopos de loop, branches de `IF` e outputs globais ou locais.
-
-- `Engine::run_step`: executa uma etapa individual:
-  - aplica operações `EDIT`;
-  - executa ferramentas internas ou customizadas;
-  - monta prompts para agentes;
-  - processa perguntas e solicitações `TREE`/`READ`;
-  - salva cada novo bloco no histórico.
-
-- Módulo de testes: contém testes abrangentes para retomada, perguntas, loops, condicionais, leitura e escrita de arquivos, edição recuperável, ferramentas customizadas, conflitos de versão e validação de históricos.
-
-### Dependências e integrações
-
-O arquivo depende de módulos internos:
-
-- `adapters`: resolve adapters e constrói invocações para agentes.
-- `agents::Agent`: carrega configurações dos agentes.
-- `harness::RunRequest`: representa uma solicitação ao harness.
-- `history`: fornece `History`, `Snapshot` e os tipos de bloco persistidos.
-- `input`: fornece `TerminalInput` e o trait `UserInput`.
-- `services`: executa processos externos por meio de `BashService` e `Invocation`.
-- `workflow`: fornece `Workflow`, `Step`, condicionais, loops e resolução de variáveis.
-- `tools`: executa `TREE`, `READ`, `WRITE`, `EDIT` e ferramentas customizadas.
-
-Também usa `BTreeMap`, `Path` e `serde_json` para armazenar outputs, manipular caminhos e serializar operações pendentes de edição.
-
-A comunicação com agentes é feita por processos externos. O arquivo constrói prompts contendo as instruções do agente e toda a conversa persistida, executa o adapter correspondente e registra a resposta recebida.
-
-### Observações
-
-- O arquivo não implementa diretamente o armazenamento do histórico, o parsing do workflow ou o comportamento individual das ferramentas; essas responsabilidades pertencem aos módulos importados.
-- Falhas de execução, respostas vazias, histórico inconsistente, agentes ausentes e conflitos de edição são propagados como `Result::Err` com mensagens textuais.
-- As operações são persistidas incrementalmente, permitindo retomar após interrupções sem repetir etapas já concluídas.
-- Em loops, outputs intermediários são locais a cada iteração; somente outputs fora desse escopo são retornados no mapa final.
-- O arquivo contém código de testes que cria diretórios temporários, arquivos, repositórios Git e configurações de agentes para simular os diferentes fluxos.
+O comportamento detalhado dessas estruturas depende dos módulos importados, que não estão incluídos no conteúdo analisado.

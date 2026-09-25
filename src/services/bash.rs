@@ -66,6 +66,7 @@ impl BashService {
         let mut child = Command::new(&self.executable)
             .args(["-lc", &self.render(invocation)])
             .current_dir(&invocation.working_directory)
+            .envs(&invocation.environment)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -104,19 +105,30 @@ impl BashService {
 
     pub fn render(&self, invocation: &Invocation) -> String {
         std::iter::once("exec --".to_owned())
-            .chain(std::iter::once(shell_quote(&invocation.program)))
+            .chain(std::iter::once(shell_quote(
+                &invocation.program,
+                &invocation.environment,
+            )))
             .chain(
                 invocation
                     .arguments
                     .iter()
-                    .map(|argument| shell_quote(argument)),
+                    .map(|argument| shell_quote(argument, &invocation.environment)),
             )
             .collect::<Vec<_>>()
             .join(" ")
     }
 }
 
-fn shell_quote(value: &str) -> String {
+fn shell_quote(value: &str, environment: &std::collections::BTreeMap<String, String>) -> String {
+    if let Some(variable) = value.strip_prefix('$')
+        && environment.contains_key(variable)
+        && variable
+            .bytes()
+            .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit() || byte == b'_')
+    {
+        return format!("\"${variable}\"");
+    }
     format!("'{}'", value.replace('\'', "'\"'\"'"))
 }
 
@@ -141,6 +153,7 @@ mod tests {
                 .chain(arguments.iter().map(|value| (*value).to_owned()))
                 .collect(),
             working_directory: std::env::current_dir().unwrap(),
+            environment: Default::default(),
         };
         let mut streamed = Vec::new();
         let result = BashService::default()
@@ -157,6 +170,7 @@ mod tests {
             program: "/bin/sh".to_owned(),
             arguments: vec!["-c".to_owned(), "pwd; exit 17".to_owned()],
             working_directory: std::env::temp_dir().canonicalize().unwrap(),
+            environment: Default::default(),
         };
         let result = BashService::default()
             .execute_to(&invocation, &mut Vec::new())
@@ -183,6 +197,7 @@ mod tests {
             program: "/usr/bin/printf".to_owned(),
             arguments: vec!["hello".to_owned()],
             working_directory: std::env::current_dir().unwrap(),
+            environment: Default::default(),
         };
         let error = BashService::default()
             .execute_to(&invocation, &mut BrokenSink)
@@ -199,11 +214,32 @@ mod tests {
                 "Prompt with spaces; $(not executed) and 'quotes'".to_owned(),
             ],
             working_directory: PathBuf::from("/workspace"),
+            environment: Default::default(),
         };
 
         assert_eq!(
             BashService::default().render(&invocation),
             "exec -- 'codex' 'exec' 'Prompt with spaces; $(not executed) and '\"'\"'quotes'\"'\"''"
         );
+    }
+
+    #[test]
+    fn passes_marked_environment_values_without_rendering_their_contents() {
+        let invocation = Invocation {
+            program: "/usr/bin/printf".to_owned(),
+            arguments: vec!["%s".to_owned(), "$TEST_AUTHORIZATION".to_owned()],
+            working_directory: std::env::current_dir().unwrap(),
+            environment: [("TEST_AUTHORIZATION".to_owned(), "Bearer secret".to_owned())]
+                .into_iter()
+                .collect(),
+        };
+
+        let command = BashService::default().render(&invocation);
+        assert!(command.contains("\"$TEST_AUTHORIZATION\""));
+        assert!(!command.contains("Bearer secret"));
+        let output = BashService::default()
+            .execute_to(&invocation, &mut Vec::new())
+            .unwrap();
+        assert_eq!(output.stdout, "Bearer secret");
     }
 }

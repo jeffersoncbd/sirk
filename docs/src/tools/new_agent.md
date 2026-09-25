@@ -1,72 +1,51 @@
 ### Resumo
 
-Este arquivo implementa a criação interativa de definições de agentes em `.agents/<nome>.md`. Ele coleta os dados do usuário, solicita a outro adapter/modelo que gere as instruções em Markdown, valida o resultado e grava o arquivo apenas se os metadados gerados forem compatíveis com os escolhidos.
+O arquivo `src/tools/new_agent.rs` implementa a criação interativa de arquivos de definição de agentes em `.agents/<nome>.md`. Ele coleta metadados do usuário, solicita a outro adapter a geração das instruções, valida o resultado e grava o arquivo somente se a definição for válida.
 
 ### Funcionamento
 
 O fluxo principal ocorre em `create_with`:
 
 1. Canonicaliza o diretório do projeto.
-2. Solicita:
-   - descrição do agente;
-   - adapter que o agente criado usará;
-   - modelo do agente;
-   - adapter e modelo responsáveis por gerar a definição;
-   - nome válido e ainda não utilizado.
-3. Monta um cabeçalho YAML com `adapter` e `model`.
-4. Cria um prompt para o agente gerador, exigindo:
-   - apenas o conteúdo do arquivo;
-   - front matter YAML;
-   - instruções detalhadas;
-   - preservação do idioma usado pelo usuário;
-   - ausência de metadados não suportados.
-5. Resolve o adapter gerador e cria uma `Invocation`.
-6. Executa a geração por meio da função recebida em `generate`.
-7. Analisa o resultado com `Agent::parse`.
-8. Verifica se o agente gerado:
-   - manteve o adapter e modelo solicitados;
-   - não habilitou `json`;
-   - não incluiu configuração de interação `ask`.
-9. Recria o front matter usando os metadados selecionados pelo usuário e grava as instruções geradas em um novo arquivo.
+2. Solicita uma descrição não vazia para o novo agente.
+3. Valida os adapters e modelos do agente criado e do agente gerador.
+4. Solicita um nome válido, rejeitando nomes inválidos ou já existentes.
+5. Monta um front matter YAML contendo `adapter` e `model`.
+6. Cria um prompt para o adapter gerador, exigindo apenas o conteúdo Markdown do agente.
+7. Resolve o adapter escolhido e cria uma `Invocation` com o prompt, diretório de trabalho, modelo e sem fluxo de eventos.
+8. Executa a geração por meio de uma função injetada ou, em `create`, pelo `BashService`.
+9. Analisa o texto retornado com `Agent::parse`.
+10. Verifica se o gerador preservou o adapter e modelo solicitados e se não adicionou metadados proibidos como `json` ou `ask`.
+11. Cria `.agents`, grava o arquivo com `create_new(true)` e chama `sync_all`.
 
-A função pública `create` fornece a execução real usando `BashService::execute_streaming`. Já `create_with` permite injetar uma função geradora, facilitando testes sem executar um modelo real.
+Erros são propagados como `Result<_, String>`. Falhas de entrada, geração, parsing, validação ou escrita impedem a criação do arquivo. O uso de `create_new(true)` também evita sobrescrever arquivos existentes.
 
 ### Componentes principais
 
-- `create`: ponto de entrada para a criação real. Executa a `Invocation` por meio de `BashService` e rejeita processos que terminem com status de erro.
+- `create`: ponto de entrada que usa `BashService::execute_streaming` para executar a geração real e rejeita processos encerrados com status de erro.
+- `create_with`: núcleo testável da criação de agentes; recebe uma função de geração injetável.
+- `choose_adapter`: apresenta os adapters disponíveis e repete a pergunta até receber um valor aceito.
+- `nonempty`: exige uma resposta não vazia.
+- `Header`: struct privada serializada para YAML, contendo `adapter` e `model`.
+- `Agent::parse`: valida e interpreta a definição Markdown retornada pelo gerador.
+- `BashService` e `Invocation`: abstraem a execução externa do adapter gerador.
+- `RunRequest`: transporta prompt, diretório, modelo e configuração de eventos para a criação da invocação.
+- `UserInput`: fornece a interface de perguntas interativas.
+- Módulo de testes: usa respostas simuladas, diretórios temporários e callbacks falsos para verificar criação, cancelamento, colisões de nomes e rejeição de definições inválidas.
 
-- `create_with`: contém todo o fluxo de entrada, geração, validação e persistência. Recebe uma função `generate` para abstrair a execução do gerador.
+### integrações
 
-- `choose_adapter`: apresenta os adapters disponíveis em `adapters::AVAILABLE`, normaliza a entrada para minúsculas e repete a pergunta até receber um adapter suportado.
+As funções públicas expostas são:
 
-- `nonempty`: solicita uma resposta até que ela não esteja vazia.
+- `create(directory, input) -> Result<PathBuf, String>`
+- `create_with(directory, input, generate) -> Result<PathBuf, String>`
 
-- `Header`: struct local derivada de `Serialize`, usada para produzir o front matter YAML com os campos `adapter` e `model`.
+O arquivo integra-se com:
 
-- `valid_id`: função importada de `agents`, usada para validar o nome do arquivo do agente.
-
-- `Agent::parse`: interpreta e valida o conteúdo Markdown retornado pelo gerador.
-
-- `Answers`: implementação de teste de `UserInput` baseada em `VecDeque`, fornecendo respostas predeterminadas.
-
-- `Project`: fixture de testes que cria um diretório temporário e o remove ao final.
-
-### Dependências e integrações
-
-- `crate::adapters`: resolve adapters e lista os adapters disponíveis.
-- `crate::agents::{Agent, valid_id}`: valida nomes e interpreta definições de agentes.
-- `crate::harness::RunRequest`: transporta prompt, diretório de trabalho, modelo e configuração de eventos.
-- `crate::input::UserInput`: abstrai a entrada interativa do usuário.
-- `crate::services::{BashService, Invocation}`: executa o processo externo e representa sua invocação.
-- `serde::Serialize` e `serde_yaml`: serializam o front matter YAML.
-- `std::fs` e `OpenOptions`: criam diretórios e arquivos.
-- `Path` e `PathBuf`: manipulam caminhos do sistema de arquivos.
-
-### Observações
-
-- O arquivo é explicitamente destinado à criação independente de agentes e não está disponível para workflows ou solicitações de modelos.
-- Erros são propagados como `Result<_, String>`, incluindo falhas de entrada, resolução de adapter, geração, parsing e gravação.
-- O arquivo de destino é aberto com `create_new(true)`, evitando sobrescrever um agente existente.
-- O diretório `.agents` só é criado depois que a geração e a validação terminam com sucesso.
-- Os testes verificam criação, preservação do idioma do prompt, cancelamento, colisões de nomes e rejeição de definições inválidas.
-- O comportamento de `Agent::parse`, de `adapters::resolve` e da execução de `BashService` depende de outros módulos não incluídos no conteúdo fornecido.
+- `crate::adapters`, para listar e resolver adapters disponíveis.
+- `crate::agents`, para validar nomes e interpretar definições de agentes.
+- `crate::harness`, para construir requisições de execução.
+- `crate::input`, para coletar entradas.
+- `crate::services`, para executar o processo externo e representar sua invocação.
+- `serde`, para serializar o front matter YAML.
+- Sistema de arquivos local, para criar e persistir arquivos `.agents/*.md`.

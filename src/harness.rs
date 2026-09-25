@@ -16,6 +16,11 @@ pub struct RunRequest {
 pub trait HarnessAdapter {
     fn id(&self) -> &'static str;
     fn invocation(&self, request: &RunRequest) -> Result<Invocation, HarnessError>;
+
+    /// Converts successful process output into the agent's response.
+    fn response(&self, stdout: String) -> Result<String, HarnessError> {
+        Ok(stdout)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +32,14 @@ pub enum HarnessError {
     MissingModel {
         adapter: &'static str,
     },
+    InvalidResponse {
+        adapter: &'static str,
+        message: String,
+    },
+    InvalidConfiguration {
+        adapter: &'static str,
+        message: String,
+    },
 }
 
 impl fmt::Display for HarnessError {
@@ -37,6 +50,18 @@ impl fmt::Display for HarnessError {
             }
             Self::MissingModel { adapter } => {
                 write!(formatter, "adapter `{adapter}` requires a model")
+            }
+            Self::InvalidResponse { adapter, message } => {
+                write!(
+                    formatter,
+                    "adapter `{adapter}` returned an invalid response: {message}"
+                )
+            }
+            Self::InvalidConfiguration { adapter, message } => {
+                write!(
+                    formatter,
+                    "adapter `{adapter}` has invalid configuration: {message}"
+                )
             }
         }
     }

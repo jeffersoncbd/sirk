@@ -55,6 +55,7 @@ pub fn execute(name: &str, arguments: &[String], directory: &Path) -> Result<Str
             .chain(arguments.iter().cloned())
             .collect(),
         working_directory: root,
+        environment: Default::default(),
     };
     let result = BashService::default()
         .execute_to(&invocation, &mut Vec::new())

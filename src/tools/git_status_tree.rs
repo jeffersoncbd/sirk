@@ -147,6 +147,7 @@ fn git(root: &Path, arguments: &[&str]) -> Result<GitOutput, String> {
                 program: "git".into(),
                 arguments: arguments.iter().map(|value| (*value).into()).collect(),
                 working_directory: root.to_owned(),
+                environment: Default::default(),
             },
             &mut io::sink(),
         )

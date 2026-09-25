@@ -1,44 +1,32 @@
 ### Resumo
 
-Este arquivo implementa o adaptador do provedor OpenCode. Ele converte uma requisição genérica do harness em uma invocação específica da CLI `opencode run`.
+O arquivo implementa o adaptador que transforma requisições genéricas do harness em comandos executáveis pela CLI do OpenCode.
 
 ### Funcionamento
 
-`OpenCodeAdapter` armazena o nome do executável a ser chamado, usando `"opencode"` por padrão. Ao receber um `RunRequest`, o método `invocation` monta os argumentos da linha de comando:
+`OpenCodeAdapter` armazena o nome do executável e, por padrão, usa `opencode`. Ao receber um `RunRequest`, constrói uma `Invocation` para executar:
 
-- inicia com `run`;
-- define o título fixo `new-harness`;
-- adiciona `--format json` quando `event_stream` está habilitado;
-- adiciona `--model` quando um modelo foi especificado;
-- usa `--` para separar opções da CLI do prompt;
-- adiciona o prompt fornecido;
-- preserva o diretório de trabalho da requisição.
+- o subcomando `run`;
+- um título fixo (`new-harness`);
+- saída em JSON quando `event_stream` está habilitado;
+- o modelo informado, se houver;
+- o prompt após `--`, evitando sua interpretação como opção da CLI.
 
-O código deliberadamente não inclui a opção `--auto`, pois ela habilitaria aprovações automáticas de permissões não negadas explicitamente.
+O adaptador não adiciona a opção `--auto`, pois ela habilitaria aprovações automáticas de permissões. A função retorna `Result<Invocation, HarnessError>`, embora a implementação atual sempre produza `Ok`.
+
+Os testes verificam a tradução das opções e garantem que a aprovação automática não seja ativada.
 
 ### Componentes principais
 
-- `OpenCodeAdapter`: struct pública que representa o adaptador OpenCode.
-- `Default for OpenCodeAdapter`: cria o adaptador usando o executável padrão `opencode`.
-- `OpenCodeAdapter::new`: permite configurar outro nome ou caminho de executável.
-- `HarnessAdapter for OpenCodeAdapter`:
-  - `id`: retorna o identificador `"opencode"`.
-  - `invocation`: traduz `RunRequest` em `Invocation` ou retorna `HarnessError`.
-- Testes internos:
-  - verificam a montagem dos argumentos com modelo e saída JSON;
-  - garantem que `--auto` não seja incluído.
+- `OpenCodeAdapter`: struct pública que contém o caminho ou nome do executável do OpenCode.
+- `Default::default`: cria um adaptador configurado com o executável `opencode`.
+- `OpenCodeAdapter::new`: construtor público que aceita qualquer tipo conversível para `String`.
+- `HarnessAdapter::id`: identifica o adaptador com o valor `"opencode"`.
+- `HarnessAdapter::invocation`: converte um `RunRequest` em uma `Invocation`, preservando prompt, diretório de trabalho e modelo.
+- Módulo `tests`: contém testes unitários privados para a montagem dos argumentos.
 
-### Dependências e integrações
+### integrações
 
-O arquivo usa tipos internos de `crate::harness`:
+O arquivo importa do módulo interno `crate::harness` os tipos `HarnessAdapter`, `HarnessError`, `Invocation` e `RunRequest`.
 
-- `HarnessAdapter`: trait que padroniza adaptadores de provedores;
-- `HarnessError`: tipo de erro da abstração;
-- `Invocation`: representa programa, argumentos e diretório de execução;
-- `RunRequest`: contém prompt, modelo, diretório de trabalho e configuração do fluxo de eventos.
-
-A execução efetiva do processo não ocorre neste arquivo; ele apenas produz a descrição da invocação para outro componente do harness executar.
-
-### Observações
-
-O tratamento de erro é representado pelo tipo `Result`, embora a implementação atual sempre retorne `Ok`. O prompt é passado como argumento separado, sem interpolação em shell.
+A implementação expõe publicamente `OpenCodeAdapter`, seu construtor `new` e a implementação do trait `HarnessAdapter`. A execução efetiva do processo e o significado completo de `Invocation` dependem do restante do módulo `harness`, que não está presente no conteúdo analisado.

@@ -1,34 +1,32 @@
 ### Resumo
 
-Este arquivo `Cargo.toml` define a configuração do pacote Rust `new-harness`, uma CLI neutra em relação a provedores para harnesses de agentes de programação. Ele configura simultaneamente uma biblioteca e um executável.
+O `Cargo.toml` é o manifesto da crate Rust `new-harness`. Ele define metadados do pacote, a versão da edição Rust, a biblioteca principal, o executável e as dependências externas.
 
 ### Funcionamento
 
-O projeto usa a edição 2024 do Rust e possui versão `0.1.0`.
+O projeto utiliza a edição 2024 do Rust e possui dois alvos de compilação:
 
-A configuração define:
+- Uma biblioteca chamada `new_harness`, cujo código começa em `src/lib.rs`.
+- Um executável chamado `new-harness`, definido em `src/main.rs`.
 
-- Uma biblioteca chamada `new_harness`, cujo código está em `src/lib.rs`.
-- Um executável chamado `new-harness`, cujo ponto de entrada está em `src/main.rs`.
-- Dependências para serialização, processamento de JSON/YAML, hashing e comparação de textos.
+As dependências fornecem suporte a:
 
-O arquivo apenas descreve metadados e componentes de compilação; não contém lógica de execução.
+- Serialização e desserialização com `serde`, `serde_yaml` e `serde_json`.
+- Leitura de variáveis de ambiente com `dotenvy`.
+- Cálculo de hashes com `sha2`.
+- Comparação de textos ou estruturas textuais com `similar`.
+
+O arquivo não contém lógica de execução, tratamento de erros ou regras de negócio; apenas configura como o Cargo deve compilar e organizar o projeto.
 
 ### Componentes principais
 
-- `[package]`: define nome, versão, edição e descrição do pacote.
-- `[lib]`: configura a crate de biblioteca `new_harness` e aponta para `src/lib.rs`.
-- `[[bin]]`: configura o binário `new-harness` e aponta para `src/main.rs`.
-- `serde`: serialização e desserialização com suporte a `derive`.
-- `serde_yaml`: leitura e escrita de dados no formato YAML.
-- `serde_json`: processamento de JSON.
-- `sha2`: geração de hashes SHA-2.
-- `similar`: comparação e geração de diferenças entre textos ou conteúdos.
+- `[package]`: define o nome, versão, edição do Rust e descrição do pacote.
+- `[lib]`: declara a crate de biblioteca `new_harness` e seu arquivo de entrada `src/lib.rs`.
+- `[dependencies]`: lista as crates externas e suas versões/recursos habilitados.
+- `[[bin]]`: declara o binário `new-harness` e seu arquivo de entrada `src/main.rs`.
 
-### Dependências e integrações
+### integrações
 
-O pacote está estruturado para oferecer uma biblioteca reutilizável e uma interface de linha de comando. Os detalhes de integração entre `src/lib.rs`, `src/main.rs` e as dependências não aparecem neste arquivo.
+A biblioteca pública do pacote é exposta como a crate `new_harness`. O binário `new-harness` constitui o ponto de entrada executável separado.
 
-### Observações
-
-Não é possível determinar, apenas pelo `Cargo.toml`, como os dados são processados, quais hashes são usados, como a CLI funciona ou quais regras de negócio existem.
+As integrações externas são feitas pelas crates `serde`, `serde_yaml`, `serde_json`, `dotenvy`, `sha2` e `similar`. O manifesto não expõe structs, enums, traits ou funções diretamente; esses símbolos devem estar definidos nos arquivos Rust indicados.

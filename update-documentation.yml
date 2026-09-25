@@ -64,3 +64,6 @@ steps:
             operation: append
             input: |
               {{ loop.item }} - {{ loop.explain_resume }}
+
+  - custom-tool: git-add
+    input: []

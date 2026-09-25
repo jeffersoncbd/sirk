@@ -1,46 +1,37 @@
 ### Resumo
 
-Este arquivo implementa o adaptador do harness para o CLI do Codex. Ele converte uma requisição genérica (`RunRequest`) em uma `Invocation` específica para executar `codex exec`, mantendo a execução somente leitura e sem solicitar aprovações.
+`src/adapters/codex.rs` implementa o adaptador responsável por transformar uma requisição genérica do harness em uma invocação do comando `codex exec`.
 
 ### Funcionamento
 
-`CodexAdapter` armazena o nome ou caminho do executável do Codex. Por padrão, usa `"codex"`, mas pode receber outro executável por meio de `new`.
+O `CodexAdapter` armazena o nome do executável e, por padrão, usa `codex`. Ao receber um `RunRequest`, monta uma lista de argumentos que:
 
-Ao criar uma invocação, o adaptador:
+- executa o subcomando `exec`;
+- ignora a exigência de estar em um repositório Git;
+- força o sandbox em modo `read-only`;
+- desativa aprovações com `approval_policy="never"`;
+- adiciona `--json` quando solicitado um fluxo de eventos;
+- inclui o modelo especificado, se houver;
+- encerra as opções com `--` e acrescenta o prompt.
 
-- inicia o comando com `codex exec`;
-- ignora a exigência de estar dentro de um repositório Git;
-- configura o sandbox como `read-only`;
-- define `approval_policy="never"`;
-- adiciona `--json` quando `event_stream` está habilitado;
-- adiciona `--model` quando um modelo foi especificado;
-- posiciona o prompt após `--`, evitando que seu conteúdo seja interpretado como opção;
-- preserva o diretório de trabalho informado.
+O resultado é um `Invocation` contendo programa, argumentos, diretório de trabalho e ambiente. O método retorna `Result`, embora a implementação atual sempre produza `Ok`.
 
-O método retorna os dados estruturados da execução sem iniciar o processo.
+O módulo também contém um teste que verifica a tradução de uma requisição completa para os argumentos esperados do Codex.
 
 ### Componentes principais
 
-- `CodexAdapter`: struct pública que representa o adaptador do Codex.
-- `Default for CodexAdapter`: cria um adaptador usando o executável padrão `codex`.
-- `CodexAdapter::new`: permite configurar um executável personalizado.
+- `CodexAdapter`: struct pública que guarda o caminho ou nome do executável.
+- `Default for CodexAdapter`: cria o adaptador usando o executável `codex`.
+- `CodexAdapter::new`: permite configurar outro executável.
 - `HarnessAdapter for CodexAdapter`:
-  - `id`: identifica o adaptador como `"codex"`.
-  - `invocation`: transforma `RunRequest` em `Invocation`.
-- Módulo de testes:
-  - `translates_generic_options_to_codex_exec`: verifica se prompt, modelo, diretório de trabalho, modo JSON e opções de segurança são traduzidos corretamente.
+  - `id`: retorna o identificador estático `"codex"`.
+  - `invocation`: constrói a invocação do processo Codex.
+- `#[cfg(test)] mod tests`: valida a montagem dos argumentos.
 
-### Dependências e integrações
+O arquivo importa `HarnessAdapter`, `HarnessError`, `Invocation` e `RunRequest` do módulo interno `crate::harness`.
 
-O arquivo importa, do módulo interno `crate::harness`:
+### integrações
 
-- `HarnessAdapter`: trait que define a interface dos adaptadores;
-- `HarnessError`: tipo de erro da criação da invocação;
-- `Invocation`: representação do programa e seus argumentos;
-- `RunRequest`: requisição genérica de execução.
+A struct `CodexAdapter` e seu construtor `new` são públicos. A implementação pública de `HarnessAdapter` expõe a identificação do adaptador e a conversão de `RunRequest` em `Invocation`.
 
-Também utiliza `std::path::PathBuf` nos testes para definir o diretório de trabalho.
-
-### Observações
-
-A função `invocation` retorna `Result`, mas a implementação atual sempre retorna `Ok`; não há validações ou falhas explícitas neste arquivo. A execução real do processo e o tratamento posterior da saída são responsabilidade de outras partes do projeto.
+O arquivo depende dos tipos definidos em `crate::harness` e do executável externo configurado, mas o conteúdo fornecido não mostra como o processo é posteriormente executado.

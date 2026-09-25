@@ -46,6 +46,7 @@ impl HarnessAdapter for OpenCodeAdapter {
             program: self.executable.clone(),
             arguments,
             working_directory: request.working_directory.clone(),
+            environment: Default::default(),
         })
     }
 }
@@ -84,6 +85,7 @@ mod tests {
                 .map(str::to_owned)
                 .collect(),
                 working_directory: PathBuf::from("/workspace"),
+                environment: Default::default(),
             }
         );
     }

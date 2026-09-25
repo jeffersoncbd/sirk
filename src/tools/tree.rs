@@ -43,6 +43,7 @@ impl Tree {
             .map(str::to_owned)
             .collect(),
             working_directory: root.clone(),
+            environment: Default::default(),
         };
         let result = BashService::default()
             .execute_bytes_to(&invocation, &mut io::sink())
@@ -74,6 +75,7 @@ impl Tree {
                     .map(str::to_owned)
                     .collect(),
                     working_directory: root.clone(),
+                    environment: Default::default(),
                 },
                 &mut io::sink(),
             )
@@ -168,6 +170,7 @@ mod tests {
                         program: "git".into(),
                         arguments: args.iter().map(|s| s.to_string()).collect(),
                         working_directory: self.0.clone(),
+                        environment: Default::default(),
                     },
                     &mut io::sink(),
                 )

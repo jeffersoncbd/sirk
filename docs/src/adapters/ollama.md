@@ -1,44 +1,34 @@
 ### Resumo
 
-Este arquivo implementa o adaptador do Ollama para o harness. Sua responsabilidade é converter uma requisição genérica (`RunRequest`) em uma invocação específica da CLI `ollama`.
+O arquivo implementa o adaptador do Ollama para o harness. Sua responsabilidade é converter um `RunRequest` genérico em uma `Invocation` específica para executar o comando `ollama run`.
 
 ### Funcionamento
 
-O `OllamaAdapter` armazena o nome do executável, usando `"ollama"` por padrão. Ao receber uma requisição:
+O adaptador exige que a requisição informe um modelo. Caso contrário, retorna `HarnessError::MissingModel`.
 
-1. Verifica se um modelo foi informado.
-2. Rejeita requisições que solicitam *event streams*, pois esse recurso não é suportado pelo adaptador.
-3. Cria uma `Invocation` equivalente a:
+Ele também rejeita requisições com `event_stream` habilitado, pois esse recurso não é suportado pelo adaptador. Nessa situação, retorna `HarnessError::UnsupportedOption`.
 
-```text
-ollama run <modelo> <prompt>
-```
+Quando a requisição é válida, monta uma invocação com:
 
-O diretório de trabalho da requisição é preservado na invocação.
+- programa configurado, normalmente `ollama`;
+- argumentos `run`, o nome do modelo e o prompt;
+- diretório de trabalho recebido na requisição;
+- ambiente de execução vazio.
+
+O arquivo não executa diretamente processos; apenas constrói a descrição da execução. Os testes verificam a tradução correta, a exigência de modelo e a rejeição de streams de eventos.
 
 ### Componentes principais
 
-- `OllamaAdapter`: struct pública que representa o adaptador do Ollama.
+- `OllamaAdapter`: struct pública que armazena o nome ou caminho do executável do Ollama.
 - `Default for OllamaAdapter`: cria o adaptador usando o executável padrão `"ollama"`.
-- `OllamaAdapter::new`: permite configurar outro caminho ou nome de executável.
+- `OllamaAdapter::new`: construtor público que permite definir outro executável.
 - `HarnessAdapter for OllamaAdapter`:
-  - `id`: retorna o identificador `"ollama"`.
-  - `invocation`: transforma `RunRequest` em `Invocation` ou retorna `HarnessError`.
-- Módulo de testes:
-  - Verifica a geração correta do comando `ollama run`.
-  - Verifica o erro quando o modelo está ausente.
-  - Verifica a rejeição de *event streams*.
+  - `id`: retorna o identificador `"ollama"`;
+  - `invocation`: valida o `RunRequest` e produz uma `Invocation` ou um `HarnessError`.
+- Módulo privado `tests`: contém testes unitários para conversão de requisições e tratamento de erros.
 
-### Dependências e integrações
+### integrações
 
-- `crate::harness` fornece:
-  - `HarnessAdapter`, trait que o adaptador implementa.
-  - `HarnessError`, para erros de validação.
-  - `Invocation`, representação do processo a ser executado.
-  - `RunRequest`, requisição independente do provedor.
-- `std::path::PathBuf` é usado apenas nos testes para configurar o diretório de trabalho.
-- A execução efetiva do processo não ocorre neste arquivo; ele apenas constrói a descrição da invocação.
+O arquivo utiliza os tipos internos `HarnessAdapter`, `HarnessError`, `Invocation` e `RunRequest`, definidos no módulo `crate::harness`.
 
-### Observações
-
-O tratamento de erros usa `Result` e `ok_or`, retornando erros estruturados para modelo ausente e opção não suportada. Os argumentos são armazenados separadamente em um `Vec<String>`, sem interpolação em shell.
+A struct `OllamaAdapter` e seu construtor são públicos. A implementação pública de `HarnessAdapter` expõe o identificador do adaptador e a capacidade de transformar requisições em invocações do Ollama.

@@ -1,46 +1,42 @@
 ### Resumo
 
-Este arquivo implementa o componente `Tree`, responsável por listar arquivos de uma árvore de trabalho Git. A listagem inclui arquivos rastreados e arquivos não rastreados que não sejam ignorados, respeitando regras do Git e regras adicionais definidas em `.treeignore`.
+O arquivo `src/tools/tree.rs` implementa a enumeração recursiva de arquivos de uma árvore de trabalho Git. Ele combina arquivos rastreados e arquivos não rastreados que não estejam ignorados, aplica regras adicionais de `.treeignore` e retorna caminhos relativos, ordenados e únicos.
 
 ### Funcionamento
 
-`Tree::list` recebe um diretório e:
+A função pública `Tree::list`:
 
-1. Resolve o caminho para uma forma canônica e verifica se ele é um diretório.
-2. Executa `git ls-files` para obter arquivos rastreados e arquivos não ignorados, usando saída delimitada por NUL (`-z`).
-3. Executa uma segunda consulta ao Git para identificar arquivos excluídos por `.treeignore`.
-4. Remove da listagem os caminhos encontrados nessa segunda consulta.
-5. Converte os caminhos em `PathBuf`, preservando caminhos não UTF-8 em sistemas Unix.
-6. Usa `symlink_metadata` para incluir arquivos regulares e links simbólicos, sem seguir os links.
-7. Ignora arquivos removidos do working tree, diretórios e gitlinks.
-8. Ordena e remove duplicatas antes de retornar o resultado.
+1. Converte o diretório informado para um caminho canônico e verifica se ele é um diretório.
+2. Executa `git ls-files` por meio de `BashService` e `Invocation`, usando saída delimitada por NUL (`-z`) para preservar nomes incomuns, incluindo espaços e quebras de linha.
+3. Inclui arquivos rastreados e arquivos não rastreados não ignorados pelas regras padrão do Git.
+4. Executa uma segunda consulta ao Git para identificar entradas excluídas por `.treeignore`.
+5. Remove essas entradas sem permitir que uma negação em `.treeignore` reintroduza arquivos bloqueados por `.gitignore`.
+6. Verifica cada caminho com `symlink_metadata`, incluindo arquivos regulares e links simbólicos, mas sem seguir os links.
+7. Ignora diretórios, gitlinks, arquivos rastreados que foram removidos e entradas inexistentes.
+8. Ordena e elimina duplicatas antes de retornar o resultado.
 
-O método retorna `Result<Tree, String>`. Erros incluem diretório inválido, falha ao executar o Git, execução fora de uma árvore Git, falha na avaliação de `.treeignore` e problemas ao inspecionar arquivos.
+Erros de resolução do diretório, execução do Git, avaliação de `.treeignore`, conversão de caminhos ou inspeção do sistema de arquivos são convertidos em `String` descritivas. A função não altera o índice Git.
+
+Os testes criam repositórios temporários e verificam padrões aninhados, negações, exclusões padrão, `.treeignore`, arquivos rastreados ignorados, arquivos removidos, caminhos não UTF-8, links simbólicos e diretórios inválidos.
 
 ### Componentes principais
 
-- `Tree`: struct pública com:
-  - `root: PathBuf`: diretório raiz canonicalizado.
-  - `files: Vec<PathBuf>`: caminhos relativos, ordenados e únicos.
+- `Tree`: struct pública que contém:
+  - `root: PathBuf`: raiz canônica usada na enumeração.
+  - `files: Vec<PathBuf>`: arquivos encontrados, relativos à raiz, ordenados e sem duplicatas.
 
-- `Tree::list`: função pública que realiza a descoberta dos arquivos usando Git.
+- `Tree::list`: método público que realiza toda a enumeração e retorna `Result<Tree, String>`.
 
-- `path_from_bytes`: funções condicionadas à plataforma que convertem os caminhos retornados pelo Git:
-  - Em Unix, aceita bytes arbitrários por meio de `OsStrExt`.
-  - Em outras plataformas, exige UTF-8 válido.
+- `path_from_bytes`: função interna específica da plataforma que converte os caminhos retornados pelo Git:
+  - Em Unix, preserva bytes não UTF-8 usando `OsStrExt`.
+  - Em outras plataformas, exige UTF-8 válido e retorna erro caso contrário.
 
-- `Project`: estrutura privada usada apenas nos testes para criar repositórios Git temporários, escrever arquivos e limpar os diretórios ao final.
+- `BashService` e `Invocation`: abstrações internas usadas para executar o Git sem montar comandos shell por interpolação de strings.
 
-- Testes: verificam regras de `.gitignore`, exclusões padrão do Git, padrões aninhados, negações, `.treeignore`, arquivos rastreados ignorados, arquivos removidos, links simbólicos, caminhos não UTF-8 e diretórios inválidos.
+- `BTreeSet`: armazena as entradas excluídas por `.treeignore`, permitindo comparação eficiente e ordenada.
 
-### Dependências e integrações
+- Módulo de testes `#[cfg(test)]`: fornece o fixture `Project` para criar repositórios Git temporários e validar o comportamento de `Tree::list`.
 
-- `crate::services::{BashService, Invocation}`: executa o processo externo `git` com programa, argumentos e diretório de trabalho separados.
-- `std::fs` e `std::io`: acessam metadados dos arquivos e descartam a saída de erro dos processos.
-- `BTreeSet`: armazena os caminhos excluídos por `.treeignore`.
-- Git: fornece a semântica de arquivos rastreados, ignorados, subdiretórios e padrões de exclusão.
-- O resultado é consumido pelo restante do projeto através da struct pública `Tree`.
+### integrações
 
-### Observações
-
-A implementação não altera o índice Git. Arquivos já rastreados continuam aparecendo mesmo quando `.gitignore` os ignora, mas arquivos removidos fisicamente não são retornados. Links simbólicos são listados como entradas e não são percorridos. A interpretação completa dos padrões depende do comportamento do Git e dos arquivos `.gitignore`/`.treeignore` existentes no diretório.
+A struct pública `Tree` e o método público `Tree::list` são a interface exposta por este arquivo. O módulo depende de `crate::services::{BashService, Invocation}` para executar comandos Git e de APIs da biblioteca padrão para manipular caminhos, arquivos, links simbólicos e erros de entrada/saída.

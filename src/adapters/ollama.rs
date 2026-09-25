@@ -42,6 +42,7 @@ impl HarnessAdapter for OllamaAdapter {
             program: self.executable.clone(),
             arguments: vec!["run".to_owned(), model.clone(), request.prompt.clone()],
             working_directory: request.working_directory.clone(),
+            environment: Default::default(),
         })
     }
 }
@@ -70,6 +71,7 @@ mod tests {
                     .map(str::to_owned)
                     .collect(),
                 working_directory: PathBuf::from("/workspace"),
+                environment: Default::default(),
             }
         );
     }

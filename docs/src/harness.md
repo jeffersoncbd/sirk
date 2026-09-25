@@ -1,38 +1,32 @@
 ### Resumo
 
-Este arquivo define a interface comum para executar diferentes coding-agent harnesses por linha de comando. Ele padroniza a solicitação de execução, a criação da invocação do processo e os erros específicos de integração.
+O arquivo define a abstração comum para executar diferentes coding-agent harnesses. Ele padroniza as requisições de execução, a construção da chamada externa e a conversão da saída do processo em uma resposta textual.
 
 ### Funcionamento
 
-`RunRequest` reúne os dados necessários para uma execução: prompt, diretório de trabalho, modelo opcional e indicação de saída por fluxo de eventos.
+`RunRequest` reúne os dados necessários para uma execução: prompt, diretório de trabalho, modelo opcional e indicação de fluxo de eventos.
 
-A trait pública `HarnessAdapter` representa a integração com um CLI específico. Cada adapter deve:
+A trait `HarnessAdapter` representa a fronteira de integração com uma CLI de agente. Cada implementação deve:
 
-- informar seu identificador por meio de `id`;
-- transformar um `RunRequest` em uma `Invocation`, ou retornar um `HarnessError`.
+- Informar um identificador estático por meio de `id`.
+- Transformar um `RunRequest` em uma `Invocation`, podendo retornar `HarnessError`.
+- Opcionalmente converter o `stdout` do processo em uma resposta específica. Por padrão, a saída é retornada sem transformação.
 
-`HarnessError` modela duas falhas de configuração:
+`HarnessError` modela falhas de configuração e processamento, incluindo opções não suportadas, modelo ausente, resposta inválida e configuração inválida. A implementação de `Display` produz mensagens legíveis, e a implementação de `std::error::Error` permite seu uso no ecossistema padrão de tratamento de erros do Rust.
 
-- `UnsupportedOption`: o adapter não suporta determinada opção;
-- `MissingModel`: o adapter exige um modelo, mas ele não foi fornecido.
-
-A implementação de `Display` gera mensagens legíveis para esses erros, e a implementação de `std::error::Error` permite usá-los no ecossistema padrão de tratamento de erros do Rust.
+Não há execução de processos, concorrência, persistência ou uso de `unsafe` neste arquivo.
 
 ### Componentes principais
 
-- `RunRequest`: struct pública que representa uma solicitação independente do provedor.
-- `HarnessAdapter`: trait pública que define o contrato de integração com um harness.
-- `HarnessError`: enum público com erros de validação ou configuração.
-- `Invocation`: tipo reexportado publicamente de `crate::services`, usado para representar a execução preparada do processo.
-- `fmt::Display`: usado para formatar mensagens de erro.
+- `RunRequest`: `struct` pública e imutável por convenção, contendo os parâmetros de uma execução.
+- `HarnessAdapter`: `trait` pública que define o contrato para adaptadores de diferentes CLIs.
+- `HarnessError`: `enum` pública com as categorias de erro relacionadas aos adaptadores.
+- `Invocation`: tipo reexportado publicamente de `crate::services`, permitindo que a interface de harness exponha esse tipo como parte de seu contrato.
+- `fmt::Display` para `HarnessError`: formata cada variante em uma mensagem específica.
+- `std::error::Error` para `HarnessError`: integra o erro aos mecanismos padrão de erro do Rust.
 
-### Dependências e integrações
+### integrações
 
-- `std::fmt`: utilizado na implementação de `Display`.
-- `std::path::PathBuf`: representa o diretório de trabalho da execução.
-- `crate::services::Invocation`: conecta este contrato à camada responsável por executar processos.
-- O restante do projeto deve fornecer implementações concretas de `HarnessAdapter` para cada CLI suportado.
+O arquivo depende do módulo interno `crate::services`, de onde importa e reexporta `Invocation`. Também usa `std::fmt` para formatação de erros e `std::path::PathBuf` para representar diretórios de trabalho.
 
-### Observações
-
-O arquivo apenas define contratos e dados; não executa processos, não realiza operações assíncronas ou concorrentes e não contém persistência. A lógica concreta de montagem dos argumentos fica nas implementações da trait `HarnessAdapter`.
+As principais partes públicas são `RunRequest`, `HarnessAdapter`, `HarnessError` e o reexport `Invocation`.

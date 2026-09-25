@@ -81,8 +81,8 @@ pub fn create_with(
          Do not change the requested adapter or model, add unsupported metadata, or write any files yourself.\n\
          The Markdown body must be nonempty. The agent name is {name}.\n\nUser description:\n{description}"
     );
-    let invocation = adapters::resolve(&generator_adapter)
-        .ok_or("unsupported generator adapter")?
+    let generator = adapters::resolve(&generator_adapter).ok_or("unsupported generator adapter")?;
+    let invocation = generator
         .invocation(&RunRequest {
             prompt,
             working_directory: directory.clone(),
@@ -90,7 +90,9 @@ pub fn create_with(
             event_stream: false,
         })
         .map_err(|e| e.to_string())?;
-    let generated = generate(&invocation)?;
+    let generated = generator
+        .response(generate(&invocation)?)
+        .map_err(|e| e.to_string())?;
     let agent = Agent::parse(&name, generated.trim()).map_err(|e| {
         format!("generator returned an invalid agent definition; no file was saved: {e}")
     })?;

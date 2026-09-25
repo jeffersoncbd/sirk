@@ -489,7 +489,9 @@ where
                             event_stream: false,
                         })
                         .map_err(|e| e.to_string())?;
-                    let response = (self.execute)(&invocation)?;
+                    let response = adapter
+                        .response((self.execute)(&invocation)?)
+                        .map_err(|e| e.to_string())?;
                     if response.trim().is_empty() {
                         return Err(
                             "agent returned an empty response; input remains pending".into()
@@ -545,6 +547,7 @@ mod tests {
                         program: "git".into(),
                         arguments: vec!["init".into(), "--quiet".into()],
                         working_directory: self.0.clone(),
+                        environment: Default::default(),
                     },
                     &mut std::io::sink(),
                 )

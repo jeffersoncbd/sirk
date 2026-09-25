@@ -2,3 +2,5 @@
 /target/
 
 /new-harness
+
+.env
