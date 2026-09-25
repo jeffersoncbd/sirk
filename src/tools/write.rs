@@ -6,6 +6,19 @@ use std::{
 };
 
 pub fn write(directory: &Path, path: &str, content: &str, force: bool) -> Result<(), String> {
+    write_with_options(directory, path, content, force, false)
+}
+
+pub fn write_with_options(
+    directory: &Path,
+    path: &str,
+    content: &str,
+    force: bool,
+    skip: bool,
+) -> Result<(), String> {
+    if force && skip {
+        return Err("WRITE cannot combine force: true with skip: true".into());
+    }
     if path.trim().is_empty() {
         return Err("WRITE requires a path".into());
     }
@@ -43,6 +56,9 @@ pub fn write(directory: &Path, path: &str, content: &str, force: bool) -> Result
             if !resolved.starts_with(&root) {
                 return Err("WRITE path must be inside the execution directory".into());
             }
+            if skip {
+                return Ok(());
+            }
             if !force {
                 return Err(format!(
                     "WRITE refuses to overwrite existing file `{path}`; set force: true to replace it"
@@ -59,9 +75,19 @@ pub fn write(directory: &Path, path: &str, content: &str, force: bool) -> Result
     } else {
         options.create_new(true);
     }
-    let mut file = options
-        .open(&target)
-        .map_err(|error| format!("WRITE cannot create `{path}`: {error}"))?;
+    let mut file = match options.open(&target) {
+        Ok(file) => file,
+        Err(error) if skip && error.kind() == std::io::ErrorKind::AlreadyExists => {
+            // A concurrent creator won; only regular files qualify for skipping.
+            let metadata = fs::symlink_metadata(&target)
+                .map_err(|e| format!("WRITE cannot inspect `{path}`: {e}"))?;
+            if !metadata.file_type().is_file() {
+                return Err(format!("WRITE path is not a regular file: {path}"));
+            }
+            return Ok(());
+        }
+        Err(error) => return Err(format!("WRITE cannot create `{path}`: {error}")),
+    };
     file.write_all(content.as_bytes())
         .and_then(|_| file.sync_all())
         .map_err(|error| format!("WRITE cannot write `{path}`: {error}"))
@@ -108,6 +134,26 @@ mod tests {
         ));
         fs::create_dir_all(&directory).unwrap();
         directory
+    }
+
+    #[test]
+    fn skip_preserves_existing_files_and_creates_missing_files() {
+        let project = temporary_project();
+        write_with_options(&project, "nested/file", "original\n", false, true).unwrap();
+        write_with_options(&project, "nested/file", "replacement", false, true).unwrap();
+        assert_eq!(
+            fs::read_to_string(project.join("nested/file")).unwrap(),
+            "original\n"
+        );
+        assert!(write_with_options(&project, "nested/file", "replacement", true, true).is_err());
+        assert!(write_with_options(&project, "nested", "content", false, true).is_err());
+        assert!(write_with_options(&project, "../outside", "content", false, true).is_err());
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(project.join("nested/file"), project.join("link")).unwrap();
+            assert!(write_with_options(&project, "link", "content", false, true).is_err());
+        }
+        fs::remove_dir_all(project).unwrap();
     }
 
     #[test]

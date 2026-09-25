@@ -17,11 +17,15 @@ steps:
           - "{{ loop.item }}"
         output: doc_name
 
-      - agent: code-explainer
-        input: "{{ loop.content }}"
+      - tool: READ
+        input: "{{ loop.doc_name }}"
         output: explain
 
-      - tool: WRITE
-        path: "{{ loop.doc_name }}"
+      - agent: explain-resume
         input: "{{ loop.explain }}"
-        force: true
+        output: explain_resume
+
+      - tool: EDIT
+        path: docs/TREE.md
+        operation: append
+        input: "{{ loop.item }} - {{ loop.explain_resume }}"

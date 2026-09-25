@@ -30,6 +30,24 @@ pub struct Step {
     pub path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skip: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operation: Option<crate::tools::edit::Operation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(
+        default,
+        rename = "version-output",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub version_output: Option<String>,
     pub output: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iter: Vec<Step>,
@@ -113,12 +131,32 @@ impl Step {
         outputs: &BTreeMap<String, String>,
         locals: Option<&BTreeMap<String, String>>,
     ) -> Result<String, String> {
-        let path = self.path.as_deref().ok_or("WRITE requires a path")?;
+        let path = self.path.as_deref().ok_or("tool requires a path")?;
         render_scoped(path, outputs, locals)
     }
 
     pub fn force(&self) -> bool {
         self.force.unwrap_or(false)
+    }
+
+    pub fn edit_request(
+        &self,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<crate::tools::edit::Request, String> {
+        Ok(crate::tools::edit::Request {
+            path: self.render_path(outputs, locals)?,
+            operation: self.operation.ok_or("EDIT requires operation")?,
+            line: self.line,
+            start: self.start,
+            end: self.end,
+            version: self
+                .version
+                .as_deref()
+                .map(|v| render_scoped(v, outputs, locals))
+                .transpose()?,
+            input: self.render_input(outputs, locals)?,
+        })
     }
 }
 
@@ -154,12 +192,28 @@ fn validate_steps(
     for (index, step) in steps.iter().enumerate() {
         let is_loop = step.tool.as_deref() == Some("LOOP");
         let is_write = step.tool.as_deref() == Some("WRITE");
+        let is_edit = step.tool.as_deref() == Some("EDIT");
+        if !is_edit
+            && (step.operation.is_some()
+                || step.line.is_some()
+                || step.start.is_some()
+                || step.end.is_some()
+                || step.version.is_some())
+        {
+            return Err("operation, line, start, end and version are only accepted on EDIT".into());
+        }
+        if step.version_output.is_some() && step.tool.as_deref() != Some("READ") {
+            return Err("version-output is only accepted on READ".into());
+        }
+        if step.version_output.is_some() && step.version_output == step.output {
+            return Err("READ output and version-output must have different names".into());
+        }
         if !is_loop && !step.iter.is_empty() {
             return Err("iter is only accepted on LOOP steps".into());
         }
-        if !is_write && step.path.is_some() {
+        if !is_write && !is_edit && step.path.is_some() {
             return Err(format!(
-                "step {}: path is only accepted on WRITE",
+                "step {}: path is only accepted on WRITE or EDIT",
                 index + 1
             ));
         }
@@ -168,6 +222,12 @@ fn validate_steps(
                 "step {}: force is only accepted on WRITE",
                 index + 1
             ));
+        }
+        if !is_write && step.skip.is_some() {
+            return Err("skip is only accepted on WRITE".into());
+        }
+        if step.force() && step.skip.unwrap_or(false) {
+            return Err("WRITE cannot combine force: true with skip: true".into());
         }
         match (&step.agent, &step.tool, &step.custom_tool) {
             (Some(agent), None, None) if crate::agents::valid_id(agent) => (),
@@ -199,15 +259,29 @@ fn validate_steps(
                         index + 1
                     ));
                 }
-                if tool == "WRITE" {
+                if tool == "WRITE" || tool == "EDIT" {
                     if !matches!(step.input, StepInput::Text(_)) {
                         return Err(format!(
-                            "step {}: WRITE input must be text content",
+                            "step {}: {tool} input must be text content",
                             index + 1
                         ));
                     }
                     if step.path.as_ref().is_none_or(|path| path.trim().is_empty()) {
-                        return Err(format!("step {}: WRITE requires a path", index + 1));
+                        return Err(format!("step {}: {tool} requires a path", index + 1));
+                    }
+                }
+                if is_edit {
+                    let mut request = step.edit_request(outputs, locals.as_deref())?;
+                    // References resolve to placeholder values during static validation.
+                    request.path = step.path.clone().unwrap();
+                    if step.version.as_ref().is_some_and(|v| v.contains("{{")) {
+                        request.version = Some("0".repeat(64));
+                    }
+                    request.validate()?;
+                    if request.operation == crate::tools::edit::Operation::Delete
+                        && step.input.text() != Some("")
+                    {
+                        return Err("EDIT delete does not accept input".into());
                     }
                 }
             }
@@ -221,7 +295,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, READ, LOOP), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, READ, WRITE, EDIT, LOOP), or custom-tool",
                     index + 1
                 ));
             }
@@ -238,7 +312,7 @@ fn validate_steps(
             let mut child_locals = BTreeMap::from([("item".into(), String::new())]);
             validate_steps(&step.iter, &mut child_outputs, Some(&mut child_locals))?;
         }
-        if let Some(name) = &step.output {
+        for name in step.output.iter().chain(step.version_output.iter()) {
             if let Some(key) = loop_target(name) {
                 if key == "item" {
                     return Err("loop.item is read-only".into());
@@ -323,6 +397,39 @@ mod tests {
     use super::*;
 
     #[test]
+    fn validates_edit_operations_and_version_outputs() {
+        let valid = "version: 1\nsteps:\n- tool: READ\n  input: file\n  output: source\n  version-output: revision\n- tool: EDIT\n  path: file\n  operation: replace\n  start: 1\n  end: 2\n  version: '{{ outputs.revision }}'\n  input: new\n";
+        serde_yaml::from_str::<Workflow>(valid)
+            .unwrap()
+            .validate()
+            .unwrap();
+        for invalid in [
+            valid.replace("start: 1", "start: 0"),
+            valid.replace("end: 2", "end: 0"),
+            valid.replace("  version: '{{ outputs.revision }}'\n", ""),
+            valid.replace("operation: replace", "operation: append"),
+            valid.replace("operation: replace", "operation: insert"),
+            valid.replace("operation: replace", "operation: delete"),
+            valid.replace("version-output: revision", "version-output: source"),
+            valid.replace("outputs.revision", "outputs.missing"),
+            valid.replace("tool: EDIT", "tool: WRITE"),
+            valid.replace("input: new", "input: [new]"),
+        ] {
+            assert!(
+                serde_yaml::from_str::<Workflow>(&invalid)
+                    .unwrap()
+                    .validate()
+                    .is_err(),
+                "{invalid}"
+            );
+        }
+        for operation in ["append", "prepend"] {
+            let workflow: Workflow = serde_yaml::from_str(&format!("version: 1\nsteps:\n- tool: EDIT\n  path: log\n  operation: {operation}\n  input: entry\n")).unwrap();
+            workflow.validate().unwrap();
+        }
+    }
+
+    #[test]
     fn loop_scopes_validate_and_reject_invalid_arrays() {
         let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [a, b]\n  iter:\n  - tool: READ\n    input: '{{ loop.item }}'\n    output: '{{ loop.content }}'\n  - agent: planner\n    input: '{{ loop.content }}'\n").unwrap();
         workflow.validate().unwrap();
@@ -404,6 +511,8 @@ mod tests {
             "tool: WRITE\n  path: output.txt\n  input: [content]",
             "tool: READ\n  path: output.txt\n  input: source.txt",
             "agent: planner\n  force: false",
+            "agent: planner\n  skip: false",
+            "tool: WRITE\n  path: file\n  force: true\n  skip: true",
         ] {
             let workflow: Workflow =
                 serde_yaml::from_str(&format!("version: 1\nsteps:\n- {step}\n")).unwrap();

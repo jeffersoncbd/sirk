@@ -143,6 +143,10 @@ fn validate_blocks(history: &History) -> Result<(), String> {
                         return Ok(false);
                     }
                 }
+            } else if step.tool.as_deref() == Some("EDIT") {
+                if !validate_edit_blocks(blocks)? {
+                    return Ok(false);
+                }
             } else if !validate_step_blocks(blocks, step.is_tool_step())? {
                 return Ok(false);
             }
@@ -158,6 +162,23 @@ fn validate_blocks(history: &History) -> Result<(), String> {
         );
     }
     Ok(())
+}
+
+fn validate_edit_blocks(blocks: &[Block]) -> Result<bool, String> {
+    if blocks.is_empty() {
+        return Ok(false);
+    }
+    let Block::Input(text) = &blocks[0] else {
+        return Err("EDIT history requires prepared input".into());
+    };
+    let pending: crate::tools::edit::Pending =
+        serde_json::from_str(text).map_err(|e| format!("invalid EDIT history: {e}"))?;
+    pending.validate()?;
+    match &blocks[1..] {
+        [] => Ok(false),
+        [Block::Output(diff)] if pending.before.is_some() && *diff == pending.diff()? => Ok(true),
+        _ => Err("invalid EDIT result; remove the edited result and later records".into()),
+    }
 }
 
 fn validate_step_blocks(blocks: &[Block], tool_step: bool) -> Result<bool, String> {
@@ -270,16 +291,22 @@ where
                 continue;
             }
             let result = self.run_step(step, index, outputs, locals.as_ref())?;
-            if let Some(name) = &step.output {
+            let version = crate::tools::edit::version(&result);
+            for (name, value) in step
+                .output
+                .iter()
+                .map(|name| (name, &result))
+                .chain(step.version_output.iter().map(|name| (name, &version)))
+            {
                 if let Some(key) = loop_target(name) {
                     locals
                         .as_mut()
                         .ok_or("missing loop scope")?
-                        .insert(key.into(), result);
+                        .insert(key.into(), value.clone());
                 } else if let Some(values) = locals.as_mut() {
-                    values.insert(name.clone(), result);
+                    values.insert(name.clone(), value.clone());
                 } else {
-                    outputs.insert(name.clone(), result);
+                    outputs.insert(name.clone(), value.clone());
                 }
             }
         }
@@ -294,6 +321,36 @@ where
         locals: Option<&BTreeMap<String, String>>,
     ) -> Result<String, String> {
         let history = &mut self.history;
+        if step.tool.as_deref() == Some("EDIT") {
+            if history.steps[index].is_empty() {
+                let pending = crate::tools::edit::Pending {
+                    request: step.edit_request(outputs, locals)?,
+                    before: None,
+                    was_missing: false,
+                };
+                pending.validate()?;
+                history.steps[index].push(Block::Input(
+                    serde_json::to_string(&pending).map_err(|e| e.to_string())?,
+                ));
+                history.save()?;
+            }
+            if let Some(Block::Output(result)) = history.steps[index].last() {
+                return Ok(result.clone());
+            }
+            let mut pending: crate::tools::edit::Pending =
+                serde_json::from_str(history.steps[index][0].text()).map_err(|e| e.to_string())?;
+            if pending.before.is_none() {
+                pending.prepare(&history.snapshot.directory)?;
+                history.steps[index][0] =
+                    Block::Input(serde_json::to_string(&pending).map_err(|e| e.to_string())?);
+                history.save()?;
+            }
+            let diff = pending.commit(&history.snapshot.directory)?;
+            history.steps[index].push(Block::Output(diff.clone()));
+            history.save()?;
+            crate::tools::edit::display(&diff);
+            return Ok(diff);
+        }
         if step.is_tool_step() {
             if history.steps[index].is_empty() {
                 history.steps[index].push(Block::Input(step.render_input(outputs, locals)?));
@@ -303,11 +360,12 @@ where
                 let result = if let Some(tool) = &step.tool {
                     if tool == "WRITE" {
                         let path = step.render_path(outputs, locals)?;
-                        crate::tools::write::write(
+                        crate::tools::write::write_with_options(
                             &history.snapshot.directory,
                             &path,
                             argument,
                             step.force(),
+                            step.skip.unwrap_or(false),
                         )?;
                         String::new()
                     } else {
@@ -840,6 +898,294 @@ mod tests {
             continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap()
         );
     }
+    #[test]
+    fn read_version_and_edit_work_in_loop_scopes_and_resume() {
+        let project = Project::new();
+        for name in ["a", "b"] {
+            fs::write(project.0.join(name), "fn a() {\n}\nfn b() {\n}\n").unwrap();
+        }
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [a, b]\n  iter:\n  - tool: READ\n    input: '{{ loop.item }}'\n    output: source\n    version-output: revision\n  - tool: EDIT\n    path: '{{ loop.item }}'\n    operation: replace\n    start: 4\n    end: 4\n    version: '{{ loop.revision }}'\n    input: \"  // literal {{ loop.source }}\\n}\\n\"\n    output: diff\n").unwrap();
+        // Inserted source contains no templates; repeated braces select only line 4.
+        let result = run_with(&workflow, &project.0, |_| panic!("no model")).unwrap();
+        assert!(result.is_empty());
+        for name in ["a", "b"] {
+            let content = fs::read_to_string(project.0.join(name)).unwrap();
+            assert!(content.starts_with("fn a() {\n}\nfn b() {\n  // literal"));
+        }
+        let mut history = History::open(&project.log()).unwrap();
+        fs::remove_file(project.0.join("a")).unwrap();
+        assert!(
+            continue_with(&mut history, |_| panic!("completed"), &mut answers(&[]))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn edit_rejects_stale_read_version_and_preserves_file() {
+        let project = Project::new();
+        fs::write(project.0.join("file"), "original\n").unwrap();
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: READ\n  input: file\n  version-output: revision\n- agent: second\n- tool: EDIT\n  path: file\n  operation: delete\n  start: 1\n  end: 1\n  version: '{{ outputs.revision }}'\n").unwrap();
+        let error = run_with(&workflow, &project.0, |_| {
+            fs::write(project.0.join("file"), "external change\n").unwrap();
+            Ok("Done".into())
+        })
+        .unwrap_err();
+        assert!(error.contains("version conflict"));
+        assert_eq!(
+            fs::read_to_string(project.0.join("file")).unwrap(),
+            "external change\n"
+        );
+    }
+
+    #[test]
+    fn prepared_edits_recover_before_and_after_commit_without_duplication() {
+        use crate::tools::edit::{Operation, Pending, Request};
+        for operation in [Operation::Append, Operation::Prepend] {
+            for already_written in [false, true] {
+                let project = Project::new();
+                fs::write(project.0.join("file"), "original\n").unwrap();
+                let op = if operation == Operation::Append {
+                    "append"
+                } else {
+                    "prepend"
+                };
+                let workflow: Workflow = serde_yaml::from_str(&format!("version: 1\nsteps:\n- tool: EDIT\n  path: file\n  operation: {op}\n  input: \"entry\\n\"\n  output: diff\n")).unwrap();
+                let mut pending = Pending {
+                    request: Request {
+                        path: "file".into(),
+                        operation,
+                        line: None,
+                        start: None,
+                        end: None,
+                        version: None,
+                        input: "entry\n".into(),
+                    },
+                    before: None,
+                    was_missing: false,
+                };
+                pending.prepare(&project.0).unwrap();
+                let expected = pending.request.apply_to("original\n").unwrap();
+                let mut history = History::create(Snapshot {
+                    directory: project.0.clone(),
+                    workflow,
+                    agents: vec![],
+                })
+                .unwrap();
+                history.labels.push("Step 1 — EDIT".into());
+                history
+                    .steps
+                    .push(vec![Block::Input(serde_json::to_string(&pending).unwrap())]);
+                history.save().unwrap();
+                if already_written {
+                    pending.commit(&project.0).unwrap();
+                }
+                let path = history.path.clone();
+                drop(history);
+                let mut history = History::open(&path).unwrap();
+                let outputs =
+                    continue_with(&mut history, |_| panic!("no model"), &mut answers(&[])).unwrap();
+                assert_eq!(outputs["diff"], pending.diff().unwrap());
+                assert_eq!(
+                    fs::read_to_string(project.0.join("file")).unwrap(),
+                    expected
+                );
+                assert_eq!(
+                    continue_with(&mut history, |_| panic!("completed"), &mut answers(&[]))
+                        .unwrap(),
+                    outputs
+                );
+                assert_eq!(
+                    fs::read_to_string(project.0.join("file")).unwrap(),
+                    expected
+                );
+                // A pending operation followed by later history is rejected before applying.
+                history.steps[0].pop();
+                history.steps.push(vec![Block::Input("later".into())]);
+                assert!(
+                    continue_with(&mut history, |_| panic!("invalid"), &mut answers(&[])).is_err()
+                );
+                history.steps.pop();
+                fs::write(project.0.join("file"), "unrelated").unwrap();
+                assert!(
+                    continue_with(&mut history, |_| panic!("conflict"), &mut answers(&[]))
+                        .unwrap_err()
+                        .contains("conflict")
+                );
+                assert_eq!(
+                    fs::read_to_string(project.0.join("file")).unwrap(),
+                    "unrelated"
+                );
+                history.steps[0].push(Block::Output("forged diff".into()));
+                assert!(
+                    continue_with(&mut history, |_| panic!("invalid"), &mut answers(&[]))
+                        .unwrap_err()
+                        .contains("invalid EDIT result")
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn edit_confines_paths_and_preserves_permissions() {
+        use crate::tools::edit::{Operation, Pending, Request};
+        let project = Project::new();
+        let outside = Project::new();
+        fs::write(project.0.join("file"), "before").unwrap();
+        fs::write(project.0.join("binary"), [255]).unwrap();
+        fs::write(outside.0.join("file"), "outside").unwrap();
+        let mut pending = Pending {
+            request: Request {
+                path: "file".into(),
+                operation: Operation::Append,
+                line: None,
+                start: None,
+                end: None,
+                version: None,
+                input: "after".into(),
+            },
+            before: None,
+            was_missing: false,
+        };
+        for path in [
+            ".agents".into(),
+            "binary".into(),
+            outside.0.join("file").to_str().unwrap().into(),
+        ] {
+            pending.request.path = path;
+            assert!(pending.prepare(&project.0).is_err());
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::{PermissionsExt, symlink};
+            symlink(project.0.join("file"), project.0.join("link")).unwrap();
+            symlink(&outside.0, project.0.join("external")).unwrap();
+            for path in ["link", "external/file"] {
+                pending.request.path = path.into();
+                assert!(pending.prepare(&project.0).is_err());
+            }
+            fs::set_permissions(project.0.join("file"), fs::Permissions::from_mode(0o751)).unwrap();
+            pending.request.path = "file".into();
+            pending.prepare(&project.0).unwrap();
+            pending.commit(&project.0).unwrap();
+            assert_eq!(
+                fs::metadata(project.0.join("file"))
+                    .unwrap()
+                    .permissions()
+                    .mode()
+                    & 0o777,
+                0o751
+            );
+        }
+        assert!(crate::tools::request("EDIT: file").is_none());
+    }
+    #[test]
+    fn edit_creates_missing_files_and_recovers_creation() {
+        for operation in ["append", "prepend"] {
+            for content in ["entry\n", ""] {
+                let project = Project::new();
+                let workflow: Workflow = serde_yaml::from_str(&format!("version: 1\nsteps:\n- tool: EDIT\n  path: new.txt\n  operation: {operation}\n  input: {}\n  output: diff\n", serde_json::to_string(content).unwrap())).unwrap();
+                let outputs = run_with(&workflow, &project.0, |_| panic!("no model")).unwrap();
+                assert_eq!(
+                    fs::read_to_string(project.0.join("new.txt")).unwrap(),
+                    content
+                );
+                if !content.is_empty() {
+                    assert!(outputs["diff"].contains("--- /dev/null"));
+                }
+                let mut history = History::open(&project.log()).unwrap();
+                // Simulate a crash after publication but before saving OUTPUT.
+                history.steps[0].pop();
+                history.save().unwrap();
+                let path = history.path.clone();
+                drop(history);
+                let mut history = History::open(&path).unwrap();
+                assert_eq!(
+                    continue_with(&mut history, |_| panic!("no model"), &mut answers(&[])).unwrap(),
+                    outputs
+                );
+                assert_eq!(
+                    fs::read_to_string(project.0.join("new.txt")).unwrap(),
+                    content
+                );
+                // Simulate a prepared creation which has not reached the filesystem yet.
+                history.steps[0].pop();
+                fs::remove_file(project.0.join("new.txt")).unwrap();
+                continue_with(&mut history, |_| panic!("no model"), &mut answers(&[])).unwrap();
+                assert_eq!(
+                    fs::read_to_string(project.0.join("new.txt")).unwrap(),
+                    content
+                );
+                // A different file created in between must not be replaced.
+                history.steps[0].pop();
+                fs::write(project.0.join("new.txt"), "other writer").unwrap();
+                assert!(
+                    continue_with(&mut history, |_| panic!("conflict"), &mut answers(&[]))
+                        .unwrap_err()
+                        .contains("conflict")
+                );
+                assert_eq!(
+                    fs::read_to_string(project.0.join("new.txt")).unwrap(),
+                    "other writer"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn missing_edit_targets_remain_confined_and_line_edits_require_files() {
+        let project = Project::new();
+        let outside = Project::new();
+        for path in [
+            "missing-parent/new.txt".to_owned(),
+            outside.0.join("new.txt").to_str().unwrap().to_owned(),
+        ] {
+            let workflow: Workflow = serde_yaml::from_str(&format!("version: 1\nsteps:\n- tool: EDIT\n  path: {}\n  operation: append\n  input: text\n", serde_json::to_string(&path).unwrap())).unwrap();
+            assert!(run_with(&workflow, &project.0, |_| panic!("no model")).is_err());
+        }
+        for operation in ["insert", "delete", "replace"] {
+            let coordinates = if operation == "insert" {
+                "line: 1"
+            } else {
+                "start: 1\n  end: 1"
+            };
+            let workflow: Workflow = serde_yaml::from_str(&format!("version: 1\nsteps:\n- tool: EDIT\n  path: missing.txt\n  operation: {operation}\n  {coordinates}\n  version: '{}'\n", crate::tools::edit::version(""))).unwrap();
+            assert!(run_with(&workflow, &project.0, |_| panic!("no model")).is_err());
+            assert!(!project.0.join("missing.txt").exists());
+        }
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(outside.0.join("absent"), project.0.join("dangling"))
+                .unwrap();
+            let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: EDIT\n  path: dangling\n  operation: append\n  input: text\n").unwrap();
+            assert!(run_with(&workflow, &project.0, |_| panic!("no model")).is_err());
+            assert!(!outside.0.join("absent").exists());
+        }
+    }
+    #[test]
+    fn skipped_write_completes_and_resume_does_not_recreate_it() {
+        let project = Project::new();
+        fs::write(project.0.join("file"), "original").unwrap();
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: WRITE\n  path: file\n  input: replacement\n  skip: true\n  output: skipped\n- tool: WRITE\n  path: next\n  input: continued\n").unwrap();
+        let outputs = run_with(&workflow, &project.0, |_| panic!("no model")).unwrap();
+        assert_eq!(outputs["skipped"], "");
+        assert_eq!(
+            fs::read_to_string(project.0.join("file")).unwrap(),
+            "original"
+        );
+        assert_eq!(
+            fs::read_to_string(project.0.join("next")).unwrap(),
+            "continued"
+        );
+        fs::remove_file(project.0.join("file")).unwrap();
+        let mut history = History::open(&project.log()).unwrap();
+        assert_eq!(
+            continue_with(&mut history, |_| panic!("no model"), &mut answers(&[])).unwrap(),
+            outputs
+        );
+        assert!(!project.0.join("file").exists());
+    }
+
     #[test]
     fn write_step_creates_a_file_and_is_not_repeated_after_resume() {
         let project = Project::new();

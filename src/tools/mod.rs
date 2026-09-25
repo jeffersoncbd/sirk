@@ -1,12 +1,13 @@
 //! Shared tool dispatch for workflow steps and agent requests.
 pub mod custom;
+pub mod edit;
 pub mod new_agent;
 pub mod read;
 pub mod tree;
 pub mod write;
 
 pub fn supports(name: &str) -> bool {
-    matches!(name, "TREE" | "READ" | "WRITE")
+    matches!(name, "TREE" | "READ" | "WRITE" | "EDIT")
 }
 
 /// Only standalone tool requests are interpreted as control messages.

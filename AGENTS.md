@@ -79,6 +79,7 @@ available in its environment, and does not stop on build failure.
 | `src/tools/tree.rs` | Git-backed listing and additional `.treeignore` filtering. |
 | `src/tools/read.rs` | UTF-8 file reads within the execution directory. |
 | `src/tools/write.rs` | Workflow-only creation and explicit replacement of project-local files. |
+| `src/tools/edit.rs` | Version-checked line edits, prepared recovery, atomic replacement, and diff presentation. |
 | `src/tools/custom.rs` | Project-local Bash script resolution, positional arguments, and stdout capture. |
 | `src/tools/new_agent.rs` | Standalone model-generated agent creation and validation. |
 
@@ -123,6 +124,22 @@ Check the installed harness CLI's help before changing flags.
 - WRITE is YAML-only and is never advertised to agents. It creates missing
   parent directories and writes text to a regular path inside the execution
   directory; existing files fail unless the workflow explicitly sets `force: true`.
+  With `skip: true`, existing regular files complete without modification; missing
+  files are created normally. Reject force and skip when both are true. Skipped
+  writes have an empty successful result and must not run again on resume.
+- EDIT is YAML-only and edits existing regular UTF-8 files. Operations are insert,
+  delete, replace, prepend and append. Line coordinates are 1-based, ranges are
+  inclusive, and inserted text is exact. Coordinate operations require a SHA-256
+  version from READ's optional version-output; append/prepend may omit it.
+- Append/prepend create absent targets in existing parent directories. Persist
+  absence separately from empty content, publish creation without overwriting a
+  concurrently created file, and never recreate a deleted prepared-update target.
+- Keep READ's text result exact when emitting version-output. Its digest follows
+  ordinary output scope rules and is reconstructed from saved text on resume.
+- Persist EDIT's request and prepared original content in its INPUT block before
+  mutation. Resume distinguishes original, already-applied and conflicting file
+  contents. Validate prepared records and completed diffs before pending work.
+  Keep ANSI presentation out of saved diffs and preserve existing v2 markers.
 - CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
   require a string-array input, pass each item as one positional argument, and
   use exact UTF-8 stdout as the result. Keep script execution in `BashService`.

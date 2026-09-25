@@ -8,7 +8,7 @@ invokes existing harness CLIs through Bash; it does not call model APIs directly
 `new-harness` is a temporary project name.
 
 Currently supported: Codex, sequential workflows, user questions, TREE, READ,
-WRITE, project-local custom tools, scoped LOOP iterations, model-generated agent
+WRITE, EDIT, project-local custom tools, scoped LOOP iterations, model-generated agent
 definitions, and transcript-based resumption. OpenCode and Claude Code are
 planned, not implemented.
 
@@ -231,6 +231,13 @@ absolute paths must remain inside it. Symlinks resolving outside it are rejected
 Ignore rules affect TREE listings, not explicit READ requests. Git is not
 required. Workflow paths can reference earlier outputs.
 
+Workflow READ steps may additionally set `version-output: revision`. This assigns
+the SHA-256 digest of the exact returned content to a separate output, for use in
+EDIT's `version`. It does not change READ's returned text or add line numbers.
+The version output follows the same global/loop scope rules as `output` and is
+reconstructed from the saved READ result on resume. Use different names for
+`output` and `version-output`.
+
 ### WRITE
 
 Creates a UTF-8 file inside the execution directory. It is workflow-only and is
@@ -260,9 +267,125 @@ file:
 
 WRITE rejects paths outside the execution directory, directories, and an existing
 target that is a symlink.
+Set `skip: true` to leave an existing regular file unchanged and complete the
+step successfully. Missing files are still created, including parent directories.
+`skip` defaults to false and is only accepted on WRITE. Combining `skip: true`
+with `force: true` is rejected; `force: false` with `skip: true` is valid.
+
+```yaml
+- tool: WRITE
+  path: docs/overview.md
+  input: "Initial documentation"
+  skip: true
+```
+
+Skipping completes only this WRITE step: later workflow steps still execute,
+and earlier steps (including model calls producing the input) have already run.
+A skipped step is recorded as successful and is not retried on resume, even if
+the file is subsequently removed.
+
 It has an empty result, so `output` is normally omitted unless a later template
 needs an explicit empty value. A failed WRITE stays pending in the transcript for
 resume.
+
+### EDIT
+
+Edits a UTF-8 regular file inside the execution directory. EDIT is
+workflow-only and is not advertised to agents. It returns a unified diff, which
+can be captured with `output`. The terminal displays removals on red backgrounds
+and additions on green backgrounds. Redirected output and history have no added
+ANSI formatting; set `NO_COLOR` to disable colors in a terminal too.
+
+```yaml
+version: 1
+steps:
+  - tool: READ
+    input: src/main.rs
+    output: source
+    version-output: revision
+
+  - tool: EDIT
+    path: src/main.rs
+    operation: replace
+    start: 10
+    end: 15
+    version: "{{ outputs.revision }}"
+    input: |
+      fn greeting() {
+          println!("Hello");
+      }
+    output: changes
+```
+
+| Operation | Coordinates | Behavior |
+| --- | --- | --- |
+| `insert` | `line` | Insert before the specified line. |
+| `delete` | `start`, `end` | Remove the inclusive range; omit `input` or use empty text. |
+| `replace` | `start`, `end` | Replace the inclusive range with `input`. |
+| `prepend` | None | Insert exact `input` at the start. |
+| `append` | None | Insert exact `input` at the end. |
+
+Lines start at 1. Ranges must be nonempty and inside the file. Inserting at
+`N + 1` appends to a file with `N` lines; an empty file accepts `line: 1`.
+A final newline terminates the last line, rather than creating another empty
+line. Line boundaries use LF; existing CRLF bytes are preserved outside edits.
+The specified lines include their line terminators when deleted or replaced.
+
+`input` is inserted exactly, without automatic separators or newline conversion.
+For example, appending `next\n` to a file containing `last` produces
+`lastnext\n`. YAML `|` includes a final newline; `|-` omits it. `path`, `input`
+and `version` support templates, including `loop.*` inside loops. Inserted values
+are not recursively expanded. Coordinates are literal positive integers.
+
+Line-based operations require `version`, a SHA-256 hex digest from a previous
+READ of the file. If the current content differs, EDIT fails without changing
+the file. READ the file again before a subsequent coordinate-based edit;
+coordinates always refer to that read's version. This release applies one
+operation per step, not batches of edits.
+
+Append and prepend may omit `version`, or provide one for the same version check:
+
+```yaml
+- tool: EDIT
+  path: logs/execution.log
+  operation: append
+  input: |
+    Execution completed.
+```
+
+Append and prepend create the target when it is absent, treating its initial
+content as empty. Its parent directory must already exist; use WRITE when you
+also need to create directories. Even an empty input creates an empty file.
+Insert, delete and replace still require an existing target. EDIT rejects
+directories, final-component symlinks, non-UTF-8 files, and resolved paths outside
+the execution directory. It does not accept `force`. The replacement uses a
+temporary file in the target directory, file/directory synchronization, and an
+atomic rename for existing targets, preserving file permissions. New targets
+are published atomically with a hard link from the temporary file, without
+overwriting a file created in the meantime. This requires filesystem hard-link
+support; new files use default permissions filtered by the process umask.
+Replacement changes the file's inode;
+ownership, extended attributes and hard-link relationships are not preserved.
+
+Before writing, EDIT saves its resolved request, original content and whether
+the file was absent as JSON in
+the existing `==> INPUT` block. The replacement is reconstructed from that record.
+On resume, a pending edit applies only if the file still matches the original;
+if it already matches the replacement, the step completes without applying it
+again. Any other content produces a conflict. The successful `<== OUTPUT` stores
+the plain diff; completed edits are not re-executed or checked against later
+file changes. Prepared records and their diffs are validated before pending work.
+An absent target is distinct from an existing empty file: a pending creation
+requires absence or the exact expected result, while a pending update cannot
+recreate a file deleted since preparation. Older prepared records default to
+an existing target. Creation diffs use `/dev/null` as the old file name.
+
+The saved request is authoritative during recovery. To change a prepared edit,
+remove its entire step record and dependent later records before resuming with
+the edited snapshot. A no-op edit returns an empty diff. Prepared original
+contents increase transcript size. Version checks detect stale reads and a
+second check detects ordinary intervening writes, but do not lock out unrelated
+writers: do not run concurrent editors against a target during EDIT.
 
 ### CUSTOM-TOOL
 
