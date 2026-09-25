@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repository_root=$(git rev-parse --show-toplevel)
+cd "$repository_root"
+
+if [[ ! -x ./new-harness ]]; then
+  printf '%s\n' \
+    'pre-commit: ./new-harness is missing or not executable; build and refresh it first.' >&2
+  exit 1
+fi
+
+printf '%s\n' 'pre-commit: updating project documentation...'
+exec ./new-harness run update-documentation.yml

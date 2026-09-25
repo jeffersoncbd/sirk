@@ -24,6 +24,17 @@ Repeat the copy after rebuilding. The host must support the binary's architectur
 and system libraries. Install and authenticate Codex where you run the binary.
 Bash is required; TREE also requires Git and a working tree.
 
+Enable the repository's documentation pre-commit hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook runs `./new-harness run update-documentation.yml` before every commit.
+It requires the root executable and an authenticated Codex installation, and a
+workflow failure cancels the commit. Generated documentation remains available
+in the working tree for a subsequent commit.
+
 ## First workflow
 
 Create `.agents/planner.md`:
