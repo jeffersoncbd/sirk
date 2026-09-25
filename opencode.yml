@@ -1,0 +1,5 @@
+version: 1
+
+steps:
+  - agent: opencode-example
+    output: greets

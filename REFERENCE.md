@@ -28,7 +28,7 @@ If clarification is needed, respond only with ASK: followed by your question.
 
 | Field | Behavior |
 | --- | --- |
-| `adapter` | Required; currently `codex`. |
+| `adapter` | Required; `codex` or `opencode`. |
 | `model` | Optional; omitted uses the harness default. Trimmed and lowercased on load. |
 | `ask` | Optional initial question, asked before the first model call. |
 | `json` | Defaults to false. True is rejected until event normalization exists. |
@@ -38,9 +38,12 @@ Unknown fields, including `write`, are rejected. Inline agent definitions in
 workflow YAML are not supported. `GPT-6-Astra`, for example, is normalized to
 `gpt-6-astra`; the CLI does not discover or verify available models for you.
 
-Agents execute with a read-only sandbox and no approval escalation. The
-orchestrator itself writes transcripts and newly generated agent definitions.
-Harnesses may also maintain their own session files and logs.
+Codex agents execute with a read-only sandbox and no approval escalation.
+OpenCode is invoked without its dangerous `--auto` permission option, but its
+CLI does not expose an equivalent read-only sandbox flag; configure its
+permissions appropriately in the OpenCode environment. The orchestrator itself
+writes transcripts and newly generated agent definitions. Harnesses may also
+maintain their own session files and logs.
 
 ## Generate an agent with a model
 
@@ -532,7 +535,7 @@ conversations remain supported.
 
 ## Current limitations
 
-- Only Codex is implemented; there is no parallel execution or
+- Codex and OpenCode are implemented; there is no parallel execution or
   automatic retry policy.
 - Conversation context grows with each turn. Native harness session state,
   hidden instructions, and verified model identity are not captured.

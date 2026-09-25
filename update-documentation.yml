@@ -35,17 +35,32 @@ steps:
         output: tree_content
         version-output: tree_version
 
-      - custom-tool: find-line-by-prefix
+      - custom-tool: line-exists-by-prefix
         input:
           - "{{ loop.tree_content }}"
           - "{{ loop.item }} - "
-        output: tree_line
+        output: tree_line_exists
 
-      - tool: EDIT
-        path: docs/TREE.md
-        operation: replace
-        start: "{{ loop.tree_line }}"
-        end: "{{ loop.tree_line }}"
-        version: "{{ loop.tree_version }}"
-        input: |
-          {{ loop.item }} - {{ loop.explain_resume }}
+      - tool: IF
+        input: "{{ loop.tree_line_exists }}"
+        is_true:
+          - custom-tool: find-line-by-prefix
+            input:
+              - "{{ loop.tree_content }}"
+              - "{{ loop.item }} - "
+            output: tree_line
+
+          - tool: EDIT
+            path: docs/TREE.md
+            operation: replace
+            start: "{{ loop.tree_line }}"
+            end: "{{ loop.tree_line }}"
+            version: "{{ loop.tree_version }}"
+            input: |
+              {{ loop.item }} - {{ loop.explain_resume }}
+        is_false:
+          - tool: EDIT
+            path: docs/TREE.md
+            operation: append
+            input: |
+              {{ loop.item }} - {{ loop.explain_resume }}

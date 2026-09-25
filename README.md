@@ -1,8 +1,8 @@
 # new-harness
 
 Run coding-agent workflows defined in YAML, with agent instructions in Markdown
-and an editable history for resumption. Currently supports the Codex CLI;
-OpenCode and Claude Code are not implemented.
+and an editable history for resumption. Supports the Codex and OpenCode CLIs;
+Claude Code is not implemented.
 
 ## Setup
 
@@ -21,7 +21,8 @@ cp target/debug/new-harness ./new-harness
 ```
 
 Repeat the copy after rebuilding. The host must support the binary's architecture
-and system libraries. Install and authenticate Codex where you run the binary.
+and system libraries. Install and authenticate the selected Codex or OpenCode
+CLI where you run the binary.
 Bash is required; TREE also requires Git and a working tree.
 
 Enable the repository's documentation pre-commit hook once per clone:
