@@ -24,6 +24,9 @@ pub enum HarnessError {
         adapter: &'static str,
         option: &'static str,
     },
+    MissingModel {
+        adapter: &'static str,
+    },
 }
 
 impl fmt::Display for HarnessError {
@@ -31,6 +34,9 @@ impl fmt::Display for HarnessError {
         match self {
             Self::UnsupportedOption { adapter, option } => {
                 write!(formatter, "adapter `{adapter}` does not support `{option}`")
+            }
+            Self::MissingModel { adapter } => {
+                write!(formatter, "adapter `{adapter}` requires a model")
             }
         }
     }
