@@ -67,6 +67,14 @@ steps:
             operation: append
             input: |
               {{ loop.item }} - {{ loop.explain_resume }}
+  - custom-tool: sort-tree
+    input: []
+    output: sorted_tree
+
+  - tool: WRITE
+    path: docs/TREE.md
+    input: "{{ outputs.sorted_tree }}"
+    force: true
 
   - custom-tool: git-add
     input: []
