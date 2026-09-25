@@ -1,5 +1,6 @@
 //! Shared tool dispatch for workflow steps and agent requests.
 pub mod custom;
+pub mod delete;
 pub mod edit;
 pub mod git_status_tree;
 pub mod new_agent;
@@ -10,7 +11,7 @@ pub mod write;
 pub fn supports(name: &str) -> bool {
     matches!(
         name,
-        "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "EDIT" | "AWAIT"
+        "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "DELETE" | "EDIT" | "AWAIT"
     )
 }
 

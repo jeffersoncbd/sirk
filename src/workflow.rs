@@ -292,6 +292,7 @@ fn validate_steps(
     for (index, step) in steps.iter().enumerate() {
         let is_loop = step.tool.as_deref() == Some("LOOP");
         let is_if = step.tool.as_deref() == Some("IF");
+        let is_delete = step.tool.as_deref() == Some("DELETE");
         if !is_if && (!step.is_true.is_empty() || !step.is_false.is_empty()) {
             return Err("is_true and is_false are only accepted on IF".into());
         }
@@ -318,15 +319,15 @@ fn validate_steps(
         if !is_loop && !step.iter.is_empty() {
             return Err("iter is only accepted on LOOP steps".into());
         }
-        if !is_write && !is_edit && step.path.is_some() {
+        if !is_write && !is_edit && !is_delete && step.path.is_some() {
             return Err(format!(
-                "step {}: path is only accepted on WRITE or EDIT",
+                "step {}: path is only accepted on WRITE, DELETE or EDIT",
                 index + 1
             ));
         }
-        if !is_write && step.force.is_some() {
+        if !is_write && !is_delete && step.force.is_some() {
             return Err(format!(
-                "step {}: force is only accepted on WRITE",
+                "step {}: force is only accepted on WRITE or DELETE",
                 index + 1
             ));
         }
@@ -384,7 +385,7 @@ fn validate_steps(
                         index + 1
                     ));
                 }
-                if tool == "WRITE" || tool == "EDIT" {
+                if tool == "WRITE" || tool == "EDIT" || tool == "DELETE" {
                     if !matches!(step.input, StepInput::Text(_)) {
                         return Err(format!(
                             "step {}: {tool} input must be text content",
@@ -394,6 +395,9 @@ fn validate_steps(
                     if step.path.as_ref().is_none_or(|path| path.trim().is_empty()) {
                         return Err(format!("step {}: {tool} requires a path", index + 1));
                     }
+                }
+                if tool == "DELETE" && step.input.text() != Some("") {
+                    return Err("DELETE does not accept input".into());
                 }
                 if is_edit {
                     let mut request = step.edit_request_with(outputs, locals.as_deref(), true)?;
@@ -420,7 +424,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, EDIT, AWAIT, LOOP, IF), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, DELETE, EDIT, AWAIT, LOOP, IF), or custom-tool",
                     index + 1
                 ));
             }
@@ -783,6 +787,8 @@ mod tests {
             "tool: READ\n  input: ' '",
             "tool: WRITE\n  input: content",
             "tool: WRITE\n  path: output.txt\n  input: [content]",
+            "tool: DELETE\n  input: content",
+            "tool: DELETE\n  path: output.txt\n  input: [content]",
             "tool: READ\n  path: output.txt\n  input: source.txt",
             "agent: planner\n  force: false",
             "agent: planner\n  skip: false",
@@ -794,6 +800,12 @@ mod tests {
         }
         serde_yaml::from_str::<Workflow>(
             "version: 1\nsteps:\n- tool: GIT-STATUS-TREE\n  output: changed\n",
+        )
+        .unwrap()
+        .validate()
+        .unwrap();
+        serde_yaml::from_str::<Workflow>(
+            "version: 1\nsteps:\n- tool: DELETE\n  path: obsolete.txt\n  force: true\n",
         )
         .unwrap()
         .validate()
@@ -852,9 +864,9 @@ mod tests {
     }
 
     #[test]
-    fn bundled_documentation_workflow_validates() {
+    fn unified_documentation_workflow_validates() {
         let workflow: Workflow =
-            serde_yaml::from_str(include_str!("../update-documentation.yml")).unwrap();
+            serde_yaml::from_str(include_str!("../documentation.yml")).unwrap();
         workflow.validate().unwrap();
     }
 }

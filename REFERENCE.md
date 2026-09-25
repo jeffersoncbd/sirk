@@ -229,6 +229,34 @@ It has an empty result, so `output` is normally omitted unless a later template
 needs an explicit empty value. A failed WRITE stays pending in the transcript for
 resume.
 
+### DELETE
+
+DELETE removes one existing regular file inside the execution directory. It is
+workflow-only unless an agent explicitly has `DELETE_TOOL: allow` metadata.
+It does not remove directories, symbolic links, or paths outside the execution
+directory, and it accepts no input:
+
+```yaml
+- tool: DELETE
+  path: docs/obsolete.md
+```
+
+The harness asks for confirmation before deletion. Set `force: true` only when
+the workflow author intentionally wants non-interactive deletion:
+
+```yaml
+- tool: DELETE
+  path: docs/obsolete.md
+  force: true
+```
+
+Agents with `DELETE_TOOL: allow` request a deletion by replying only with
+`DELETE:` followed by a JSON object such as `{"path":"docs/obsolete.md"}`.
+Their requests still require user confirmation. An agent may include
+`"force":true` only when its front matter also explicitly grants
+`DELETE_WITHOUT_CONFIRM: allow`; that setting is rejected unless
+`DELETE_TOOL: allow` is present.
+
 ### EDIT
 
 Edits a UTF-8 regular file inside the execution directory. EDIT is

@@ -33,6 +33,9 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
   files. Its negations must not revive files excluded by standard Git rules.
 - Preserve path bytes in the low-level listing. JSON rendering rejects
   non-UTF-8 paths rather than silently changing them.
+- GIT-STATUS-TREE includes deleted paths as well as existing status entries, so
+  workflows can remove derived artifacts. It still applies `.treeignore` to
+  every status entry.
 - READ returns exact UTF-8 contents, including empty text, without headers.
   It accepts only regular files whose resolved paths stay within the execution
   directory. TREE ignore rules are not READ access rules.
@@ -42,6 +45,11 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
   With `skip: true`, existing regular files complete without modification; missing
   files are created normally. Reject force and skip when both are true. Skipped
   writes have an empty successful result and must not run again on resume.
+- DELETE removes only an existing regular file inside the execution directory.
+  It rejects directories, symlinks, and paths outside that directory. DELETE is
+  YAML-only unless the agent explicitly has `DELETE_TOOL: allow`; confirmation
+  is required unless YAML sets `force: true`. An agent may bypass confirmation
+  only with both `DELETE_TOOL: allow` and `DELETE_WITHOUT_CONFIRM: allow`.
 - EDIT is YAML-only and edits existing regular UTF-8 files. Operations are insert,
   delete, replace, prepend and append. Line coordinates are 1-based, ranges are
   inclusive, and inserted text is exact. Coordinates accept numeric YAML values or
@@ -59,8 +67,10 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
 - CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
   require a string-array input, pass each item as one positional argument, and
   use exact UTF-8 stdout as the result. Keep script execution in `BashService`.
-- Recognize agent requests only as standalone `TREE` or one-line
-  `READ: <path>` responses. Use the same tool implementation for YAML steps.
+- Recognize ordinary agent requests only as standalone `TREE` or one-line
+  `READ: <path>` responses. DELETE is an explicit external tool with separate,
+  validated agent permissions; use the same deletion implementation for YAML
+  steps and that external tool.
 - LOOP is YAML-only. Do not register it in the agent tool dispatcher or
   advertise it in model prompts.
 - IF is YAML-only, with is_true/is_false step lists and a strict true/false
@@ -111,4 +121,3 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
   writing, and keep canonical target metadata. Reject changed metadata,
   invalid definitions, and failed processes.
 - Do not overwrite existing agents. Retain model lowercase normalization.
-

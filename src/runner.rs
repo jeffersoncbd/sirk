@@ -8,6 +8,7 @@ use crate::{
     services::{BashService, Invocation},
     workflow::{Step, Workflow, condition, loop_items, loop_target},
 };
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
 fn execute(invocation: &Invocation) -> Result<String, String> {
@@ -97,6 +98,16 @@ fn question(text: &str) -> Option<&str> {
 
 const DUPLICATE_EDIT_RESULT: &str = "No changes applied: this EDIT request was already completed. Do not repeat it; provide a final response or a different edit.";
 const EDIT_FAILURE_PREFIX: &str = "EDIT failed: ";
+const DUPLICATE_DELETE_RESULT: &str = "No changes applied: this DELETE request was already completed. Do not repeat it; provide a final response or a different request.";
+const DELETE_FAILURE_PREFIX: &str = "DELETE failed: ";
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct ExternalDeleteRequest {
+    path: String,
+    #[serde(default)]
+    force: bool,
+}
 
 fn external_edit_request(text: &str) -> Option<Result<crate::tools::edit::Request, String>> {
     let payload = text.trim().strip_prefix("EDIT:")?.trim();
@@ -166,6 +177,37 @@ fn completed_external_edit(blocks: &[Block], request: &crate::tools::edit::Reque
             return false;
         };
         external_edit_request(previous).is_some_and(|previous| previous.as_ref() == Ok(request))
+    })
+}
+
+fn external_delete_request(text: &str) -> Option<Result<ExternalDeleteRequest, String>> {
+    let payload = text.trim().strip_prefix("DELETE:")?.trim();
+    Some(
+        serde_json::from_str(payload)
+            .map_err(|error| format!("invalid DELETE_TOOL request: {error}")),
+    )
+}
+
+fn external_delete_pending(blocks: &[Block]) -> Option<Result<ExternalDeleteRequest, String>> {
+    let [.., Block::Output(request), Block::Input(pending)] = blocks else {
+        return None;
+    };
+    let request = external_delete_request(request)?;
+    Some(request.and_then(|request| {
+        let pending: ExternalDeleteRequest = serde_json::from_str(pending)
+            .map_err(|error| format!("invalid DELETE_TOOL history: {error}"))?;
+        (pending == request)
+            .then_some(pending)
+            .ok_or_else(|| "DELETE_TOOL history does not match its request".into())
+    }))
+}
+
+fn completed_external_delete(blocks: &[Block], request: &ExternalDeleteRequest) -> bool {
+    blocks.windows(3).any(|window| {
+        let [Block::Output(previous), Block::Input(_), Block::Delete(_)] = window else {
+            return false;
+        };
+        external_delete_request(previous).is_some_and(|previous| previous.as_ref() == Ok(request))
     })
 }
 fn all_steps(steps: &[Step]) -> Vec<&Step> {
@@ -241,7 +283,12 @@ fn validate_blocks(history: &History) -> Result<(), String> {
                     .iter()
                     .find(|agent| &agent.id == id)
                     .ok_or("missing agent configuration")?;
-                if !validate_agent_blocks(blocks, agent.edit_tool)? {
+                if !validate_agent_blocks(
+                    blocks,
+                    agent.edit_tool,
+                    agent.delete_tool,
+                    agent.delete_without_confirm,
+                )? {
                     return Ok(false);
                 }
             } else if !validate_step_blocks(blocks, true)? {
@@ -312,6 +359,7 @@ fn validate_step_blocks(blocks: &[Block], tool_step: bool) -> Result<bool, Strin
                 expects_input = false;
                 valid
             }
+            Block::Delete(_) => false,
         };
         if !valid {
             return Err(
@@ -322,7 +370,12 @@ fn validate_step_blocks(blocks: &[Block], tool_step: bool) -> Result<bool, Strin
     Ok(complete)
 }
 
-fn validate_agent_blocks(blocks: &[Block], edit_tool: bool) -> Result<bool, String> {
+fn validate_agent_blocks(
+    blocks: &[Block],
+    edit_tool: bool,
+    delete_tool: bool,
+    delete_without_confirm: bool,
+) -> Result<bool, String> {
     let mut position = 0;
     match blocks.get(position) {
         Some(Block::Ask(text)) if !text.trim().is_empty() => position += 1,
@@ -389,6 +442,44 @@ fn validate_agent_blocks(blocks: &[Block], edit_tool: bool) -> Result<bool, Stri
                 return Err(
                     "invalid EDIT_TOOL result; remove the response and later records".into(),
                 );
+            }
+            position += 1;
+            continue;
+        }
+        if let Some(request) = external_delete_request(output) {
+            if !delete_tool {
+                return Err("agent requested DELETE_TOOL without permission".into());
+            }
+            let request = request?;
+            if matches!(blocks.get(position), Some(Block::Delete(result)) if result == DUPLICATE_DELETE_RESULT)
+            {
+                if !completed_external_delete(&blocks[..position - 1], &request) {
+                    return Err("invalid duplicate DELETE_TOOL result".into());
+                }
+                position += 1;
+                continue;
+            }
+            if matches!(blocks.get(position), Some(Block::Delete(result)) if result.starts_with(DELETE_FAILURE_PREFIX))
+            {
+                position += 1;
+                continue;
+            }
+            if request.force && !delete_without_confirm {
+                return Err(
+                    "DELETE_TOOL force request lacks DELETE_WITHOUT_CONFIRM permission".into(),
+                );
+            }
+            let Some(Block::Input(pending)) = blocks.get(position) else {
+                return Ok(false);
+            };
+            let pending: ExternalDeleteRequest = serde_json::from_str(pending)
+                .map_err(|error| format!("invalid DELETE_TOOL history: {error}"))?;
+            if pending != request {
+                return Err("DELETE_TOOL history does not match its request".into());
+            }
+            position += 1;
+            if !matches!(blocks.get(position), Some(Block::Delete(_))) {
+                return Ok(false);
             }
             position += 1;
             continue;
@@ -578,6 +669,15 @@ where
                             step.skip.unwrap_or(false),
                         )?;
                         String::new()
+                    } else if tool == "DELETE" {
+                        let path = step.render_path(outputs, locals)?;
+                        if !step.force() {
+                            self.input.await_confirmation(&format!(
+                                "Delete `{path}`? Press Enter to confirm, or /cancel to cancel."
+                            ))?;
+                        }
+                        crate::tools::delete::delete(&history.snapshot.directory, &path)?;
+                        String::new()
                     } else {
                         crate::tools::execute_with_input(
                             tool,
@@ -620,9 +720,10 @@ where
                     history.save()?;
                 }
                 Block::Output(ref text) => {
-                    if agent.edit_tool
-                        && let Some(request) = external_edit_request(text)
-                    {
+                    if let Some(request) = external_edit_request(text) {
+                        if !agent.edit_tool {
+                            return Err("agent requested EDIT_TOOL without permission".into());
+                        }
                         let request = request?;
                         if completed_external_edit(&history.steps[index], &request) {
                             history.steps[index].push(Block::Edit(DUPLICATE_EDIT_RESULT.into()));
@@ -636,6 +737,25 @@ where
                                     "{EDIT_FAILURE_PREFIX}{error}. Correct the request and try again."
                                 ))),
                             }
+                        }
+                        history.save()?;
+                    } else if let Some(request) = external_delete_request(text) {
+                        if !agent.delete_tool {
+                            return Err("agent requested DELETE_TOOL without permission".into());
+                        }
+                        let request = request?;
+                        if request.force && !agent.delete_without_confirm {
+                            history.steps[index].push(Block::Delete(format!(
+                                "{DELETE_FAILURE_PREFIX}`force: true` requires DELETE_WITHOUT_CONFIRM: allow. Correct the request and try again."
+                            )));
+                        } else if completed_external_delete(&history.steps[index], &request) {
+                            history.steps[index]
+                                .push(Block::Delete(DUPLICATE_DELETE_RESULT.into()));
+                        } else {
+                            history.steps[index].push(Block::Input(
+                                serde_json::to_string(&request)
+                                    .map_err(|error| error.to_string())?,
+                            ));
                         }
                         history.save()?;
                     } else if let Some((tool, argument)) = crate::tools::request(text) {
@@ -673,12 +793,40 @@ where
                     history.save()?;
                     crate::tools::edit::display(&diff);
                 }
-                Block::Input(_) | Block::Tree(_) | Block::Read(_) | Block::Edit(_) => {
+                Block::Input(_) if external_delete_pending(&history.steps[index]).is_some() => {
+                    let request = external_delete_pending(&history.steps[index])
+                        .expect("matched external delete pending")?;
+                    if !request.force {
+                        self.input.await_confirmation(&format!(
+                            "Delete `{}`? Press Enter to confirm, or /cancel to cancel.",
+                            request.path
+                        ))?;
+                    }
+                    let result = match crate::tools::delete::delete(
+                        &history.snapshot.directory,
+                        &request.path,
+                    ) {
+                        Ok(()) => String::new(),
+                        Err(error) => format!(
+                            "{DELETE_FAILURE_PREFIX}{error}. Correct the request and try again."
+                        ),
+                    };
+                    history.steps[index].push(Block::Delete(result));
+                    history.save()?;
+                }
+                Block::Input(_)
+                | Block::Tree(_)
+                | Block::Read(_)
+                | Block::Edit(_)
+                | Block::Delete(_) => {
                     let mut prompt = agent.instructions.clone();
                     prompt.push_str("\n\nAvailable tool: TREE. To list project files respecting Git ignores, respond with exactly TREE and nothing else. The tool result will be returned so you can continue your response.");
                     prompt.push_str("\nAvailable tool: READ. To read a UTF-8 file inside the execution directory, respond with exactly READ: <path> on one line, without quotes or code fences. Paths are relative to the execution directory. The file content will be returned so you can continue your response.");
                     if agent.edit_tool {
                         prompt.push_str("\n\nExternal tool: EDIT. This tool is executed after your response; do not try to use an internal tool. To request exactly one file edit, respond only with `EDIT:` followed by a JSON object, without code fences or any other text. The object must contain `path`, `operation`, and `input`. `operation` is one of `insert`, `delete`, `replace`, `prepend`, or `append`. For `insert`, also provide positive integer `line`. For `delete` and `replace`, also provide positive integer `start` and `end` (inclusive). `delete` requires an empty `input`. `prepend` and `append` take no coordinates. Paths are relative to the execution directory. Do not include `version`; the external tool verifies the current document before applying the edit. After a successful edit, you receive its diff and may request another edit or provide your final answer. A Tool result (EDIT) beginning with `EDIT failed:` means no change was made; correct the request and try again. Before requesting another edit, inspect every Tool result (EDIT) in the conversation. Never repeat a request that was already applied; if the diff completes the work, provide your final answer. Request edits only when necessary.");
+                    }
+                    if agent.delete_tool {
+                        prompt.push_str("\n\nExternal tool: DELETE. To request deletion of exactly one regular file, respond only with `DELETE:` followed by a JSON object containing `path`, without code fences or other text. Paths are relative to the execution directory. The user confirms each deletion before it runs. You may include `force: true` only when DELETE_WITHOUT_CONFIRM is allowed; otherwise it is rejected. After execution, inspect the Tool result (DELETE) before responding.");
                     }
                     if agent.ask.is_some() && !initial.is_empty() {
                         prompt.push_str(&format!("\n\nWorkflow input:\n{initial}"));
@@ -687,8 +835,12 @@ where
                     for (position, block) in history.steps[index].iter().enumerate() {
                         if matches!(block, Block::Input(_))
                             && position > 0
-                            && external_edit_request(history.steps[index][position - 1].text())
+                            && (external_edit_request(history.steps[index][position - 1].text())
                                 .is_some()
+                                || external_delete_request(
+                                    history.steps[index][position - 1].text(),
+                                )
+                                .is_some())
                         {
                             continue;
                         }
@@ -699,6 +851,7 @@ where
                             Block::Tree(_) => "Tool result (TREE)",
                             Block::Read(_) => "Tool result (READ)",
                             Block::Edit(_) => "Tool result (EDIT)",
+                            Block::Delete(_) => "Tool result (DELETE)",
                         };
                         prompt.push_str(&format!("\n{role}:\n{}\n", block.text()));
                     }
@@ -1600,6 +1753,105 @@ mod tests {
             outputs
         );
         assert!(!project.0.join("file").exists());
+    }
+
+    #[test]
+    fn delete_requires_confirmation_unless_forced() {
+        let project = Project::new();
+        fs::write(project.0.join("obsolete"), "content").unwrap();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- tool: DELETE\n  path: obsolete\n").unwrap();
+        assert!(run_with(&workflow, &project.0, |_| panic!("no model")).is_err());
+        assert!(project.0.join("obsolete").exists());
+        run_interactive_with(
+            &workflow,
+            &project.0,
+            |_| panic!("no model"),
+            &mut answers(&[""]),
+        )
+        .unwrap();
+        assert!(!project.0.join("obsolete").exists());
+
+        fs::write(project.0.join("forced"), "content").unwrap();
+        let forced: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- tool: DELETE\n  path: forced\n  force: true\n",
+        )
+        .unwrap();
+        run_with(&forced, &project.0, |_| panic!("no model")).unwrap();
+        assert!(!project.0.join("forced").exists());
+    }
+
+    #[test]
+    fn agent_delete_requires_permission_and_reports_its_result() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/cleaner.md"),
+            "---\nadapter: codex\nDELETE_TOOL: allow\n---\nClean generated files.",
+        )
+        .unwrap();
+        fs::write(project.0.join("obsolete"), "content").unwrap();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- agent: cleaner\n  output: result\n")
+                .unwrap();
+        let mut calls = 0;
+        let outputs = run_interactive_with(
+            &workflow,
+            &project.0,
+            |invocation| {
+                calls += 1;
+                let prompt = invocation.arguments.last().unwrap();
+                match calls {
+                    1 => {
+                        assert!(prompt.contains("External tool: DELETE"));
+                        Ok("DELETE: {\"path\":\"obsolete\"}".into())
+                    }
+                    2 => {
+                        assert!(prompt.contains("Tool result (DELETE)"));
+                        Ok("Deleted the obsolete file.".into())
+                    }
+                    _ => panic!("unexpected model call"),
+                }
+            },
+            &mut answers(&[""]),
+        )
+        .unwrap();
+        assert_eq!(outputs["result"], "Deleted the obsolete file.");
+        assert!(!project.0.join("obsolete").exists());
+    }
+
+    #[test]
+    fn agent_delete_force_requires_the_separate_permission() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/cleaner.md"),
+            "---\nadapter: codex\nDELETE_TOOL: allow\nDELETE_WITHOUT_CONFIRM: allow\n---\nClean generated files.",
+        )
+        .unwrap();
+        fs::write(project.0.join("obsolete"), "content").unwrap();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- agent: cleaner\n  output: result\n")
+                .unwrap();
+        let mut calls = 0;
+        let outputs = run_with(&workflow, &project.0, |invocation| {
+            calls += 1;
+            match calls {
+                1 => Ok("DELETE: {\"path\":\"obsolete\",\"force\":true}".into()),
+                2 => {
+                    assert!(
+                        invocation
+                            .arguments
+                            .last()
+                            .unwrap()
+                            .contains("Tool result (DELETE)")
+                    );
+                    Ok("Deleted without confirmation.".into())
+                }
+                _ => panic!("unexpected model call"),
+            }
+        })
+        .unwrap();
+        assert_eq!(outputs["result"], "Deleted without confirmation.");
+        assert!(!project.0.join("obsolete").exists());
     }
     #[test]
     fn if_reuses_docs_or_generates_them_and_restores_loop_outputs() {

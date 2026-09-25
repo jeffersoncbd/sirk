@@ -14,9 +14,8 @@ O arquivo implementa a descoberta de arquivos existentes que aparecem como alter
 6. Remove:
    - arquivos deletados;
    - arquivos ignorados;
-   - diretórios;
    - conteúdos de submódulos;
-   - caminhos excluídos por `.treeignore`.
+   - caminhos excluídos por `.treeignore`.   - conteúdos de submódulos;   - caminhos excluídos por `.treeignore`.
 7. Verifica no sistema de arquivos se cada caminho ainda é um arquivo ou symlink.
 8. Ordena e remove duplicatas antes de retornar o resultado.
 

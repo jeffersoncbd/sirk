@@ -27,6 +27,7 @@ pub enum Block {
     Tree(String),
     Read(String),
     Edit(String),
+    Delete(String),
 }
 impl Block {
     pub fn text(&self) -> &str {
@@ -36,7 +37,8 @@ impl Block {
             | Self::Output(s)
             | Self::Tree(s)
             | Self::Read(s)
-            | Self::Edit(s) => s,
+            | Self::Edit(s)
+            | Self::Delete(s) => s,
         }
     }
     fn marker(&self) -> &str {
@@ -47,6 +49,7 @@ impl Block {
             Self::Tree(_) => "==> TREE",
             Self::Read(_) => "==> READ",
             Self::Edit(_) => "==> EDIT",
+            Self::Delete(_) => "==> DELETE",
         }
     }
 }
@@ -67,7 +70,14 @@ impl Drop for History {
 fn reserved(line: &str) -> bool {
     matches!(
         line,
-        "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | "==> EDIT" | SEPARATOR
+        "==> ASK"
+            | "==> INPUT"
+            | "<== OUTPUT"
+            | "==> TREE"
+            | "==> READ"
+            | "==> EDIT"
+            | "==> DELETE"
+            | SEPARATOR
     ) || line.starts_with("Step ")
         || line.starts_with('\\')
 }
@@ -143,6 +153,7 @@ impl History {
                     "==> TREE" => Block::Tree(value),
                     "==> READ" => Block::Read(value),
                     "==> EDIT" => Block::Edit(value),
+                    "==> DELETE" => Block::Delete(value),
                     _ => Block::Output(value),
                 };
                 steps
@@ -157,7 +168,13 @@ impl History {
                 || line.starts_with("Step ")
                 || matches!(
                     line,
-                    "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | "==> EDIT"
+                    "==> ASK"
+                        | "==> INPUT"
+                        | "<== OUTPUT"
+                        | "==> TREE"
+                        | "==> READ"
+                        | "==> EDIT"
+                        | "==> DELETE"
                 )
             {
                 finish(&mut active, &mut steps)?;
@@ -232,9 +249,10 @@ mod tests {
             agents: vec![],
         };
         let mut history = History::create(snapshot).unwrap();
-        history.steps.push(vec![Block::Input(
-            "hello\n==> INPUT\n<== OUTPUT\nStep 2 — fake\n\\literal\n\n".into(),
-        )]);
+        history.steps.push(vec![
+            Block::Input("hello\n==> INPUT\n<== OUTPUT\nStep 2 — fake\n\\literal\n\n".into()),
+            Block::Delete(String::new()),
+        ]);
         history.save().unwrap();
         let (_, steps, _) = History::parse(&fs::read_to_string(&history.path).unwrap()).unwrap();
         assert_eq!(history.steps, steps);

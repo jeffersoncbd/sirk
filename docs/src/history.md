@@ -22,14 +22,16 @@ Durante a gravação, linhas que poderiam ser confundidas com marcadores ou cabe
 - `Snapshot`: estado serializável da execução, contendo o diretório de trabalho, o `Workflow` e os `Agent`s configurados.
 - `Block`: enum que representa tipos de conteúdo do histórico:
   - `Ask`: solicitação enviada ao agente.
+- `Block`: enum que representa tipos de conteúdo do histórico:
+  - `Ask`: solicitação enviada ao agente.
   - `Input`: entrada fornecida pelo usuário ou sistema.
   - `Output`: saída produzida.
   - `Tree`: resultado de uma consulta de árvore de arquivos.
   - `Read`: conteúdo de um arquivo lido.
   - `Edit`: descrição ou resultado de uma edição realizada.
+  - `Delete`: descrição ou resultado de uma exclusão realizada.
 - `Block::text`: retorna o conteúdo textual do bloco.
-- `Block::marker`: retorna o marcador usado no formato persistido.
-- `History`: estado completo do histórico aberto, incluindo:  - caminho do transcript;
+- `Block::marker`: retorna o marcador usado no formato persistido.- `History`: estado completo do histórico aberto, incluindo:  - caminho do transcript;
   - snapshot;
   - etapas e blocos;
   - rótulos das etapas;

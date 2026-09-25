@@ -4,11 +4,11 @@ O arquivo `src/tools/mod.rs` centraliza o despacho e a interpretação de ferram
 
 ### Funcionamento
 
-O módulo declara submódulos para ferramentas específicas: `custom`, `edit`, `git_status_tree`, `new_agent`, `read`, `tree` e `write`.
+O módulo declara submódulos para ferramentas específicas: `custom`, `delete`, `edit`, `git_status_tree`, `new_agent`, `read`, `tree` e `write`.
 
-A função `supports` reconhece os nomes `TREE`, `GIT-STATUS-TREE`, `READ`, `WRITE`, `EDIT` e `AWAIT`, enquanto `request` interpreta apenas mensagens isoladas nos formatos `TREE`, `READ: <caminho>` ou `READ:`. Requisições com texto adicional ou caminhos contendo quebras de linha são rejeitadas.
+A função `supports` reconhece os nomes `TREE`, `GIT-STATUS-TREE`, `READ`, `WRITE`, `DELETE`, `EDIT` e `AWAIT`, enquanto `request` interpreta apenas mensagens isoladas nos formatos `TREE`, `READ: <caminho>` ou `READ:`. Requisições com texto adicional ou caminhos contendo quebras de linha são rejeitadas.
 
-A execução ocorre por `execute` e `execute_with_input`. Embora `supports` também reconheça `WRITE`, `EDIT` e `AWAIT`, o despacho efetivo atualmente trata apenas:
+A execução ocorre por `execute` e `execute_with_input`. Embora `supports` também reconheça `WRITE`, `DELETE`, `EDIT` e `AWAIT`, o despacho efetivo atualmente trata apenas:
 - `TREE`, listando arquivos e serializando os caminhos como JSON.
 - `GIT-STATUS-TREE`, listando arquivos relacionados ao estado do Git.
 - `READ`, lendo o conteúdo de um caminho no diretório informado.
@@ -18,7 +18,7 @@ Os testes verificam a preservação correta de caracteres especiais em caminhos 
 
 ### Componentes principais
 
-- `pub mod custom`, `edit`, `git_status_tree`, `new_agent`, `read`, `tree` e `write`: registram os submódulos de ferramentas.
+- `pub mod custom`, `delete`, `edit`, `git_status_tree`, `new_agent`, `read`, `tree` e `write`: registram os submódulos de ferramentas.
 - `supports(name: &str) -> bool`: informa se o nome da ferramenta está entre os nomes reconhecidos.
 - `request(text: &str) -> Option<(&str, &str)>`: analisa requisições textuais autônomas e retorna o nome da ferramenta e sua entrada.
 - `execute(...) -> Result<String, String>`: executa uma ferramenta sem entrada explícita.

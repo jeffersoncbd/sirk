@@ -26,7 +26,7 @@ instructions.
 - Check `git status --short` and relevant diffs. Preserve user changes, especially
   workflows, `.agents/`, and ignore rules.
 - Read the workflow and agent definitions relevant to the task. The bundled
-  workflow is [create-documentation.yml](create-documentation.yml).
+  workflow is [documentation.yml](documentation.yml).
 - Stay within the requested feature. Known limitations, the deprecated
   `serde_yaml 0.9` dependency, and the broken `build.sh` are not implicit tasks.
 - Write tool-owned code, comments, messages, tests, and logs in English.

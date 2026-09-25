@@ -13,6 +13,10 @@ pub struct Agent {
     pub ask: Option<String>,
     #[serde(default, rename = "EDIT_TOOL")]
     pub edit_tool: bool,
+    #[serde(default, rename = "DELETE_TOOL")]
+    pub delete_tool: bool,
+    #[serde(default, rename = "DELETE_WITHOUT_CONFIRM")]
+    pub delete_without_confirm: bool,
 }
 
 #[derive(Deserialize)]
@@ -30,6 +34,18 @@ struct Metadata {
         deserialize_with = "deserialize_edit_tool"
     )]
     edit_tool: bool,
+    #[serde(
+        default,
+        rename = "DELETE_TOOL",
+        deserialize_with = "deserialize_delete_permission"
+    )]
+    delete_tool: bool,
+    #[serde(
+        default,
+        rename = "DELETE_WITHOUT_CONFIRM",
+        deserialize_with = "deserialize_delete_permission"
+    )]
+    delete_without_confirm: bool,
 }
 
 fn deserialize_edit_tool<'de, D: serde::Deserializer<'de>>(
@@ -40,6 +56,19 @@ fn deserialize_edit_tool<'de, D: serde::Deserializer<'de>>(
         Ok(true)
     } else {
         Err(serde::de::Error::custom("`EDIT_TOOL` must be `allow`"))
+    }
+}
+
+fn deserialize_delete_permission<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value == "allow" {
+        Ok(true)
+    } else {
+        Err(serde::de::Error::custom(
+            "`DELETE_TOOL` and `DELETE_WITHOUT_CONFIRM` must be `allow`",
+        ))
     }
 }
 
@@ -102,6 +131,9 @@ impl Agent {
                 "`json: true` is not supported until event normalization exists".to_owned(),
             );
         }
+        if metadata.delete_without_confirm && !metadata.delete_tool {
+            return Err("`DELETE_WITHOUT_CONFIRM` requires `DELETE_TOOL: allow`".to_owned());
+        }
         let instructions = lines.collect::<Vec<_>>().join("\n").trim().to_owned();
         if instructions.is_empty() {
             return Err("Markdown instructions cannot be empty".to_owned());
@@ -114,6 +146,8 @@ impl Agent {
             json: metadata.json,
             ask: metadata.ask,
             edit_tool: metadata.edit_tool,
+            delete_tool: metadata.delete_tool,
+            delete_without_confirm: metadata.delete_without_confirm,
         })
     }
 }
@@ -134,6 +168,7 @@ mod tests {
         assert_eq!(agent.model.as_deref(), Some("custom"));
         assert!(!agent.json);
         assert!(!agent.edit_tool);
+        assert!(!agent.delete_tool);
     }
 
     #[test]
@@ -159,6 +194,8 @@ mod tests {
             "---\nadapter: codex\nwrite: true\n---\nReview",
             "---\nadapter: codex\njson: true\n---\nReview",
             "---\nadapter: codex\nEDIT_TOOL: deny\n---\nReview",
+            "---\nadapter: codex\nDELETE_TOOL: deny\n---\nReview",
+            "---\nadapter: codex\nDELETE_WITHOUT_CONFIRM: allow\n---\nReview",
         ] {
             assert!(Agent::parse("reviewer", source).is_err());
         }
@@ -180,5 +217,16 @@ mod tests {
                 .unwrap()
                 .contains("EDIT_TOOL: true")
         );
+    }
+
+    #[test]
+    fn enables_delete_permissions_only_when_explicitly_allowed() {
+        let agent = Agent::parse(
+            "cleaner",
+            "---\nadapter: codex\nDELETE_TOOL: allow\nDELETE_WITHOUT_CONFIRM: allow\n---\nClean generated files.",
+        )
+        .unwrap();
+        assert!(agent.delete_tool);
+        assert!(agent.delete_without_confirm);
     }
 }

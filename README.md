@@ -34,7 +34,7 @@ Enable the repository's documentation pre-commit hook once per clone:
 git config core.hooksPath .githooks
 ```
 
-The hook runs `./new-harness run update-documentation.yml` before every commit.
+The hook runs `./new-harness run documentation.yml` before every commit.
 It requires the root executable and an authenticated Codex installation, and a
 workflow failure cancels the commit. Generated documentation remains available
 in the working tree for a subsequent commit.
@@ -89,9 +89,10 @@ iteration. Templates do not expand inserted content again.
 | Tool | Purpose |
 | --- | --- |
 | TREE | List files as JSON, respecting Git ignores and `.treeignore`. |
-| GIT-STATUS-TREE | List existing changed and untracked files as JSON, filtered by `.treeignore`. |
+| GIT-STATUS-TREE | List changed, untracked, and deleted paths as JSON, filtered by `.treeignore`. |
 | READ | Read exact UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; optional `version-output` supports EDIT. |
 | WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
+| DELETE | Delete one regular file; confirmation is required unless `force: true` is set. |
 | EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
 | AWAIT | Pause and wait for the user to press Enter before continuing. |
 | CUSTOM-TOOL | Run `tools/<name>.sh` with a string array of arguments via `custom-tool: name`. |
@@ -99,6 +100,7 @@ iteration. Templates do not expand inserted content again.
 | IF | Select `is_true` or `is_false` steps from a strict boolean condition. |
 
 Agents run read-only and can request `TREE`, `READ: <path>`, or `ASK: <question>`.
+An agent with explicit `DELETE_TOOL: allow` metadata may also request deletion.
 Other tools are workflow-only. File tools operate inside the execution directory.
 Agent definitions and history also resolve there, regardless of the YAML's path.
 

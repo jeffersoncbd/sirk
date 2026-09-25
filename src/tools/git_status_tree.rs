@@ -1,4 +1,4 @@
-//! GIT-STATUS-TREE: list existing paths reported by Git status.
+//! GIT-STATUS-TREE: list changed paths reported by Git status.
 use crate::services::{BashService, Invocation};
 use std::{
     collections::BTreeSet,
@@ -20,9 +20,9 @@ pub struct GitStatusTree {
 }
 
 impl GitStatusTree {
-    /// List existing modified, added, renamed, copied, unmerged, and untracked
-    /// files below a directory in a Git working tree. Deleted files, ignored
-    /// files, directories, and submodule contents are omitted. Additional
+    /// List modified, added, deleted, renamed, copied, unmerged, and untracked
+    /// paths below a directory in a Git working tree. Ignored files, directories,
+    /// and submodule contents are omitted. Additional
     /// `.treeignore` rules apply to every status entry.
     pub fn list(directory: &Path) -> Result<Self, String> {
         let root = directory.canonicalize().map_err(|error| {
@@ -79,6 +79,7 @@ impl GitStatusTree {
                 return Err("GIT-STATUS-TREE received malformed Git status output".into());
             }
             let status_code = &record[..2];
+            let deleted = status_code.contains(&b'D');
             let repository_path = &record[3..];
             if status_code.iter().any(|code| matches!(code, b'R' | b'C')) {
                 records.next().ok_or(
@@ -92,6 +93,10 @@ impl GitStatusTree {
                 continue;
             }
             let path = path_from_bytes(relative)?;
+            if deleted {
+                files.push(path);
+                continue;
+            }
             match fs::symlink_metadata(root.join(&path)) {
                 Ok(metadata) if metadata.is_file() || metadata.file_type().is_symlink() => {
                     files.push(path)
@@ -231,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn lists_existing_status_files_and_applies_treeignore() {
+    fn lists_changed_and_deleted_paths_and_applies_treeignore() {
         let project = Project::new();
         for path in [
             "clean.txt",
@@ -265,6 +270,7 @@ mod tests {
                 ".gitignore",
                 ".treeignore",
                 "added.txt",
+                "deleted.txt",
                 "modified.txt",
                 "renamed.txt",
                 "staged.txt",
