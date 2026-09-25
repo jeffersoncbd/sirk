@@ -2,5 +2,3 @@
 /target/
 
 /new-harness
-
-src/tools/edit.rs

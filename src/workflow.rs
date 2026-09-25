@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -51,6 +51,10 @@ pub struct Step {
     pub output: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iter: Vec<Step>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub is_true: Vec<Step>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub is_false: Vec<Step>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -58,6 +62,7 @@ pub struct Step {
 pub enum StepInput {
     Text(String),
     Array(Vec<String>),
+    Bool(bool),
 }
 
 impl Default for StepInput {
@@ -73,6 +78,7 @@ impl StepInput {
         locals: Option<&BTreeMap<String, String>>,
     ) -> Result<String, String> {
         match self {
+            Self::Bool(value) => Ok(value.to_string()),
             Self::Text(text) => render_scoped(text, outputs, locals),
             Self::Array(items) => items
                 .iter()
@@ -85,7 +91,7 @@ impl StepInput {
     fn text(&self) -> Option<&str> {
         match self {
             Self::Text(text) => Some(text),
-            Self::Array(_) => None,
+            Self::Array(_) | Self::Bool(_) => None,
         }
     }
 }
@@ -93,6 +99,14 @@ impl StepInput {
 pub fn loop_items(input: &str) -> Result<Vec<String>, String> {
     serde_json::from_str(input)
         .map_err(|error| format!("LOOP requires a JSON array of strings: {error}"))
+}
+
+pub fn condition(input: &str) -> Result<bool, String> {
+    match input.trim() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => Err("IF input must be true or false".into()),
+    }
 }
 
 pub fn loop_target(output: &str) -> Option<&str> {
@@ -106,6 +120,13 @@ pub fn loop_target(output: &str) -> Option<&str> {
 }
 
 impl Step {
+    pub fn branch(&self, selected: bool) -> (&str, &[Step]) {
+        if selected {
+            ("true", &self.is_true)
+        } else {
+            ("false", &self.is_false)
+        }
+    }
     pub fn name(&self) -> &str {
         self.agent
             .as_deref()
@@ -180,7 +201,12 @@ impl Workflow {
         if self.steps.is_empty() {
             return Err("a workflow requires at least one step".to_owned());
         }
-        validate_steps(&self.steps, &mut BTreeMap::new(), None)
+        validate_steps(
+            &self.steps,
+            &mut BTreeMap::new(),
+            None,
+            &mut BTreeSet::new(),
+        )
     }
 }
 
@@ -188,9 +214,17 @@ fn validate_steps(
     steps: &[Step],
     outputs: &mut BTreeMap<String, String>,
     mut locals: Option<&mut BTreeMap<String, String>>,
+    declared: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     for (index, step) in steps.iter().enumerate() {
         let is_loop = step.tool.as_deref() == Some("LOOP");
+        let is_if = step.tool.as_deref() == Some("IF");
+        if !is_if && (!step.is_true.is_empty() || !step.is_false.is_empty()) {
+            return Err("is_true and is_false are only accepted on IF".into());
+        }
+        if !is_if && matches!(step.input, StepInput::Bool(_)) {
+            return Err("boolean input is only accepted on IF".into());
+        }
         let is_write = step.tool.as_deref() == Some("WRITE");
         let is_edit = step.tool.as_deref() == Some("EDIT");
         if !is_edit
@@ -231,6 +265,22 @@ fn validate_steps(
         }
         match (&step.agent, &step.tool, &step.custom_tool) {
             (Some(agent), None, None) if crate::agents::valid_id(agent) => (),
+            (None, Some(tool), None) if tool == "IF" => {
+                if step.is_true.is_empty() && step.is_false.is_empty() {
+                    return Err("IF requires at least one nonempty branch".into());
+                }
+                if step.output.is_some() {
+                    return Err("IF has no aggregate output; assign outputs in its branches".into());
+                }
+                match &step.input {
+                    StepInput::Bool(_) => (),
+                    StepInput::Text(text) if text.contains("{{") => (),
+                    StepInput::Text(text) => {
+                        condition(text)?;
+                    }
+                    StepInput::Array(_) => return Err("IF input must be a boolean or text".into()),
+                }
+            }
             (None, Some(tool), None) if tool == "LOOP" => {
                 if step.iter.is_empty() {
                     return Err("LOOP requires a nonempty iter list".into());
@@ -295,7 +345,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, READ, WRITE, EDIT, LOOP), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, READ, WRITE, EDIT, LOOP, IF), or custom-tool",
                     index + 1
                 ));
             }
@@ -310,7 +360,44 @@ fn validate_steps(
         if is_loop {
             let mut child_outputs = outputs.clone();
             let mut child_locals = BTreeMap::from([("item".into(), String::new())]);
-            validate_steps(&step.iter, &mut child_outputs, Some(&mut child_locals))?;
+            validate_steps(
+                &step.iter,
+                &mut child_outputs,
+                Some(&mut child_locals),
+                &mut declared.clone(),
+            )?;
+        }
+        if is_if {
+            let mut true_outputs = outputs.clone();
+            let mut false_outputs = outputs.clone();
+            let mut true_locals = locals.as_deref().cloned();
+            let mut false_locals = locals.as_deref().cloned();
+            let mut true_declared = declared.clone();
+            let mut false_declared = declared.clone();
+            validate_steps(
+                &step.is_true,
+                &mut true_outputs,
+                true_locals.as_mut(),
+                &mut true_declared,
+            )?;
+            validate_steps(
+                &step.is_false,
+                &mut false_outputs,
+                false_locals.as_mut(),
+                &mut false_declared,
+            )?;
+            // Only definitely assigned names are readable after the conditional.
+            true_outputs.retain(|name, _| false_outputs.contains_key(name));
+            *outputs = true_outputs;
+            if let (Some(parent), Some(mut yes), Some(no)) =
+                (locals.as_deref_mut(), true_locals, false_locals)
+            {
+                yes.retain(|name, _| no.contains_key(name));
+                *parent = yes;
+            }
+            // Reserve even branch-specific global names to prevent a possible reassignment.
+            declared.extend(true_declared);
+            declared.extend(false_declared);
         }
         for name in step.output.iter().chain(step.version_output.iter()) {
             if let Some(key) = loop_target(name) {
@@ -335,9 +422,10 @@ fn validate_steps(
                 values.insert(name.clone(), String::new());
                 continue;
             }
-            if outputs.insert(name.clone(), String::new()).is_some() {
+            if !declared.insert(name.clone()) {
                 return Err(format!("output `{name}` is declared more than once"));
             }
+            outputs.insert(name.clone(), String::new());
         }
     }
     Ok(())
@@ -395,6 +483,83 @@ pub fn render_scoped(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn if_validates_both_branches_and_merges_definite_outputs() {
+        let source = "version: 1\nsteps:\n- tool: IF\n  input: true\n  is_true:\n  - tool: READ\n    input: yes\n    output: answer\n  is_false:\n  - tool: READ\n    input: no\n    output: answer\n- agent: reader\n  input: '{{ outputs.answer }}'\n";
+        serde_yaml::from_str::<Workflow>(source)
+            .unwrap()
+            .validate()
+            .unwrap();
+        for invalid in [
+            source.replace("input: true", "input: yes"),
+            source.replace("input: true", "input: [true]"),
+            source.replace("input: true", "input: ''"),
+            source.replace("input: true", "input: true\n  output: result"),
+            source.replace("input: no", "input: '{{ outputs.missing }}'"),
+            source.replace("tool: IF", "tool: READ"),
+            source.replace(
+                "    input: no\n    output: answer",
+                "    input: no\n    output: other",
+            ),
+            source.replace("input: true", "input: true\n  iter: [{tool: TREE}]"),
+        ] {
+            assert!(
+                serde_yaml::from_str::<Workflow>(&invalid)
+                    .and_then(|w| w.validate().map_err(serde::de::Error::custom))
+                    .is_err(),
+                "{invalid}"
+            );
+        }
+        let branch_only = "version: 1\nsteps:\n- tool: IF\n  input: false\n  is_true:\n  - tool: TREE\n    output: tree\n- tool: TREE\n  output: tree\n";
+        assert!(
+            serde_yaml::from_str::<Workflow>(branch_only)
+                .unwrap()
+                .validate()
+                .unwrap_err()
+                .contains("more than once")
+        );
+        assert!(condition(" true\r\n").unwrap());
+        assert!(!condition("false\n").unwrap());
+        for value in ["1", "0", "TRUE", "", "null", "true\nfalse"] {
+            assert!(condition(value).is_err());
+        }
+    }
+
+    #[test]
+    fn if_respects_loop_scope_and_optional_branches() {
+        let source = "version: 1\nsteps:\n- tool: LOOP\n  input: [a]\n  iter:\n  - tool: IF\n    input: false\n    is_true:\n    - tool: READ\n      input: a\n      output: text\n    is_false:\n    - tool: READ\n      input: b\n      output: text\n  - agent: reader\n    input: '{{ loop.text }}'\n";
+        serde_yaml::from_str::<Workflow>(source)
+            .unwrap()
+            .validate()
+            .unwrap();
+        assert!(
+            serde_yaml::from_str::<Workflow>(&source.replace("output: text", "output: item"))
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+        assert!(
+            serde_yaml::from_str::<Workflow>(&format!(
+                "{source}- agent: reader\n  input: '{{{{ loop.text }}}}'\n"
+            ))
+            .unwrap()
+            .validate()
+            .is_err()
+        );
+        let optional =
+            "version: 1\nsteps:\n- tool: IF\n  input: false\n  is_true:\n  - tool: TREE\n";
+        serde_yaml::from_str::<Workflow>(optional)
+            .unwrap()
+            .validate()
+            .unwrap();
+        assert!(
+            serde_yaml::from_str::<Workflow>("version: 1\nsteps:\n- tool: IF\n  input: true\n")
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+    }
 
     #[test]
     fn validates_edit_operations_and_version_outputs() {

@@ -8,7 +8,7 @@ invokes existing harness CLIs through Bash; it does not call model APIs directly
 `new-harness` is a temporary project name.
 
 Currently supported: Codex, sequential workflows, user questions, TREE, READ,
-WRITE, EDIT, project-local custom tools, scoped LOOP iterations, model-generated agent
+WRITE, EDIT, project-local custom tools, scoped LOOP iterations, IF branches, model-generated agent
 definitions, and transcript-based resumption. OpenCode and Claude Code are
 planned, not implemented.
 
@@ -412,6 +412,63 @@ with `output`. Stderr remains visible. A missing script, invalid UTF-8 stdout, o
 nonzero exit stops the workflow and leaves the invocation pending for resume.
 CUSTOM-TOOL is YAML-only and is not advertised to agents.
 
+### IF
+
+IF is workflow-only and executes one branch based on its input:
+
+```yaml
+- custom-tool: file-exists
+  input: ["{{ loop.doc_name }}"]
+  output: file_exists
+- tool: IF
+  input: "{{ loop.file_exists }}"
+  is_true:
+    - tool: READ
+      input: "{{ loop.doc_name }}"
+      output: explain
+  is_false:
+    - agent: code-explainer
+      input: "{{ loop.content }}"
+      output: explain
+    - tool: WRITE
+      path: "{{ loop.doc_name }}"
+      input: "{{ loop.explain }}"
+```
+
+This example belongs inside a LOOP. Subsequent steps can read `loop.explain`
+because both branches assign it. The bundled `tools/file-exists.sh` prints
+`true` for a regular file (including a symlink to a regular file) and `false`
+otherwise. READ still enforces its own path restrictions. Missing or empty
+script arguments fail rather than producing a condition.
+
+`input` accepts YAML booleans (`true`, `false`) or text resolving to those exact
+lowercase words. Surrounding whitespace, including a script's trailing newline,
+is ignored when interpreting the condition. Empty values, arrays, numbers,
+`yes`, `no`, `0`, and `1` are rejected; there is no implicit truthiness or shell
+expression evaluation. Boolean input is only supported on IF.
+
+`is_true` and `is_false` are lists of steps. Either may be omitted or empty,
+but at least one must be nonempty. Selecting an absent/empty branch does nothing.
+Both branches are validated recursively, including every referenced agent,
+before execution. Only the selected branch executes. Branches may contain
+nested IF, LOOP, tools, and agents. IF does not accept `iter` or `output`.
+
+Branches share the enclosing scope: outside loops, their outputs are global;
+inside loops, they assign to the current iteration's locals. After IF, templates
+may reference names already available before it or names assigned in both
+branches. A new name assigned in only one branch cannot be referenced afterward.
+The two branches may declare the same new global output, but possible duplicate
+global assignments in sequential steps are rejected. Loop locals retain their
+normal reassignment rules, and `loop.item` remains read-only. IF introduces no
+new loop scope and has no aggregate result.
+
+The resolved condition is saved once in IF's `==> INPUT` block. Resume reuses
+that decision and completed child results instead of reevaluating the condition.
+Child labels include the branch, for example `Step 2.true.1` or
+`Step 1.3.2.false.1` for a branch nested in a loop iteration. Changing the saved
+condition requires truncating its dependent child records and subsequent steps;
+records from the opposite branch or after pending work are rejected.
+
 ### LOOP
 
 LOOP is **workflow-only** and accepts an array of strings. It executes the
@@ -536,7 +593,7 @@ conversations remain supported.
 
 ## Current limitations
 
-- Only Codex is implemented; there is no parallel execution, branching, or
+- Only Codex is implemented; there is no parallel execution or
   automatic retry policy.
 - Conversation context grows with each turn. Native harness session state,
   hidden instructions, and verified model identity are not captured.

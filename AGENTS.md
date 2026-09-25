@@ -147,6 +147,14 @@ Check the installed harness CLI's help before changing flags.
   `READ: <path>` responses. Use the same tool implementation for YAML steps.
 - LOOP is YAML-only. Do not register it in the agent tool dispatcher or
   advertise it in model prompts.
+- IF is YAML-only, with is_true/is_false step lists and a strict true/false
+  condition (surrounding whitespace accepted). Validate both branches, including
+  agents, before execution. IF has no aggregate output and shares its enclosing
+  scope; only names available on both paths may be referenced afterward.
+- Persist IF's resolved condition in INPUT and include true/false in child labels.
+  Resume the saved branch, restore its outputs and reject opposite-branch records
+  or later records after pending work. Recurse through IF as well as LOOP when
+  validating agents and history. Preserve legacy workflows and v2 logs.
 - LOOP accepts string arrays, runs `iter` in order, and has no aggregate output.
   Each iteration gets fresh locals and read-only `loop.item`. Inside a loop,
   `output: content` assigns `loop.content`; outside it assigns
@@ -204,7 +212,7 @@ Check the installed harness CLI's help before changing flags.
 
 ## Known implementation limitations
 
-No parallel execution, branching, or automatic retries. Conversation prompts
+No parallel execution or automatic retries. Conversation prompts
 and captured stdout grow in memory; there are no size limits, timeouts, or log
 rotation. Process cleanup handles the direct child, not the complete descendant
 tree. Terminal answers are single-line; no PTY management exists. JSON harness

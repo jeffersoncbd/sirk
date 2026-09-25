@@ -6,7 +6,7 @@ use crate::{
     history::{Block, History, Snapshot},
     input::{TerminalInput, UserInput},
     services::{BashService, Invocation},
-    workflow::{Step, Workflow, loop_items, loop_target},
+    workflow::{Step, Workflow, condition, loop_items, loop_target},
 };
 use std::{collections::BTreeMap, path::Path};
 
@@ -99,6 +99,8 @@ fn all_steps(steps: &[Step]) -> Vec<&Step> {
     for step in steps {
         result.push(step);
         result.extend(all_steps(&step.iter));
+        result.extend(all_steps(&step.is_true));
+        result.extend(all_steps(&step.is_false));
     }
     result
 }
@@ -142,6 +144,17 @@ fn validate_blocks(history: &History) -> Result<(), String> {
                     )? {
                         return Ok(false);
                     }
+                }
+            } else if step.tool.as_deref() == Some("IF") {
+                if blocks.is_empty() {
+                    return Ok(false);
+                }
+                let [Block::Input(input)] = blocks.as_slice() else {
+                    return Err("IF history must contain only its condition".into());
+                };
+                let (branch, body) = step.branch(condition(input)?);
+                if !visit(history, body, &format!("{id}.{branch}."), cursor)? {
+                    return Ok(false);
                 }
             } else if step.tool.as_deref() == Some("EDIT") {
                 if !validate_edit_blocks(blocks)? {
@@ -288,6 +301,18 @@ where
                         &mut child_locals,
                     )?;
                 }
+                continue;
+            }
+            if step.tool.as_deref() == Some("IF") {
+                if self.history.steps[index].is_empty() {
+                    let argument = step.render_input(outputs, locals.as_ref())?;
+                    condition(&argument)?;
+                    self.history.steps[index].push(Block::Input(argument));
+                    self.history.save()?;
+                }
+                let selected = condition(self.history.steps[index][0].text())?;
+                let (branch, body) = step.branch(selected);
+                self.run_steps(body, &format!("{id}.{branch}."), outputs, locals)?;
                 continue;
             }
             let result = self.run_step(step, index, outputs, locals.as_ref())?;
@@ -1184,6 +1209,112 @@ mod tests {
             outputs
         );
         assert!(!project.0.join("file").exists());
+    }
+    #[test]
+    fn if_reuses_docs_or_generates_them_and_restores_loop_outputs() {
+        let project = Project::new();
+        fs::create_dir(project.0.join("tools")).unwrap();
+        fs::write(
+            project.0.join("tools/file-exists.sh"),
+            include_str!("../tools/file-exists.sh"),
+        )
+        .unwrap();
+        fs::write(project.0.join("cached"), "existing documentation").unwrap();
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [cached, missing]\n  iter:\n  - custom-tool: file-exists\n    input: ['{{ loop.item }}']\n    output: exists\n  - tool: IF\n    input: '{{ loop.exists }}'\n    is_true:\n    - tool: READ\n      input: '{{ loop.item }}'\n      output: explain\n    is_false:\n    - agent: second\n      input: generate\n      output: explain\n    - tool: WRITE\n      path: '{{ loop.item }}'\n      input: '{{ loop.explain }}'\n  - tool: EDIT\n    path: index\n    operation: append\n    input: '{{ loop.explain }}'\n").unwrap();
+        let mut calls = 0;
+        let outputs = run_with(&workflow, &project.0, |_| {
+            calls += 1;
+            Ok("generated documentation".into())
+        })
+        .unwrap();
+        assert_eq!(calls, 1);
+        assert!(outputs.is_empty());
+        assert_eq!(
+            fs::read_to_string(project.0.join("index")).unwrap(),
+            "existing documentationgenerated documentation"
+        );
+        let mut history = History::open(&project.log()).unwrap();
+        assert!(
+            history
+                .labels
+                .iter()
+                .any(|s| s == "Step 1.1.2.true.1 — READ")
+        );
+        assert!(
+            history
+                .labels
+                .iter()
+                .any(|s| s == "Step 1.2.2.false.1 — second")
+        );
+        fs::remove_file(project.0.join("cached")).unwrap();
+        continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap();
+        assert_eq!(
+            fs::read_to_string(project.0.join("index")).unwrap(),
+            "existing documentationgenerated documentation"
+        );
+    }
+
+    #[test]
+    fn if_recovers_pending_nested_branch_and_rejects_edited_conditions() {
+        let project = Project::new();
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- agent: second\n  output: selected\n- tool: IF\n  input: '{{ outputs.selected }}'\n  is_true:\n  - tool: LOOP\n    input: [a, b]\n    iter:\n    - agent: second\n      input: '{{ loop.item }}'\n  is_false:\n  - tool: WRITE\n    path: wrong-branch\n    input: wrong\n- tool: WRITE\n  path: final\n  input: done\n").unwrap();
+        let mut calls = 0;
+        assert!(
+            run_with(&workflow, &project.0, |_| {
+                calls += 1;
+                match calls {
+                    1 => Ok("true\n".into()),
+                    2 => Ok("first".into()),
+                    _ => Err("interrupted".into()),
+                }
+            })
+            .is_err()
+        );
+        let mut history = History::open(&project.log()).unwrap();
+        assert!(!project.0.join("wrong-branch").exists());
+        let original = history.steps[1][0].clone();
+        history.steps[1][0] = Block::Input("false".into());
+        assert!(
+            continue_with(
+                &mut history,
+                |_| panic!("must validate first"),
+                &mut answers(&[])
+            )
+            .is_err()
+        );
+        assert!(!project.0.join("wrong-branch").exists());
+        history.steps[1][0] = original;
+        let mut resumed = 0;
+        continue_with(
+            &mut history,
+            |invocation| {
+                resumed += 1;
+                assert!(invocation.arguments.last().unwrap().contains("b"));
+                Ok("second".into())
+            },
+            &mut answers(&[]),
+        )
+        .unwrap();
+        assert_eq!(resumed, 1);
+        assert_eq!(fs::read_to_string(project.0.join("final")).unwrap(), "done");
+        // Truncating a branch result while retaining later records must fail preflight.
+        history.steps[3].pop();
+        assert!(continue_with(&mut history, |_| panic!("invalid"), &mut answers(&[])).is_err());
+    }
+
+    #[test]
+    fn if_validates_unselected_agents_and_handles_empty_selection() {
+        let project = Project::new();
+        let invalid: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: IF\n  input: true\n  is_true:\n  - tool: TREE\n  is_false:\n  - agent: missing\n").unwrap();
+        assert!(run_with(&invalid, &project.0, |_| panic!("validate first")).is_err());
+        assert!(!project.0.join("history").exists());
+        let empty: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: IF\n  input: false\n  is_true:\n  - tool: READ\n    input: missing\n- tool: WRITE\n  path: done\n  input: ok\n").unwrap();
+        run_with(&empty, &project.0, |_| panic!("no model")).unwrap();
+        assert_eq!(fs::read_to_string(project.0.join("done")).unwrap(), "ok");
+        let mut history = History::open(&project.log()).unwrap();
+        continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap();
+        assert!(crate::tools::request("IF: true").is_none());
+        assert!(!crate::tools::supports("IF"));
     }
 
     #[test]

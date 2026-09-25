@@ -17,9 +17,26 @@ steps:
           - "{{ loop.item }}"
         output: doc_name
 
-      - tool: READ
-        input: "{{ loop.doc_name }}"
-        output: explain
+      - custom-tool: file-exists
+        input:
+          - "{{ loop.doc_name }}"
+        output: file_exists
+
+      - tool: IF
+        input: "{{ loop.file_exists }}"
+        is_true:
+          - tool: READ
+            input: "{{ loop.doc_name }}"
+            output: explain
+
+        is_false:
+          - agent: code-explainer
+            input: "{{ loop.content }}"
+            output: explain
+          - tool: WRITE
+            path: "{{ loop.doc_name }}"
+            input: "{{ loop.explain }}"
+            force: false
 
       - agent: explain-resume
         input: "{{ loop.explain }}"
