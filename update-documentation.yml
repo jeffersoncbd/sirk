@@ -13,7 +13,10 @@ steps:
         output: content
 
       - agent: code-explainer
-        input: "{{ loop.content }}"
+        input: |
+          - Nome do arquivo: {{ loop.item }}
+          - Conteúdo do arquivo:
+          {{ loop.content }}
         output: explain
 
       - custom-tool: doc-name

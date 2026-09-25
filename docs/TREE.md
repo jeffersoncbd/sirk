@@ -34,7 +34,8 @@ src/adapters/opencode.rs - Adapta requisições do harness para comandos seguros
 src/adapters/ollama.rs - Adapta requisições genéricas do harness para invocações válidas do comando Ollama.
 
 
-.env.example - Documenta variáveis de ambiente opcionais para configurar o acesso à API web do Ollama.
+.env.example - Modelo de configuração das variáveis de ambiente para integração com a API web do Ollama.
+
 
 
 
