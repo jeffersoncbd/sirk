@@ -1,34 +1,33 @@
 ### Resumo
 
-Este arquivo define a interface comum para executar diferentes CLIs de agentes de código. Ele padroniza os dados de uma execução, o contrato dos adaptadores e os erros relacionados a opções não suportadas.
+Este arquivo define a interface comum para executar diferentes coding-agent harnesses. Ele representa uma solicitação de execução, padroniza os adaptadores de integração e fornece um erro específico para opções não suportadas.
 
 ### Funcionamento
 
-`RunRequest` reúne as informações necessárias para iniciar uma execução: prompt, diretório de trabalho, modelo opcional e indicação de stream de eventos.
+`RunRequest` reúne os dados necessários para uma execução: prompt, diretório de trabalho, modelo opcional e indicação de uso de fluxo de eventos.
 
-Cada implementação de `HarnessAdapter` representa uma integração com um harness específico. Ela deve:
+Cada integração concreta deve implementar `HarnessAdapter`, que:
 
-- retornar seu identificador por `id()`;
-- transformar um `RunRequest` em uma `Invocation` por meio de `invocation()`.
+- Retorna um identificador estático por meio de `id()`.
+- Converte um `RunRequest` em uma `Invocation`, retornando `HarnessError` quando a configuração não é suportada.
 
-A criação da `Invocation` pode falhar com `HarnessError`, atualmente usado para indicar que determinado adaptador não oferece suporte a uma opção solicitada.
+O enum `HarnessError` atualmente representa apenas a tentativa de usar uma opção incompatível com determinado adaptador. Ele implementa `Display` para gerar uma mensagem legível e `std::error::Error` para integração com o ecossistema padrão de erros do Rust.
 
 ### Componentes principais
 
-- `RunRequest`: struct pública com os parâmetros provider-neutral da execução.
-- `HarnessAdapter`: trait pública que define a fronteira de integração com CLIs de agentes.
-- `HarnessError`: enum público para erros de configuração ou compatibilidade do adaptador.
-- `Invocation`: tipo reexportado publicamente de `crate::services`, usado para representar a execução de um processo externo.
-- Implementação de `Display`: produz mensagens como `adapter \`...\` does not support \`...\``.
-- Implementação de `std::error::Error`: permite usar `HarnessError` como erro idiomático de Rust.
+- `RunRequest`: struct pública com os parâmetros de uma execução.
+- `HarnessAdapter`: trait pública que define o contrato dos adaptadores de harness.
+- `HarnessError`: enum público para erros de configuração ou compatibilidade.
+- `Invocation`: reexportado publicamente a partir de `crate::services`, permitindo que consumidores usem esse tipo por meio deste módulo.
+- `fmt::Display`: usado para formatar `HarnessError`.
 
 ### Dependências e integrações
 
-- `std::fmt`: usado para implementar `Display`.
-- `std::path::PathBuf`: representa o diretório de trabalho.
-- `crate::services::Invocation`: conecta este contrato ao serviço interno responsável por executar processos.
-- Os adaptadores concretos devem implementar `HarnessAdapter`, provavelmente em módulos específicos de `crate::adapters`.
+- Usa `std::path::PathBuf` para representar o diretório de trabalho.
+- Usa `std::fmt` para implementar a exibição dos erros.
+- Integra-se ao módulo interno `crate::services` por meio do tipo `Invocation`.
+- Serve como fronteira entre o restante da aplicação e implementações específicas de CLIs de coding agents.
 
 ### Observações
 
-O arquivo não executa processos nem realiza comunicação externa diretamente. Ele apenas define contratos e tipos compartilhados. O comportamento detalhado de cada harness depende das implementações concretas de `HarnessAdapter`, que não estão presentes no conteúdo analisado.
+O arquivo apenas define contratos e tipos de dados; não executa processos nem implementa adaptadores concretos. O comportamento de criação da `Invocation` depende das implementações de `HarnessAdapter` e do tipo `Invocation`, cujo conteúdo não foi fornecido.

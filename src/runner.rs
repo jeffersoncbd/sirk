@@ -926,10 +926,12 @@ mod tests {
     #[test]
     fn read_version_and_edit_work_in_loop_scopes_and_resume() {
         let project = Project::new();
+        fs::create_dir(project.0.join("tools")).unwrap();
+        fs::write(project.0.join("tools/line.sh"), "printf ' 4\\n'\n").unwrap();
         for name in ["a", "b"] {
             fs::write(project.0.join(name), "fn a() {\n}\nfn b() {\n}\n").unwrap();
         }
-        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [a, b]\n  iter:\n  - tool: READ\n    input: '{{ loop.item }}'\n    output: source\n    version-output: revision\n  - tool: EDIT\n    path: '{{ loop.item }}'\n    operation: replace\n    start: 4\n    end: 4\n    version: '{{ loop.revision }}'\n    input: \"  // literal {{ loop.source }}\\n}\\n\"\n    output: diff\n").unwrap();
+        let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [a, b]\n  iter:\n  - tool: READ\n    input: '{{ loop.item }}'\n    output: source\n    version-output: revision\n  - custom-tool: line\n    input: []\n    output: target\n  - tool: EDIT\n    path: '{{ loop.item }}'\n    operation: replace\n    start: '{{ loop.target }}'\n    end: '{{ loop.target }}'\n    version: '{{ loop.revision }}'\n    input: \"  // literal {{ loop.source }}\\n}\\n\"\n    output: diff\n").unwrap();
         // Inserted source contains no templates; repeated braces select only line 4.
         let result = run_with(&workflow, &project.0, |_| panic!("no model")).unwrap();
         assert!(result.is_empty());
@@ -937,6 +939,7 @@ mod tests {
             let content = fs::read_to_string(project.0.join(name)).unwrap();
             assert!(content.starts_with("fn a() {\n}\nfn b() {\n  // literal"));
         }
+        fs::remove_file(project.0.join("tools/line.sh")).unwrap();
         let mut history = History::open(&project.log()).unwrap();
         fs::remove_file(project.0.join("a")).unwrap();
         assert!(

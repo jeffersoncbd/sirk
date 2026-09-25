@@ -1,49 +1,63 @@
 ### Resumo
 
-Este arquivo implementa o serviço compartilhado `BashService`, responsável por executar comandos externos através do Bash, preservando corretamente argumentos, diretório de trabalho, saída padrão e status de encerramento.
+Este arquivo implementa `BashService`, um serviço compartilhado para executar processos por meio do Bash. Ele transforma um `Invocation` em um comando com argumentos protegidos contra interpretação indevida pelo shell, executa o processo e transmite/captura sua saída padrão.
 
 ### Funcionamento
 
-`BashService` recebe uma `Invocation`, que contém o programa, seus argumentos e o diretório de execução. O comando é convertido para uma string usando aspas simples compatíveis com POSIX e executado como:
+O serviço inicia o executável configurado — por padrão, `bash` — usando `bash -lc`. O comando é montado com:
 
-```text
-bash -lc "exec -- ..."
-```
+- `exec --`, para substituir o processo do Bash pelo programa chamado;
+- o programa e cada argumento individualmente protegidos por aspas simples;
+- o diretório de trabalho definido em `Invocation`.
 
-Cada argumento é escapado individualmente por `shell_quote`, impedindo que espaços, aspas, quebras de linha ou construções como `$(...)` sejam interpretados como código shell.
+Durante a execução:
 
-A saída padrão do processo é:
+1. A entrada padrão do processo é fechada com `Stdio::null()`.
+2. A saída padrão é capturada em um pipe.
+3. A saída de erro permanece ligada ao processo-pai.
+4. A saída padrão é lida em blocos de 8.192 bytes.
+5. Cada bloco é escrito no destino fornecido e armazenado em memória.
+6. O processo filho é aguardado, preservando seu `ExitStatus`.
 
-- enviada em blocos de 8 KiB para um destino fornecido pelo chamador;
-- armazenada simultaneamente em memória;
-- convertida para `String` em `execute_to`, exigindo UTF-8 válido;
-- mantida como bytes em `execute_bytes_to`, permitindo lidar com saídas binárias, como caminhos Git separados por NUL.
+A variante `execute_to` converte a saída capturada de bytes para `String`, retornando erro caso ela não seja UTF-8 válida. Já `execute_bytes_to` preserva dados binários, inclusive caminhos separados por NUL produzidos pelo Git.
 
-A entrada padrão do processo é fechada (`Stdio::null()`), enquanto o erro padrão permanece ligado ao processo pai. Se o destino da saída falhar, o processo filho é encerrado e aguardado antes de retornar o erro.
+Se o destino da saída falhar, o processo filho é encerrado e aguardado antes que o erro seja retornado.
 
 ### Componentes principais
 
-- `BashService`: serviço público que armazena o executável do shell a ser usado.
-- `BashService::new`: cria o serviço com um executável configurável.
-- `BashService::default`: usa `bash` como executável padrão.
-- `execute_streaming`: executa o comando e envia a saída diretamente para a saída padrão do processo atual.
-- `execute_to`: transmite e captura a saída, retornando-a como `String`.
-- `execute_bytes_to`: variante interna que preserva a saída como `Vec<u8>`.
-- `render`: monta a linha de comando com `exec --` e argumentos devidamente escapados.
-- `shell_quote`: função privada que envolve valores em aspas simples e escapa aspas internas.
-- `ProcessOutput`: tipo público contendo `ExitStatus` e stdout textual.
-- `BinaryProcessOutput`: tipo interno contendo `ExitStatus` e stdout binário.
-- Módulo de testes: verifica preservação de argumentos, diretório de trabalho, status de saída, transmissão de bytes, falhas do destino e renderização segura.
+- `BashService`: serviço público que armazena o executável do shell.
+  - `new`: cria o serviço com um executável personalizado.
+  - `default`: usa `"bash"`.
+  - `execute_streaming`: executa e transmite a saída diretamente para `stdout`.
+  - `execute_to`: transmite a saída para um destino e retorna-a como `String`.
+  - `execute_bytes_to`: versão interna que preserva a saída como `Vec<u8>`.
+  - `render`: converte um `Invocation` em uma linha de comando shell protegida.
+
+- `ProcessOutput`: estrutura pública contendo:
+  - `status`: o `ExitStatus` do processo;
+  - `stdout`: saída padrão convertida para `String`.
+
+- `BinaryProcessOutput`: estrutura privada do crate usada para transportar saída binária sem conversão UTF-8.
+
+- `shell_quote`: função privada que envolve valores em aspas simples e escapa aspas simples internas usando a forma POSIX `'\"'\"'`.
+
+- Testes:
+  - verificam preservação de argumentos especiais;
+  - confirmam captura e transmissão simultâneas da saída;
+  - validam diretório de trabalho e código de saída;
+  - verificam propagação de erro de um destino quebrado;
+  - conferem a renderização correta dos argumentos para o shell.
 
 ### Dependências e integrações
 
-- `std::process`: cria e controla o processo filho por meio de `Command`, `Stdio` e `ExitStatus`.
-- `std::io`: lê stdout, escreve no destino, faz flush e trata erros de I/O.
-- `super::Invocation`: tipo definido no módulo pai, usado para descrever o programa, argumentos e diretório de execução.
-- O Bash é usado como camada de execução, mas o programa real e seus argumentos continuam sendo definidos pela `Invocation`.
+O arquivo usa:
+
+- `std::io` para leitura, escrita, captura de saída e erros de I/O;
+- `std::process` para criar e controlar processos filhos;
+- `super::Invocation`, tipo interno que fornece programa, argumentos e diretório de trabalho.
+
+Ele integra-se às funcionalidades do projeto que precisam executar comandos externos por meio de Bash, mantendo a construção dos argumentos centralizada no serviço.
 
 ### Observações
 
-A conversão para `String` falha com `io::ErrorKind::InvalidData` quando a saída não é UTF-8 válida. Por isso, `execute_bytes_to` existe para consumidores que precisam preservar bytes arbitrários.
-
-O método usa `expect` apenas para uma condição interna esperada: o stdout deve estar disponível porque foi configurado como `Stdio::piped()`. Não há uso de `unsafe`, concorrência explícita ou `async/await`.
+O arquivo não executa diretamente os comandos durante sua definição; eles são executados apenas quando os métodos correspondentes são chamados. A proteção contra expansão do shell depende da função `shell_quote`, que trata cada programa e argumento como uma única palavra shell. O código também usa `expect` para assumir que o stdout foi configurado como pipe; essa condição é garantida pela própria configuração do `Command`.

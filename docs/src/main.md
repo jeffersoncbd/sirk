@@ -1,59 +1,50 @@
 ### Resumo
 
-Este arquivo é o ponto de entrada da aplicação CLI `new-harness`. Ele interpreta argumentos, inicia workflows, retoma históricos, cria agentes interativamente e oferece um modo de operação interativo quando nenhum argumento é informado.
+Este arquivo é o ponto de entrada binário da aplicação `new-harness`. Ele interpreta argumentos da linha de comando, inicia sessões interativas, carrega workflows, executa ou retoma históricos e apresenta erros ao usuário.
 
 ### Funcionamento
 
-A função `main` coleta os argumentos da linha de comando e chama `run`. Em caso de sucesso, retorna `ExitCode::SUCCESS`; em caso de erro, imprime a mensagem em `stderr` e retorna código de saída `2`.
+`main` coleta os argumentos recebidos e chama `run`. Em caso de sucesso, retorna `ExitCode::SUCCESS`; em caso de erro, imprime a mensagem em `stderr` e encerra com código `2`.
 
-Os comandos suportados são:
+O comando é interpretado assim:
 
-- execução interativa sem argumentos;
-- criação de agente com `--newAgent` ou `--new-agent`;
-- execução de workflow com `run <workflow.yml>`;
-- retomada com `resume <history.log>`;
-- exibição da ajuda.
+- Sem argumentos: inicia o modo interativo.
+- `--newAgent` ou `--new-agent`: cria um agente interativamente.
+- `run <workflow.yml>`: carrega e executa um workflow.
+- `resume <history.log>`: retoma um histórico editável.
+- `help`, `--help` ou `-h`: exibe o uso.
+- Qualquer outra combinação produz erro de comando inválido.
 
-No modo interativo, o programa lê comandos linha a linha. Ele aceita:
+No modo interativo, o programa exibe um prompt, lê linhas da entrada padrão e aceita:
 
-- `run <workflow.yml>`;
+- `run <workflow.yml>` ou apenas um caminho de workflow;
 - `resume <history.log>`;
 - `/help`;
-- `/quit` ou `/exit`.
+- `/quit` e `/exit`.
 
-Erros ocorridos durante a execução interativa são exibidos, mas não encerram o loop. A entrada padrão é encerrada com EOF, o programa termina normalmente.
+Erros ocorridos durante comandos interativos são exibidos, mas não encerram o loop. A sessão termina quando a entrada padrão chega ao fim ou quando o usuário usa um comando de saída.
 
 ### Componentes principais
 
-- `main()`: ponto de entrada e conversão do resultado em `ExitCode`.
-- `run(arguments)`: interpreta os argumentos da CLI e direciona para a operação correspondente.
-- `interactive()`: executa o prompt interativo para workflows.
-- `run_workflow(path)`: carrega um `Workflow`, resolve o diretório de trabalho atual e inicia sua execução com `runner::run`.
-- `resume_workflow(path)`: retoma uma execução usando `runner::resume`.
+- `main()`: converte o resultado da execução em um `ExitCode`.
+- `run(arguments)`: faz o despacho dos comandos da CLI.
+- `interactive()`: implementa o prompt interativo e processa comandos digitados.
+- `run_workflow(path)`: carrega um `Workflow` usando `Workflow::from_file`, resolve o diretório atual e chama `runner::run`.
+- `resume_workflow(path)`: chama `runner::resume` para continuar um histórico.
 - `print_usage()`: imprime a mensagem de ajuda.
-- `usage()`: retorna a string estática com os comandos disponíveis.
-- `tests::rejects_an_invalid_command()`: verifica que comandos desconhecidos produzem erro.
+- `usage()`: fornece a string estática com os comandos suportados.
+- `tests::rejects_an_invalid_command`: verifica que comandos desconhecidos retornam erro.
 
 ### Dependências e integrações
 
-O arquivo utiliza módulos da biblioteca padrão:
-
-- `std::env` para argumentos e diretório atual;
-- `std::io` para leitura do terminal e flush do prompt;
-- `std::path::Path` para manipulação de caminhos;
-- `std::process::ExitCode` para códigos de saída.
-
-Também integra módulos internos da crate:
-
-- `new_harness::workflow::Workflow` para carregar workflows a partir de arquivos;
-- `new_harness::runner` para executar e retomar workflows;
-- `new_harness::tools::new_agent::create` para criação interativa de agentes;
-- `new_harness::input::TerminalInput` como fonte de entrada do terminal.
+- `std::env`, `std::io`, `std::path` e `std::process` fornecem acesso a argumentos, terminal, caminhos e códigos de saída.
+- `new_harness::runner` executa e retoma workflows.
+- `new_harness::workflow::Workflow` representa e carrega workflows a partir de arquivos.
+- `new_harness::tools::new_agent::create` cria agentes de forma interativa.
+- `new_harness::input::TerminalInput` fornece a entrada do terminal usada durante a criação do agente.
 
 ### Observações
 
-As funções deste arquivo são privadas; a interface pública utilizada está nos módulos da crate `new_harness`.
+O tratamento de erros usa `Result<(), String>` e o operador `?`, propagando falhas até `main`. Não há `panic!`, `unsafe`, concorrência ou persistência implementados diretamente neste arquivo.
 
-Os erros são propagados com `Result` e `?`, sem uso de `panic!`. A execução em modo não interativo termina com código `2` quando há erro, enquanto o modo interativo apenas informa o erro e continua.
-
-A mensagem de uso menciona que um caminho de workflow pode ser fornecido diretamente, mas a função `run` não possui um caso explícito para um único argumento que seja um caminho; esse comportamento depende apenas do código apresentado.
+A mensagem de uso documenta que um caminho de workflow pode ser passado diretamente (`new-harness <workflow.yml>`), mas o despacho não implementa esse formato na linha de comando; ele só é aceito diretamente no modo interativo.

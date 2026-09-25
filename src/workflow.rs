@@ -35,11 +35,11 @@ pub struct Step {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub operation: Option<crate::tools::edit::Operation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub line: Option<usize>,
+    pub line: Option<EditCoordinate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub start: Option<usize>,
+    pub start: Option<EditCoordinate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub end: Option<usize>,
+    pub end: Option<EditCoordinate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     #[serde(
@@ -55,6 +55,59 @@ pub struct Step {
     pub is_true: Vec<Step>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub is_false: Vec<Step>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum EditCoordinate {
+    Number(usize),
+    Template(String),
+}
+
+impl EditCoordinate {
+    fn render(
+        &self,
+        name: &str,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<usize, String> {
+        let rendered = match self {
+            Self::Number(value) => return positive_coordinate(name, *value),
+            Self::Template(template) => render_scoped(template, outputs, locals)?,
+        };
+        let value = rendered
+            .trim()
+            .parse::<usize>()
+            .map_err(|_| coordinate_error(name))?;
+        positive_coordinate(name, value)
+    }
+
+    fn render_for_validation(
+        &self,
+        name: &str,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+    ) -> Result<usize, String> {
+        if let Self::Template(template) = self
+            && template.contains("{{")
+        {
+            render_scoped(template, outputs, locals)?;
+            return Ok(if name == "end" { usize::MAX } else { 1 });
+        }
+        self.render(name, outputs, locals)
+    }
+}
+
+fn coordinate_error(name: &str) -> String {
+    format!("EDIT {name} must render to a positive integer")
+}
+
+fn positive_coordinate(name: &str, value: usize) -> Result<usize, String> {
+    if value == 0 {
+        Err(coordinate_error(name))
+    } else {
+        Ok(value)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -165,12 +218,32 @@ impl Step {
         outputs: &BTreeMap<String, String>,
         locals: Option<&BTreeMap<String, String>>,
     ) -> Result<crate::tools::edit::Request, String> {
+        self.edit_request_with(outputs, locals, false)
+    }
+
+    fn edit_request_with(
+        &self,
+        outputs: &BTreeMap<String, String>,
+        locals: Option<&BTreeMap<String, String>>,
+        validating: bool,
+    ) -> Result<crate::tools::edit::Request, String> {
+        let coordinate = |value: Option<&EditCoordinate>, name: &str| {
+            value
+                .map(|value| {
+                    if validating {
+                        value.render_for_validation(name, outputs, locals)
+                    } else {
+                        value.render(name, outputs, locals)
+                    }
+                })
+                .transpose()
+        };
         Ok(crate::tools::edit::Request {
             path: self.render_path(outputs, locals)?,
             operation: self.operation.ok_or("EDIT requires operation")?,
-            line: self.line,
-            start: self.start,
-            end: self.end,
+            line: coordinate(self.line.as_ref(), "line")?,
+            start: coordinate(self.start.as_ref(), "start")?,
+            end: coordinate(self.end.as_ref(), "end")?,
             version: self
                 .version
                 .as_deref()
@@ -295,8 +368,10 @@ fn validate_steps(
                 }
             }
             (None, Some(tool), None) if crate::tools::supports(tool) => {
-                if tool == "TREE" && step.input.text() != Some("") {
-                    return Err(format!("step {}: TREE does not accept input", index + 1));
+                if matches!(tool.as_str(), "TREE" | "GIT-STATUS-TREE")
+                    && step.input.text() != Some("")
+                {
+                    return Err(format!("step {}: {tool} does not accept input", index + 1));
                 }
                 if tool == "READ"
                     && step
@@ -321,7 +396,7 @@ fn validate_steps(
                     }
                 }
                 if is_edit {
-                    let mut request = step.edit_request(outputs, locals.as_deref())?;
+                    let mut request = step.edit_request_with(outputs, locals.as_deref(), true)?;
                     // References resolve to placeholder values during static validation.
                     request.path = step.path.clone().unwrap();
                     if step.version.as_ref().is_some_and(|v| v.contains("{{")) {
@@ -345,7 +420,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, READ, WRITE, EDIT, LOOP, IF), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, EDIT, LOOP, IF), or custom-tool",
                     index + 1
                 ));
             }
@@ -595,6 +670,39 @@ mod tests {
     }
 
     #[test]
+    fn edit_coordinates_render_output_and_loop_templates() {
+        let source = "version: 1\nsteps:\n- tool: LOOP\n  input: [file]\n  iter:\n  - custom-tool: find-line\n    input: ['{{ loop.item }}']\n    output: target\n  - tool: READ\n    input: '{{ loop.item }}'\n    version-output: revision\n  - tool: EDIT\n    path: '{{ loop.item }}'\n    operation: replace\n    start: '{{ loop.target }}'\n    end: '{{ loop.target }}'\n    version: '{{ loop.revision }}'\n    input: replacement\n";
+        let workflow: Workflow = serde_yaml::from_str(source).unwrap();
+        workflow.validate().unwrap();
+
+        let edit = &workflow.steps[0].iter[2];
+        let locals = BTreeMap::from([
+            ("item".into(), "file".into()),
+            ("target".into(), " 2\n".into()),
+            ("revision".into(), "0".repeat(64)),
+        ]);
+        let request = edit.edit_request(&BTreeMap::new(), Some(&locals)).unwrap();
+        assert_eq!((request.start, request.end), (Some(2), Some(2)));
+
+        for invalid in ["", "0", "two", "1 2", "-1"] {
+            let mut invalid_locals = locals.clone();
+            invalid_locals.insert("target".into(), invalid.into());
+            assert!(
+                edit.edit_request(&BTreeMap::new(), Some(&invalid_locals))
+                    .unwrap_err()
+                    .contains("positive integer"),
+                "{invalid:?}"
+            );
+        }
+        assert!(
+            serde_yaml::from_str::<Workflow>(&source.replace("loop.target", "loop.missing"))
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+    }
+
+    #[test]
     fn loop_scopes_validate_and_reject_invalid_arrays() {
         let workflow: Workflow = serde_yaml::from_str("version: 1\nsteps:\n- tool: LOOP\n  input: [a, b]\n  iter:\n  - tool: READ\n    input: '{{ loop.item }}'\n    output: '{{ loop.content }}'\n  - agent: planner\n    input: '{{ loop.content }}'\n").unwrap();
         workflow.validate().unwrap();
@@ -670,6 +778,7 @@ mod tests {
             "agent: planner\n  tool: TREE",
             "input: hello",
             "tool: TREE\n  input: unsupported",
+            "tool: GIT-STATUS-TREE\n  input: unsupported",
             "tool: READ",
             "tool: READ\n  input: ' '",
             "tool: WRITE\n  input: content",
@@ -683,6 +792,12 @@ mod tests {
                 serde_yaml::from_str(&format!("version: 1\nsteps:\n- {step}\n")).unwrap();
             assert!(workflow.validate().is_err(), "{step}");
         }
+        serde_yaml::from_str::<Workflow>(
+            "version: 1\nsteps:\n- tool: GIT-STATUS-TREE\n  output: changed\n",
+        )
+        .unwrap()
+        .validate()
+        .unwrap();
     }
     #[test]
     fn validates_write_steps_and_renders_their_paths() {

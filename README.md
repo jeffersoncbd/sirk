@@ -74,6 +74,7 @@ iteration. Templates do not expand inserted content again.
 | Tool | Purpose |
 | --- | --- |
 | TREE | List files as JSON, respecting Git ignores and `.treeignore`. |
+| GIT-STATUS-TREE | List existing changed and untracked files as JSON, filtered by `.treeignore`. |
 | READ | Read exact UTF-8 text; optional `version-output` supports EDIT. |
 | WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
 | EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
@@ -93,7 +94,7 @@ branch records. Never edit a running transcript.
 
 ## Documentation
 
-- [Workflow reference](docs/REFERENCE.md): full YAML examples, tool options,
+- [Workflow reference](REFERENCE.md): full YAML examples, tool options,
   agent generation, history editing, and limitations.
 - [Documentation index](docs/TREE.md): trusted map of source files and their
   module documentation; consult individual documents as needed.

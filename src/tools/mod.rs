@@ -1,13 +1,14 @@
 //! Shared tool dispatch for workflow steps and agent requests.
 pub mod custom;
 pub mod edit;
+pub mod git_status_tree;
 pub mod new_agent;
 pub mod read;
 pub mod tree;
 pub mod write;
 
 pub fn supports(name: &str) -> bool {
-    matches!(name, "TREE" | "READ" | "WRITE" | "EDIT")
+    matches!(name, "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "EDIT")
 }
 
 /// Only standalone tool requests are interpreted as control messages.
@@ -37,24 +38,28 @@ pub fn execute_with_input(
     match name {
         "TREE" => {
             let tree = tree::Tree::list(directory)?;
-            format_tree(&tree.files)
+            format_paths("TREE", &tree.files)
+        }
+        "GIT-STATUS-TREE" => {
+            let tree = git_status_tree::GitStatusTree::list(directory)?;
+            format_paths("GIT-STATUS-TREE", &tree.files)
         }
         "READ" => read::read(directory, input),
         _ => Err(format!("unknown tool `{name}`")),
     }
 }
 
-fn format_tree(files: &[std::path::PathBuf]) -> Result<String, String> {
+fn format_paths(tool: &str, files: &[std::path::PathBuf]) -> Result<String, String> {
     let paths: Vec<&str> = files
         .iter()
         .map(|path| {
             path.to_str()
-                .ok_or("TREE cannot represent a non-UTF-8 path in a JSON array")
+                .ok_or_else(|| format!("{tool} cannot represent a non-UTF-8 path in a JSON array"))
         })
         .collect::<Result<_, _>>()?;
     serde_json::to_string_pretty(&paths)
         .map(|json| format!("{json}\n"))
-        .map_err(|error| format!("TREE could not serialize paths: {error}"))
+        .map_err(|error| format!("{tool} could not serialize paths: {error}"))
 }
 
 #[cfg(test)]
@@ -70,10 +75,10 @@ mod tests {
             "ação.rs",
         ];
         let files: Vec<_> = paths.iter().map(std::path::PathBuf::from).collect();
-        let output = format_tree(&files).unwrap();
+        let output = format_paths("TREE", &files).unwrap();
         assert_eq!(serde_json::from_str::<Vec<String>>(&output).unwrap(), paths);
         assert_eq!(output.lines().count(), paths.len() + 2);
-        assert_eq!(format_tree(&[]).unwrap(), "[]\n");
+        assert_eq!(format_paths("TREE", &[]).unwrap(), "[]\n");
     }
     #[test]
     fn parses_only_standalone_requests() {

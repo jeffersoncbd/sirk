@@ -1,61 +1,61 @@
 ### Resumo
 
-Este arquivo implementa o mecanismo de edição de arquivos usado exclusivamente por workflows. Ele valida operações, verifica a versão atual do arquivo por SHA-256, prepara alterações persistentes, gera diffs e aplica mudanças de forma controlada e parcialmente atômica.
+Este arquivo implementa um mecanismo de edição de arquivos exclusivo para workflows. Ele valida operações, prepara alterações com base no conteúdo atual, verifica versões usando SHA-256, gera diffs unificados e grava o resultado de forma durável e relativamente segura contra alterações concorrentes.
 
 ### Funcionamento
 
-As edições podem inserir, excluir, substituir, acrescentar ou antepor texto. Operações baseadas em linhas exigem um digest SHA-256 obtido anteriormente por `READ`; isso evita editar uma versão desatualizada do arquivo.
-
 O fluxo principal é:
 
-1. Validar a requisição e seus parâmetros.
-2. Ler o arquivo-alvo e confirmar sua versão.
-3. Armazenar o conteúdo original em um registro `Pending`.
-4. Calcular o conteúdo resultante e gerar um diff unificado.
-5. Antes da gravação, verificar novamente se o arquivo não mudou.
-6. Escrever em um arquivo temporário e substituir o original, preservando permissões quando aplicável.
+1. Uma `Request` descreve o arquivo, a operação, as coordenadas, a versão esperada e o texto de entrada.
+2. `Request::validate` verifica se:
+   - o caminho foi informado;
+   - as coordenadas correspondem à operação;
+   - linhas começam em 1;
+   - deleções não possuem entrada;
+   - operações por linha possuem uma versão SHA-256 válida.
+3. `Request::apply_to` verifica conflito de versão e calcula os offsets de bytes para inserir, remover, substituir, acrescentar ou preceder conteúdo.
+4. `Pending::prepare` lê o arquivo, armazena seu conteúdo original e valida previamente a alteração.
+5. `Pending::diff` produz um diff unificado.
+6. `Pending::commit` revalida o estado do arquivo e grava o resultado:
+   - cria arquivos ausentes sem sobrescrever um arquivo criado concorrentemente;
+   - substitui arquivos existentes por meio de arquivo temporário e `rename`;
+   - preserva permissões do arquivo original;
+   - sincroniza o arquivo e o diretório com `sync_all`.
 
-`Append` e `Prepend` também podem criar um arquivo ausente. A criação usa `hard_link` para evitar substituir um arquivo criado concorrentemente. Caminhos são limitados ao diretório de execução e symlinks não são aceitos como arquivos-alvo.
-
-A exibição do diff pode usar cores quando a saída for um terminal e `NO_COLOR` não estiver definido. Caracteres de controle vindos do conteúdo são escapados para não executar sequências de terminal.
+O caminho do arquivo é resolvido dentro de um diretório-base. Arquivos simbólicos não são aceitos, e o caminho final precisa permanecer dentro desse diretório.
 
 ### Componentes principais
 
-- `Operation`: enumeração serializável das operações de edição: `insert`, `delete`, `replace`, `prepend` e `append`.
-
-- `Request`: descreve uma edição, incluindo caminho, operação, coordenadas de linhas, versão esperada e texto de entrada.
-  - `validate`: verifica coordenadas, versão e regras específicas de cada operação.
-  - `apply_to`: aplica a edição a uma string, preservando exatamente os bytes do conteúdo textual.
-
+- `Operation`: enum público com as operações `Insert`, `Delete`, `Replace`, `Prepend` e `Append`. É serializado em letras minúsculas.
+- `Request`: estrutura pública que representa uma solicitação de edição.
+  - `validate`: valida a forma da solicitação.
+  - `apply_to`: aplica a edição a um conteúdo em memória.
 - `version`: calcula o digest SHA-256 do conteúdo e o retorna como hexadecimal.
-
-- `Pending`: representa uma edição preparada, contendo a requisição, o conteúdo anterior e a informação sobre eventual ausência do arquivo.
-  - `validate`: valida o registro persistido.
-  - `prepare`: lê o arquivo e salva o estado original antes da mutação.
-  - `diff`: produz um diff unificado usando `similar::TextDiff`.
-  - `commit`: confirma a edição, verifica conflitos e grava o resultado.
-
-- `sync_parent`: sincroniza o diretório pai no sistema de arquivos após a alteração.
-
-- `read_optional`: lê um arquivo UTF-8 ou informa que ele não existe.
-
-- `target`: resolve e valida o caminho do arquivo dentro do diretório permitido.
-
-- `display` e `render`: exibem ou formatam o diff, opcionalmente com cores e escape de caracteres de controle.
-
-- Módulo de testes: cobre edições por linha, operações no início e fim do arquivo, conflitos de versão, diffs e renderização colorida.
+- `Pending`: representa uma edição preparada, contendo a solicitação, o conteúdo anterior e a indicação de que o arquivo não existia.
+  - `validate`: verifica a consistência do registro preparado.
+  - `prepare`: captura o conteúdo atual e prepara a edição.
+  - `diff`: gera o diff da alteração.
+  - `commit`: confirma a alteração no filesystem.
+- `sync_parent`: sincroniza o diretório que contém o arquivo.
+- `read_optional`: lê um arquivo UTF-8, diferenciando arquivo ausente de erro de leitura.
+- `target`: valida e resolve o caminho do arquivo dentro do diretório de execução.
+- `display`: imprime um diff com cores quando a saída é um terminal e `NO_COLOR` não está definido.
+- `render`: aplica destaque visual a linhas adicionadas e removidas e escapa caracteres de controle.
+- Módulo de testes: cobre edições por linha, preservação de bytes, fim de arquivo, conflitos de versão e renderização de diffs.
 
 ### Dependências e integrações
 
-- `serde`: serialização e desserialização de `Operation`, `Request` e `Pending`, incluindo rejeição de campos desconhecidos.
-- `sha2`: cálculo do SHA-256 usado no controle de versão.
+- `serde`: serialização e desserialização de `Operation`, `Request` e `Pending`.
+- `sha2`: cálculo do SHA-256 usado no controle otimista de versão.
 - `similar`: geração de diffs unificados.
-- `std::fs` e `std::io`: leitura, escrita, sincronização, permissões e manipulação de arquivos.
-- `AtomicU64`: criação de nomes exclusivos para arquivos temporários.
-- O arquivo integra-se ao sistema de histórico/workflow por meio dos registros `Pending` e dos blocos `INPUT`, embora a implementação desse histórico esteja em outro módulo.
+- `std::fs` e `std::io`: leitura, escrita, arquivos temporários, sincronização e detecção de terminal.
+- `std::sync::atomic`: geração de nomes únicos para arquivos temporários.
+- Interage com o filesystem por meio do diretório-base recebido em `prepare` e `commit`.
 
 ### Observações
 
-O tratamento de erros usa `Result<(), String>` ou `Result<T, String>`, com validações explícitas e propagação pelo operador `?`. Não há uso de `unsafe`, `async` ou threads.
-
-A explicação do fluxo completo depende dos módulos que criam, persistem e retomam os registros `Pending`; esse contexto não está presente no arquivo analisado.
+- O arquivo trabalha apenas com texto UTF-8, mas preserva exatamente os bytes do conteúdo lido, incluindo finais de linha `\r\n` e ausência de newline no fim.
+- Operações `Append` e `Prepend` podem criar um arquivo ausente; operações baseadas em linhas exigem que ele exista.
+- O tratamento de erros usa `Result<_, String>` e o operador `?`; não há `panic!` nem código `unsafe` no arquivo.
+- A validação de versão evita aplicar alterações sobre conteúdo diferente daquele lido durante a preparação.
+- O comportamento completo depende do protocolo externo que fornece as versões, armazena `Pending` e decide quando chamar `prepare`, `diff` e `commit`.

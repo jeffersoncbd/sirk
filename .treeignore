@@ -6,6 +6,8 @@
 /AGENTS.md
 /build.sh
 /README.md
+/CONTRACTS.md
+/REFERENCE.md
 /*.yml
 
 .gitignore

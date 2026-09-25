@@ -1,0 +1,51 @@
+version: 1
+
+steps:
+  - tool: GIT-STATUS-TREE
+    output: changed_files
+  
+  - tool: LOOP
+    input: "{{ outputs.changed_files }}"
+    iter:
+
+      - tool: READ
+        input: "{{ loop.item }}"
+        output: content
+
+      - agent: code-explainer
+        input: "{{ loop.content }}"
+        output: explain
+
+      - custom-tool: doc-name
+        input:
+          - "{{ loop.item }}"
+        output: doc_name
+
+      - tool: WRITE
+        path: "{{ loop.doc_name }}"
+        input: "{{ loop.explain }}"
+        force: true
+
+      - agent: explain-resume
+        input: "{{ loop.explain }}"
+        output: explain_resume
+
+      - tool: READ
+        input: docs/TREE.md
+        output: tree_content
+        version-output: tree_version
+
+      - custom-tool: find-line-by-prefix
+        input:
+          - "{{ loop.tree_content }}"
+          - "{{ loop.item }} - "
+        output: tree_line
+
+      - tool: EDIT
+        path: docs/TREE.md
+        operation: replace
+        start: "{{ loop.tree_line }}"
+        end: "{{ loop.tree_line }}"
+        version: "{{ loop.tree_version }}"
+        input: |
+          {{ loop.item }} - {{ loop.explain_resume }}

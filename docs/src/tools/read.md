@@ -1,41 +1,46 @@
 ### Resumo
 
-Este arquivo implementa a ferramenta `READ`, responsável por ler e retornar o conteúdo UTF-8 de um arquivo regular localizado dentro de um diretório de execução.
+Este arquivo implementa a operação `READ`, responsável por ler e retornar o conteúdo UTF-8 de um arquivo localizado dentro de um diretório de execução específico.
 
 ### Funcionamento
 
 A função pública `read` recebe:
 
-- `directory`: diretório raiz permitido.
-- `path`: caminho relativo do arquivo a ser lido.
+- `directory`: diretório-raiz permitido, como `&Path`;
+- `path`: caminho relativo do arquivo, como `&str`.
 
 O fluxo é:
 
-1. Rejeita caminhos vazios.
-2. Resolve o diretório raiz com `canonicalize`.
-3. Resolve o caminho do arquivo e normaliza componentes como `..` e links simbólicos.
-4. Verifica se o arquivo permanece dentro do diretório raiz.
-5. Confirma que o caminho aponta para um arquivo regular.
-6. Lê o conteúdo usando `fs::read_to_string`, exigindo UTF-8 válido.
+1. Rejeita caminhos vazios ou compostos apenas por espaços.
+2. Resolve o diretório-raiz usando `canonicalize`.
+3. Junta o caminho informado à raiz e também o normaliza.
+4. Verifica se o caminho final continua dentro do diretório-raiz.
+5. Confirma que o destino é um arquivo regular.
+6. Lê o conteúdo com `fs::read_to_string`, exigindo texto UTF-8.
+7. Retorna `Ok(String)` em caso de sucesso ou `Err(String)` com uma mensagem descritiva.
 
-Qualquer falha é convertida em `Err(String)` com uma mensagem contextualizada.
+A verificação com `starts_with(&root)` impede que o caminho escape do diretório de execução por meio de `..` ou links simbólicos resolvidos pelo `canonicalize`.
 
 ### Componentes principais
 
-- `read(directory: &Path, path: &str) -> Result<String, String>`: função pública que valida o caminho e retorna o conteúdo do arquivo ou uma mensagem de erro.
-- `std::fs`: utilizado para ler o arquivo como texto UTF-8.
-- `std::path::Path`: utilizado para representar e manipular caminhos do sistema de arquivos.
+- `read(directory: &Path, path: &str) -> Result<String, String>`: função pública que valida, localiza e lê o arquivo.
+- `std::fs`: usado para ler o conteúdo do arquivo.
+- `std::path::Path`: usado para representar e manipular caminhos do sistema de arquivos.
+
+Não há structs, enums, traits, constantes ou módulos próprios definidos neste arquivo.
 
 ### Dependências e integrações
 
-A implementação depende apenas da biblioteca padrão do Rust, especificamente de `std::fs` e `std::path::Path`.
+O arquivo depende apenas da biblioteca padrão do Rust:
 
-A função provavelmente é usada por uma camada de ferramentas do projeto que fornece acesso controlado a arquivos para outras partes da aplicação, mas esse contexto não aparece no trecho fornecido.
+- `std::fs` para leitura;
+- `std::path::Path` para manipulação de caminhos.
+
+Ele provavelmente é chamado por uma camada responsável por interpretar o comando `READ`, mas essa integração não aparece no conteúdo fornecido.
 
 ### Observações
 
-- O uso de `canonicalize` impede que caminhos com travessia de diretórios ou links simbólicos escapem do diretório de execução.
-- O arquivo precisa existir e ser um arquivo regular; diretórios e outros tipos de entrada são rejeitados.
-- O conteúdo vazio é válido e será retornado como `Ok(String::new())`.
-- Não há `unsafe`, concorrência ou persistência adicional.
-
+- O tratamento de erros usa `Result<String, String>` e o operador `?` para interromper o fluxo quando uma etapa falha.
+- Erros são convertidos em mensagens textuais contextualizadas com `map_err`.
+- A leitura é síncrona e não envolve concorrência, persistência adicional ou comunicação externa.
+- O arquivo aceita somente conteúdo válido em UTF-8; arquivos binários ou com codificação inválida resultam em erro.

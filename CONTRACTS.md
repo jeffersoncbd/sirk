@@ -44,8 +44,9 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
   writes have an empty successful result and must not run again on resume.
 - EDIT is YAML-only and edits existing regular UTF-8 files. Operations are insert,
   delete, replace, prepend and append. Line coordinates are 1-based, ranges are
-  inclusive, and inserted text is exact. Coordinate operations require a SHA-256
-  version from READ's optional version-output; append/prepend may omit it.
+  inclusive, and inserted text is exact. Coordinates accept numeric YAML values or
+  templates that render to positive integers. Coordinate operations require a
+  SHA-256 version from READ's optional version-output; append/prepend may omit it.
 - Append/prepend create absent targets in existing parent directories. Persist
   absence separately from empty content, publish creation without overwriting a
   concurrently created file, and never recreate a deleted prepared-update target.

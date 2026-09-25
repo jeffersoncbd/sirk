@@ -1,39 +1,31 @@
 ### Resumo
 
-Este arquivo funciona como ponto de entrada da crate, declarando e expondo publicamente os principais módulos do projeto Rust. Ele organiza a estrutura interna da aplicação e permite que outros módulos ou crates acessem esses componentes.
+Este arquivo funciona como o ponto de entrada da crate Rust para organizar e expor os principais módulos do projeto. Ele declara nove módulos públicos, permitindo que sejam acessados por outras partes da crate ou por crates externas.
 
 ### Funcionamento
 
-Cada declaração `pub mod` informa ao compilador que existe um módulo correspondente e o torna público:
+Cada instrução `pub mod` associa um módulo ao arquivo ou diretório correspondente, normalmente seguindo a convenção de nomes do Rust. A declaração `pub` torna o módulo público.
 
-- `adapters`
-- `agents`
-- `harness`
-- `history`
-- `input`
-- `runner`
-- `services`
-- `tools`
-- `workflow`
-
-O arquivo não contém lógica de execução, funções, structs ou tratamento de erros. Sua responsabilidade é apenas registrar a composição modular da crate.
+O arquivo não implementa lógica de negócio diretamente; sua responsabilidade é estrutural, compondo a API modular da crate.
 
 ### Componentes principais
 
-- `pub mod adapters;` — expõe os adaptadores de integração.
-- `pub mod agents;` — expõe funcionalidades relacionadas aos agentes.
-- `pub mod harness;` — expõe contratos ou abstrações do harness.
-- `pub mod history;` — expõe gerenciamento de histórico.
-- `pub mod input;` — expõe interfaces de entrada de dados.
-- `pub mod runner;` — expõe a execução de workflows ou tarefas.
-- `pub mod services;` — expõe serviços auxiliares da aplicação.
-- `pub mod tools;` — expõe ferramentas usadas pelo sistema.
-- `pub mod workflow;` — expõe estruturas e regras de workflows.
+- `adapters`: adaptadores para integração com diferentes componentes ou implementações.
+- `agents`: definição e gerenciamento de agentes.
+- `harness`: funcionalidades relacionadas ao harness de execução.
+- `history`: gerenciamento de histórico ou transcrições.
+- `input`: tratamento de entradas do usuário ou do sistema.
+- `runner`: execução dos fluxos ou tarefas principais.
+- `services`: serviços auxiliares e integrações externas.
+- `tools`: ferramentas disponibilizadas aos agentes ou ao fluxo de execução.
+- `workflow`: definição e processamento de workflows.
 
 ### Dependências e integrações
 
-O arquivo integra os módulos internos da própria crate. Os detalhes das responsabilidades e dependências externas não estão presentes no conteúdo fornecido e dependem dos arquivos correspondentes.
+O arquivo depende implicitamente da estrutura de módulos da própria crate. Para que essas declarações funcionem, devem existir arquivos como `adapters.rs` ou diretórios como `adapters/mod.rs`, e o mesmo se aplica aos demais módulos.
+
+Não há dependências externas, imports, funções ou tipos definidos diretamente neste conteúdo.
 
 ### Observações
 
-As declarações usam `pub`, portanto os módulos ficam acessíveis externamente à crate. O arquivo provavelmente corresponde a um módulo raiz, como `lib.rs` ou `main.rs`, mas o caminho não foi informado.
+O comportamento interno de cada módulo não pode ser determinado apenas por este arquivo. Ele atua essencialmente como um índice público e ponto de organização da crate.

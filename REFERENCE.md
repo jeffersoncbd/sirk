@@ -271,9 +271,11 @@ The specified lines include their line terminators when deleted or replaced.
 
 `input` is inserted exactly, without automatic separators or newline conversion.
 For example, appending `next\n` to a file containing `last` produces
-`lastnext\n`. YAML `|` includes a final newline; `|-` omits it. `path`, `input`
-and `version` support templates, including `loop.*` inside loops. Inserted values
-are not recursively expanded. Coordinates are literal positive integers.
+`lastnext\n`. YAML `|` includes a final newline; `|-` omits it. `path`, `input`,
+`version`, `line`, `start`, and `end` support templates, including `loop.*`
+inside loops. Inserted values are not recursively expanded. Rendered coordinates
+may contain surrounding whitespace but must otherwise be positive integers.
+Numeric YAML coordinates remain supported.
 
 Line-based operations require `version`, a SHA-256 hex digest from a previous
 READ of the file. If the current content differs, EDIT fails without changing

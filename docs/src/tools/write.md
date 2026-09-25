@@ -1,48 +1,60 @@
 ### Resumo
 
-Este arquivo implementa o comando interno `WRITE`, responsável por criar ou substituir arquivos UTF-8 dentro de um diretório de execução específico. Ele valida o caminho, impede operações fora do diretório permitido e controla explicitamente a sobrescrita por meio do parâmetro `force`.
+Este arquivo implementa a operação `WRITE`: cria um arquivo UTF-8 dentro de um diretório de execução, podendo criar diretórios-pai e, opcionalmente, substituir arquivos existentes.
+
+Também valida caminhos para impedir gravações fora do diretório permitido, rejeita diretórios e links simbólicos como destino e inclui testes unitários para esses comportamentos.
 
 ### Funcionamento
 
-A função pública `write`:
+A função pública `write` é uma forma simplificada de chamar `write_with_options` sem o modo `skip`.
 
-1. Rejeita caminhos vazios.
-2. Resolve o diretório-raiz com `canonicalize`.
-3. Converte o caminho informado em um caminho absoluto dentro da raiz.
-4. Verifica se o destino permanece dentro do diretório de execução.
-5. Cria os diretórios-pai ausentes.
-6. Recusa destinos que não sejam arquivos regulares.
-7. Recusa sobrescrever arquivos existentes quando `force` é `false`.
-8. Usa `create_new` para criação exclusiva ou `truncate` para substituição forçada.
-9. Escreve o conteúdo como bytes UTF-8 e chama `sync_all` para sincronizar o arquivo.
+`write_with_options`:
 
-A função retorna `Ok(())` em caso de sucesso ou `Err(String)` com uma mensagem específica em caso de falha.
+1. Valida combinações inválidas de opções e garante que o caminho não esteja vazio.
+2. Resolve o diretório raiz com `canonicalize`.
+3. Converte o caminho recebido em um caminho absoluto dentro dessa raiz.
+4. Verifica se todos os componentes do caminho permanecem dentro do diretório de execução.
+5. Cria os diretórios-pai ausentes usando `ensure_directory`.
+6. Analisa o destino existente:
+   - rejeita diretórios e outros tipos que não sejam arquivos regulares;
+   - rejeita links simbólicos;
+   - recusa sobrescrever arquivos, a menos que `force` seja `true`;
+   - retorna sucesso sem alterar o arquivo quando `skip` é `true`.
+7. Abre o arquivo com `OpenOptions`:
+   - `create_new(true)` para criação exclusiva;
+   - `create(true).truncate(true)` quando `force` está habilitado.
+8. Escreve o conteúdo e chama `sync_all` para sincronizar os dados com o armazenamento.
+
+O tratamento de erros usa `Result<(), String>`, convertendo erros de filesystem em mensagens textuais específicas.
 
 ### Componentes principais
 
-- `write(...) -> Result<(), String>`: API pública do módulo para criação ou substituição de arquivos.
-- `ensure_directory(...)`: função privada que cria recursivamente, um nível por vez, os diretórios-pai necessários.
-- `Component::Normal`: usado para rejeitar componentes de caminho que não sejam nomes normais, como navegação relativa ou componentes especiais.
-- `OpenOptions`: configura o arquivo para criação exclusiva ou substituição forçada.
-- Módulo `tests`: contém testes para:
-  - criação de arquivos em diretórios aninhados;
-  - recusa de sobrescrita sem `force`;
-  - substituição com `force: true`;
-  - rejeição de caminhos externos e destinos que não sejam arquivos.
+- `write(directory, path, content, force)`: API pública principal para criar ou substituir um arquivo.
+- `write_with_options(directory, path, content, force, skip)`: implementação completa, incluindo os modos de sobrescrita e ignorar escrita.
+- `ensure_directory(directory, path)`: garante que um diretório-pai exista. Cria apenas um nível por chamada e lida com possíveis condições de corrida durante a criação.
+- `Component`, `Path`: usados para validar e montar caminhos com segurança.
+- `OpenOptions`: configura a criação exclusiva ou a substituição do arquivo.
+- `#[cfg(test)] mod tests`: testes unitários que cobrem:
+  - criação de arquivos e diretórios aninhados;
+  - preservação de arquivos no modo `skip`;
+  - substituição com `force`;
+  - rejeição de caminhos externos;
+  - rejeição de diretórios e links simbólicos.
 
 ### Dependências e integrações
 
 O arquivo usa apenas a biblioteca padrão do Rust:
 
-- `std::fs`: operações de arquivos, diretórios e metadados;
-- `std::io::Write`: escrita e sincronização do conteúdo;
-- `std::path`: manipulação e validação de caminhos.
+- `std::fs` para metadados, criação de diretórios e leitura/escrita de arquivos;
+- `std::io::Write` para escrever e sincronizar o conteúdo;
+- `std::path` para manipulação e validação de caminhos.
 
-A função recebe o diretório de execução como `&Path`, portanto depende do chamador para fornecer corretamente essa raiz. O comportamento está alinhado a uma ferramenta `WRITE` controlada pelo workflow, conforme indicado pelo comentário inicial.
+Ele depende de um diretório de execução fornecido pelo chamador e não interage diretamente com outros módulos ou serviços externos no conteúdo apresentado.
 
 ### Observações
 
-- O módulo não usa `unsafe`, concorrência ou comunicação externa.
-- O tratamento de erros é baseado em `Result<(), String>`, com mensagens próprias para cada tipo de falha.
-- Arquivos existentes só podem ser substituídos quando `force` é `true`.
-- Os testes usam diretórios temporários e removem esses diretórios ao final de cada caso.
+- O conteúdo é recebido como `&str` e convertido para bytes UTF-8 com `as_bytes()`.
+- Não há uso de `unsafe`, concorrência explícita ou comunicação de rede.
+- O arquivo evita substituir links simbólicos e impede que o destino escape da raiz definida.
+- `force` e `skip` são mutuamente exclusivos.
+- O contexto externo — especialmente quem chama essas funções e como interpreta as mensagens de erro — não está presente no trecho fornecido.
