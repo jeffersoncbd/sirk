@@ -1,7 +1,8 @@
 Cargo.toml - Configura o pacote Rust, sua biblioteca, executável e dependências para serialização, hashing e comparação de textos.
 src/adapters/codex.rs - Adapta requisições genéricas para executar o CLI Codex com opções seguras e somente leitura.
 src/agents.rs - Define, valida e carrega agentes a partir de arquivos Markdown com metadados YAML e instruções.
-src/harness.rs - Define contratos comuns para executar harnesses de coding agents e representar erros de configuração.
+src/harness.rs - Define contratos comuns para adaptar e preparar execuções de diferentes harnesses de coding agents.
+
 src/history.rs - Gerencia a criação, leitura, gravação e bloqueio de históricos persistentes de execução no formato v2.
 src/input.rs - Define a interface de entrada do usuário e lê respostas do terminal, validando cancelamentos e entradas vazias.
 src/lib.rs - Organiza e expõe publicamente os principais módulos da crate Rust, sem implementar lógica de negócio.
@@ -17,3 +18,5 @@ src/tools/tree.rs - Lista arquivos rastreados e não ignorados da árvore Git, a
 src/tools/write.rs - Implementa a operação WRITE, criando arquivos UTF-8 com validação segura de caminhos e opções de sobrescrita.
 src/workflow.rs - Modela, valida e renderiza workflows YAML declarativos, incluindo etapas, escopos, outputs e edições.
 src/adapters/opencode.rs - Adapta requisições genéricas do harness para invocações seguras da CLI `opencode run`.
+src/adapters/ollama.rs - Adapta requisições genéricas para invocações seguras da CLI Ollama, validando modelo e opções suportadas.
+
