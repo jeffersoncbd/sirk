@@ -1,8 +1,8 @@
 # new-harness
 
 Run coding-agent workflows defined in YAML, with agent instructions in Markdown
-and an editable history for resumption. Supports the Codex and OpenCode CLIs;
-Claude Code is not implemented.
+and an editable history for resumption. Supports the Codex, OpenCode, Ollama,
+Ollama Web, and OpenRouter adapters; Claude Code is not implemented.
 
 ## Setup
 
@@ -21,8 +21,11 @@ cp target/debug/new-harness ./new-harness
 ```
 
 Repeat the copy after rebuilding. The host must support the binary's architecture
-and system libraries. Install and authenticate the selected Codex or OpenCode
-CLI where you run the binary.
+and system libraries. Install and authenticate the selected CLI where you run
+the binary. The `openrouter` adapter uses `curl`, an `OPENROUTER_API_KEY`, and
+an explicit model slug such as `~openai/gpt-sol-latest`; configure the key in the
+execution directory's `.env` file or environment. `OPENROUTER_URL` may override
+its API endpoint.
 Bash is required; TREE also requires Git and a working tree.
 
 Enable the repository's documentation pre-commit hook once per clone:
@@ -87,7 +90,7 @@ iteration. Templates do not expand inserted content again.
 | --- | --- |
 | TREE | List files as JSON, respecting Git ignores and `.treeignore`. |
 | GIT-STATUS-TREE | List existing changed and untracked files as JSON, filtered by `.treeignore`. |
-| READ | Read exact UTF-8 text; optional `version-output` supports EDIT. |
+| READ | Read exact UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; optional `version-output` supports EDIT. |
 | WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
 | EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
 | CUSTOM-TOOL | Run `tools/<name>.sh` with a string array of arguments via `custom-tool: name`. |
@@ -97,6 +100,12 @@ iteration. Templates do not expand inserted content again.
 Agents run read-only and can request `TREE`, `READ: <path>`, or `ASK: <question>`.
 Other tools are workflow-only. File tools operate inside the execution directory.
 Agent definitions and history also resolve there, regardless of the YAML's path.
+
+Use `.readignore` to prevent READ from exposing sensitive files. It accepts one
+relative pattern per line; blank lines and `#` comments are ignored. A pattern
+such as `.env` blocks that filename at any depth, while `secrets/` blocks a
+directory and `*.pem` blocks matching filenames. A blocked request returns
+`AccessDenied`.
 
 Each run saves `history/run-<id>.log`. Resume uses its saved directory and
 configuration, reuses completed results, and retries pending work. To regenerate

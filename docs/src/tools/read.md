@@ -1,46 +1,36 @@
 ### Resumo
 
-Este arquivo implementa a operação `READ`, responsável por ler e retornar o conteúdo UTF-8 de um arquivo localizado dentro de um diretório de execução específico.
+O arquivo implementa a operação `READ`, responsável por ler o conteúdo UTF-8 de um arquivo localizado dentro de um diretório de execução, bloqueando caminhos externos e arquivos definidos em `.readignore`.
 
 ### Funcionamento
 
-A função pública `read` recebe:
+A função pública `read`:
 
-- `directory`: diretório-raiz permitido, como `&Path`;
-- `path`: caminho relativo do arquivo, como `&str`.
+1. Rejeita caminhos vazios.
+2. Resolve canonicamente o diretório raiz e o caminho informado.
+3. Garante que o arquivo esteja dentro do diretório de execução, impedindo travessias como `../`.
+4. Verifica se o caminho corresponde a um arquivo regular.
+5. Consulta `.readignore`, quando existente, e retorna `AccessDenied` para arquivos correspondentes às regras.
+6. Lê o arquivo com `fs::read_to_string`, retornando erro caso o conteúdo não seja UTF-8 ou não possa ser acessado.
 
-O fluxo é:
+O `.readignore` aceita comentários iniciados por `#`, padrões para nomes de componentes, curingas `*` e `?`, além de `**` para múltiplos componentes de caminho. Padrões terminados em `/` representam diretórios.
 
-1. Rejeita caminhos vazios ou compostos apenas por espaços.
-2. Resolve o diretório-raiz usando `canonicalize`.
-3. Junta o caminho informado à raiz e também o normaliza.
-4. Verifica se o caminho final continua dentro do diretório-raiz.
-5. Confirma que o destino é um arquivo regular.
-6. Lê o conteúdo com `fs::read_to_string`, exigindo texto UTF-8.
-7. Retorna `Ok(String)` em caso de sucesso ou `Err(String)` com uma mensagem descritiva.
-
-A verificação com `starts_with(&root)` impede que o caminho escape do diretório de execução por meio de `..` ou links simbólicos resolvidos pelo `canonicalize`.
+Os erros são propagados com `Result<String, String>` e o operador `?`. Há também um `expect` interno para uma condição que já foi validada: o caminho deve estar dentro da raiz.
 
 ### Componentes principais
 
-- `read(directory: &Path, path: &str) -> Result<String, String>`: função pública que valida, localiza e lê o arquivo.
-- `std::fs`: usado para ler o conteúdo do arquivo.
-- `std::path::Path`: usado para representar e manipular caminhos do sistema de arquivos.
+- `read`: API pública que valida, autoriza e lê o arquivo.
+- `read_ignored`: carrega `.readignore` e verifica se o arquivo está bloqueado.
+- `matches_ignore`: interpreta o padrão e decide como compará-lo com o caminho relativo.
+- `matches_components`: compara componentes de diretórios, incluindo o curinga `**`.
+- `matches_component`: compara partes individuais usando `*` e `?`.
+- Módulo `tests`: contém testes para arquivos ignorados por nome, extensões, diretórios e comentários.
+- `std::fs`, `std::io` e `std::path::Path`: fornecem operações de sistema de arquivos, identificação de erros e manipulação de caminhos.
 
-Não há structs, enums, traits, constantes ou módulos próprios definidos neste arquivo.
+### integrações
 
-### Dependências e integrações
+O arquivo expõe publicamente apenas:
 
-O arquivo depende apenas da biblioteca padrão do Rust:
+- `read(directory: &Path, path: &str) -> Result<String, String>`
 
-- `std::fs` para leitura;
-- `std::path::Path` para manipulação de caminhos.
-
-Ele provavelmente é chamado por uma camada responsável por interpretar o comando `READ`, mas essa integração não aparece no conteúdo fornecido.
-
-### Observações
-
-- O tratamento de erros usa `Result<String, String>` e o operador `?` para interromper o fluxo quando uma etapa falha.
-- Erros são convertidos em mensagens textuais contextualizadas com `map_err`.
-- A leitura é síncrona e não envolve concorrência, persistência adicional ou comunicação externa.
-- O arquivo aceita somente conteúdo válido em UTF-8; arquivos binários ou com codificação inválida resultam em erro.
+As funções de interpretação do `.readignore` são privadas e usadas apenas internamente pelo módulo.

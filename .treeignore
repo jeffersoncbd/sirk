@@ -13,5 +13,6 @@
 
 .gitignore
 .treeignore
+.readignore
 Cargo.lock
 mod.rs

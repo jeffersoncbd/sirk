@@ -24,7 +24,8 @@ src/tools/git_status_tree.rs - Descobre e filtra arquivos alterados no Git, apli
 
 src/tools/new_agent.rs - Cria interativamente arquivos de definição de agentes, validando seu conteúdo antes de salvá-los.
 
-src/tools/read.rs - Valida caminhos dentro da raiz permitida e lê arquivos UTF-8, retornando conteúdo ou erros descritivos.
+src/tools/read.rs - Lê arquivos UTF-8 dentro do diretório permitido, aplicando validações de segurança e regras do `.readignore`.
+
 src/tools/tree.rs - Enumera arquivos rastreados e não ignorados de uma árvore Git, aplicando filtros e retornando caminhos únicos.
 
 src/tools/write.rs - Implementa a operação WRITE, criando arquivos UTF-8 com validação segura de caminhos e opções de sobrescrita.
@@ -34,7 +35,8 @@ src/adapters/opencode.rs - Adapta requisições do harness para comandos seguros
 src/adapters/ollama.rs - Adapta requisições genéricas do harness para invocações válidas do comando Ollama.
 
 
-.env.example - Modelo de configuração das variáveis de ambiente para integração com a API web do Ollama.
+.env.example - Documenta variáveis de ambiente para configurar integrações com os serviços Ollama e OpenRouter.
+
 
 
 
@@ -44,4 +46,6 @@ src/adapters/ollama.rs - Adapta requisições genéricas do harness para invoca�
 
 
 src/adapters/ollama_web.rs - Adapta solicitações do harness para chamadas HTTP ao Ollama via curl e extrai o texto gerado.
+
+src/adapters/openrouter.rs - Implementa o adaptador OpenRouter, criando requisições curl e interpretando respostas JSON da API.
 
