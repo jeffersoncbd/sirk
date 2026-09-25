@@ -26,9 +26,8 @@ Erros são representados como `Result<_, String>` e propagados com `?`, com vali
 - `run`, `resume`, `run_with` e `run_interactive_with`: iniciam execuções interativas, sem entrada, novas ou retomadas a partir de histórico.
 - `validate_snapshot`: verifica o workflow, o diretório, agentes, adaptadores, permissões de edição e configurações de perguntas.
 - `all_steps`: percorre recursivamente passos comuns, loops e os dois ramos de condições para localizar agentes.
-- `validate_blocks`, `validate_edit_blocks`, `validate_step_blocks` e `validate_agent_blocks`: conferem se os blocos persistidos correspondem ao tipo e à posição esperados no workflow.
 - `external_edit_request`, `prepare_external_edit` e `completed_external_edit`: interpretam pedidos externos `EDIT:`, preparam alterações e detectam pedidos já aplicados.
-- `continue_with`: valida o histórico e cria o `Engine` para continuar a execução.
+- `continue_with`: valida o histórico e cria o `Engine` para continuar a execução.- `external_edit_request`, `prepare_external_edit` e `completed_external_edit`: interpretam pedidos externos `EDIT:`, preparam alterações e detectam pedidos já aplicados.- `continue_with`: valida o histórico e cria o `Engine` para continuar a execução.
 - `Engine::run_steps`: controla a sequência, IDs hierárquicos, loops, condições, escopos locais e propagação de outputs.
 - `Engine::run_step`: executa edições, confirmações, ferramentas e conversas com agentes, salvando cada transição no histórico.
 - `question`: reconhece respostas de agentes no formato `ASK:`.

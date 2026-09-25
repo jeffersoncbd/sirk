@@ -1,29 +1,26 @@
 ### Resumo
 
-Este arquivo define a fronteira de interação com o usuário pelo terminal. Ele oferece uma trait abstrata para perguntas e confirmações, além de uma implementação concreta que lê respostas da entrada padrão.
+Este arquivo define a fronteira síncrona de interação com o usuário pelo terminal. Ele abstrai perguntas e confirmações por meio da trait `UserInput` e fornece a implementação concreta `TerminalInput`.
 
 ### Funcionamento
 
-`TerminalInput::ask`:
+`UserInput::ask` é a operação obrigatória para obter uma resposta textual. A trait também fornece `await_confirmation` com implementação padrão que chama `ask` e descarta a resposta.
 
-1. Exibe a pergunta recebida.
-2. Mostra o prompt `> ` e força sua exibição com `stdout().flush()`.
-3. Lê uma linha da entrada padrão.
-4. Remove `\r` e `\n` do final da resposta.
-5. Retorna erro se a entrada for fechada ou se o usuário digitar `/cancel`.
-6. Ignora respostas vazias ou compostas apenas por espaços, solicitando uma nova resposta.
-7. Retorna a resposta não vazia como `String`, preservando os espaços nas extremidades.
+`TerminalInput::ask` imprime a pergunta, exibe o prompt `> `, força sua saída com `stdout().flush()` e lê uma linha da entrada padrão. Os caracteres `\r` e `\n` finais são removidos, mas os demais espaços são preservados. Respostas vazias ou compostas apenas por espaços são rejeitadas e solicitadas novamente. A entrada fechada, erros de leitura ou escrita e a resposta `/cancel` resultam em `Err(String)`.
 
-`TerminalInput::await_confirmation` abre `/dev/tty` para garantir interação com um terminal mesmo quando a entrada padrão está fechada, como em hooks do Git. Exibe o prompt, força sua saída com `flush()`, lê uma linha e retorna `Ok(())` para qualquer resposta, inclusive vazia. A resposta `/cancel` produz erro; falhas ao abrir, clonar ou ler o terminal também são convertidas para `String`.
-- `UserInput`: trait pública que define `ask` e fornece `await_confirmation` com implementação padrão baseada em `ask`.
-- `TerminalInput`: struct pública, sem campos, usada para interação direta com o terminal.
-- `TerminalInput::ask`: implementação da leitura e validação de respostas textuais.
-- `TerminalInput::await_confirmation`: implementação específica para aguardar uma confirmação sem validar o conteúdo da resposta.
+`TerminalInput::await_confirmation` abre `/dev/tty` para permitir interação mesmo quando a entrada padrão está fechada, como pode ocorrer em hooks do Git. Ele clona o descritor para leitura, escreve o prompt no terminal, força a saída e lê uma linha. Qualquer resposta diferente de `/cancel`, inclusive vazia, confirma a operação; falhas ao abrir, clonar, escrever ou ler o terminal resultam em erro.
+
+### Componentes principais
+
+- `UserInput`: trait pública que define `ask` e a implementação padrão de `await_confirmation`.
+- `TerminalInput`: struct pública sem campos, usada para interação direta com o terminal.
+- `TerminalInput::ask`: implementa perguntas interativas com validação de resposta não vazia.
+- `TerminalInput::await_confirmation`: implementa confirmações usando diretamente `/dev/tty`, sem exigir conteúdo não vazio.
 
 ### integrações
 
-- `std::io::{self, Write}`:
-  - `stdin` é usado para ler as respostas.
-  - `stdout` e `Write::flush` são usados para exibir imediatamente os prompts.
-- A trait `UserInput` pode ser implementada por outros mecanismos de interação e usada para desacoplar a lógica da aplicação da entrada concreta.
-O arquivo não executa lógica de negócio nem persiste dados. A interação é síncrona e bloqueante. Em `ask`, o conteúdo da resposta é preservado, exceto pelos caracteres de fim de linha removidos; espaços internos e espaços nas extremidades são mantidos na resposta aceita.O arquivo não executa lógica de negócio nem persiste dados. A interação é síncrona e bloqueante. Em `ask`, o conteúdo da resposta é preservado, exceto pelos caracteres de fim de linha removidos; espaços internos e espaços nas extremidades são mantidos na resposta aceita.O arquivo não executa lógica de negócio nem persiste dados. A interação é síncrona e bloqueante. Em `ask`, o conteúdo da resposta é preservado, exceto pelos caracteres de fim de linha removidos; espaços internos e espaços nas extremidades são mantidos na resposta aceita.O arquivo não executa lógica de negócio nem persiste dados. A interação é síncrona e bloqueante. O conteúdo das respostas é preservado, exceto pelos caracteres de fim de linha removidos; espaços internos e espaços nas extremidades são mantidos na resposta aceita.
+- `std::io::{self, BufRead, BufReader, Write}` fornece leitura de linhas, buffers, acesso à entrada padrão e escrita com `flush`.
+- `std::fs::OpenOptions` abre `/dev/tty` para confirmações independentes da entrada padrão.
+- A trait `UserInput` é a interface pública para mecanismos alternativos de interação.
+
+A interação é síncrona e bloqueante. O arquivo não persiste dados, executa lógica de negócio nem usa código `unsafe`; erros são propagados como `String` por meio de `Result`.

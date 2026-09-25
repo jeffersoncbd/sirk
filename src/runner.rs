@@ -117,6 +117,26 @@ fn prepare_external_edit(
     directory: &Path,
 ) -> Result<crate::tools::edit::Pending, String> {
     let before = crate::tools::read::read(directory, &request.path)?;
+    let line_count = before.split_inclusive('\n').count();
+    match request.operation {
+        crate::tools::edit::Operation::Insert
+            if request.line.is_some_and(|line| line > line_count + 1) =>
+        {
+            return Err(format!(
+                "EDIT insert line is beyond EOF; `{}` has {line_count} lines",
+                request.path
+            ));
+        }
+        crate::tools::edit::Operation::Delete | crate::tools::edit::Operation::Replace
+            if request.end.is_some_and(|end| end > line_count) =>
+        {
+            return Err(format!(
+                "EDIT range is beyond EOF; `{}` has {line_count} lines",
+                request.path
+            ));
+        }
+        _ => (),
+    }
     request.version = Some(crate::tools::edit::version(&before));
     let pending = crate::tools::edit::Pending {
         request,
@@ -1162,6 +1182,7 @@ mod tests {
                     let prompt = invocation.arguments.last().unwrap();
                     assert!(prompt.contains(EDIT_FAILURE_PREFIX));
                     assert!(prompt.contains("range is beyond EOF"));
+                    assert!(prompt.contains("`document.md` has 2 lines"));
                     Ok("EDIT:\n{\"path\":\"document.md\",\"operation\":\"replace\",\"start\":1,\"end\":2,\"input\":\"current\\n\"}".into())
                 }
                 3 => Ok("Updated the document.".into()),

@@ -1,4 +1,7 @@
-use std::io::{self, Write};
+use std::{
+    fs::OpenOptions,
+    io::{self, BufRead, BufReader, Write},
+};
 
 /// Shared interaction boundary for initial questions and agent clarification.
 pub trait UserInput {
@@ -37,14 +40,18 @@ impl UserInput for TerminalInput {
     }
 
     fn await_confirmation(&mut self, prompt: &str) -> Result<(), String> {
-        print!("{prompt} ");
-        io::stdout().flush().map_err(|e| e.to_string())?;
+        // Git hooks commonly have stdin closed even when they were started from a terminal.
+        let terminal = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/tty")
+            .map_err(|error| format!("AWAIT requires an interactive terminal: {error}"))?;
+        let mut reader = BufReader::new(terminal.try_clone().map_err(|e| e.to_string())?);
+        let mut writer = terminal;
+        write!(writer, "{prompt} ").map_err(|e| e.to_string())?;
+        writer.flush().map_err(|e| e.to_string())?;
         let mut line = String::new();
-        if io::stdin()
-            .read_line(&mut line)
-            .map_err(|e| e.to_string())?
-            == 0
-        {
+        if reader.read_line(&mut line).map_err(|e| e.to_string())? == 0 {
             return Err("input closed".into());
         }
         if line.trim_end_matches(['\r', '\n']) == "/cancel" {
