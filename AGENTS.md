@@ -1,37 +1,57 @@
 # Development instructions
 
-This file guides Codex and other coding assistants working on this repository.
-Read [README.md](README.md) for the product, schemas, examples, and user commands.
-Keep development guidance here and user-facing documentation in the README.
+## Read only what the task needs
 
-These instructions apply to development tasks. When invoked as a workflow agent
-or definition generator, perform that assigned task; do not start repository
-maintenance or build checks unless requested. Files in `.agents/` are product
-data loaded by the orchestrator, not development instructions.
+- [README.md](README.md) is the concise user manual.
+- [docs/TREE.md](docs/TREE.md) is the trusted source-file and architecture index.
+  Start there to locate the relevant modules instead of scanning all source or
+  loading every document. For `src/foo/bar.rs`, read `docs/src/foo/bar.md`;
+  `Cargo.toml` maps to `docs/Cargo.md`.
+- Consult [docs/REFERENCE.md](docs/REFERENCE.md) for detailed user-facing syntax
+  and behavior, and the relevant sections of [docs/CONTRACTS.md](docs/CONTRACTS.md)
+  for compatibility requirements. Neither needs to be loaded in full each session.
+- Inspect the relevant current source before editing. Documentation is the
+  navigation reference; reconcile any discrepancy with code and tests, and update
+  affected documentation as part of the change.
 
-## Start a development session
+These instructions apply to development. Workflow agents and definition
+generators should perform their assigned task without repository maintenance or
+build checks unless requested. `.agents/` contains product data, not development
+instructions.
 
-- Inspect the current source and existing changes before editing. Use
-  `git status --short` and relevant diffs when Git metadata is available.
-- Read `example.yml` and agent files relevant to the requested change. The user
-  actively edits examples, `.agents/`, and ignore rules; preserve those edits.
-- Keep work within the requested feature. Known limitations are not a backlog
-  automatically authorized for implementation.
-- Do not assume a previous successful integration run validates later changes.
+## Before editing
 
-## Environment and checks
+- Check `git status --short` and relevant diffs. Preserve user changes, especially
+  workflows, `.agents/`, and ignore rules.
+- Read the workflow and agent definitions relevant to the task. The bundled
+  workflow is [create-documentation.yml](create-documentation.yml).
+- Stay within the requested feature. Known limitations, the deprecated
+  `serde_yaml 0.9` dependency, and the broken `build.sh` are not implicit tasks.
+- Write tool-owned code, comments, messages, tests, logs, and documentation in
+  English. Preserve user-authored text in its original language.
 
-Build and test Rust inside the VS Code Dev Container. Do not install Rust on
-the host. The project is mounted at `/workspaces/new-harness`.
+## Implementation boundaries
 
-Discover the active container each session; IDs change:
+Keep orchestration out of `main.rs`, provider behavior out of workflow schemas,
+and external process execution in `BashService`. Build executable/argument lists
+through `Invocation`; never interpolate prompts or paths into shell code.
+Preserve binary capture for Git's NUL-delimited paths.
 
-```bash
-docker container ls
-```
+Keep Codex read-only with `approval_policy="never"` and `--skip-git-repo-check`.
+Do not add automatic write approvals or `write` agent metadata. Close child stdin;
+interaction goes through `UserInput`. Check the installed harness CLI's help
+before changing flags. New adapters implement `HarnessAdapter` and register in
+`src/adapters/mod.rs`; verify their permissions and output semantics.
 
-Always use `docker exec -u vscode` to avoid root-owned artifacts. For code
-changes, run these checks with the active project container:
+Preserve supported v2 transcripts and workflow compatibility. Before changing
+execution, tools, scopes, or recovery, consult the corresponding
+[contracts](docs/CONTRACTS.md) and module documents indexed by [TREE](docs/TREE.md).
+
+## Build and verify
+
+Build and test Rust only inside the VS Code Dev Container; do not install Rust on
+the host. Discover the active container each session with `docker container ls`.
+Always use `-u vscode` to avoid root-owned artifacts. For code changes, run:
 
 ```bash
 docker exec -u vscode -w /workspaces/new-harness <container-id> cargo fmt --check
@@ -40,188 +60,30 @@ docker exec -u vscode -w /workspaces/new-harness <container-id> cargo clippy --a
 docker exec -u vscode -w /workspaces/new-harness <container-id> cargo build
 ```
 
-Use `cargo fmt` in the same environment when formatting is needed.
-Documentation-only changes need document and link checks, not a Rust rebuild.
+Use `cargo fmt` in the same environment if needed. Documentation-only changes
+require document and link checks, not Rust builds. Avoid `build.sh`: it removes
+the root binary, assumes Cargo is available, and continues after build failure.
 
-The current runtime setup uses authenticated Codex on the host. Container
-compilation does not make that CLI available inside the container. Run live
-integrations only where the chosen harness is installed and authenticated.
-Tests use fake harness callbacks, temporary projects, and real local Bash/Git
-commands; they should not require model access.
+Use `runner::run_with`, `run_interactive_with`, `continue_with`, and
+`new_agent::create_with` for tests without model access. Cover meaningful behavior
+and recovery for the affected feature. Tests use fake harness callbacks and real
+local Bash/Git; distinguish them from live model integrations. Run live checks
+only where the harness is installed and authenticated (currently Codex on the
+host). Previous integration runs do not validate later changes.
 
-When refreshing the root binary after a successful build, run on the host:
+After a successful build, refresh the root executable on the host with
+`cp target/debug/new-harness ./new-harness` when delivering code to run, or state
+that it still needs refreshing. Host architecture and system libraries must be
+compatible.
 
-```bash
-cp target/debug/new-harness ./new-harness
-```
+## Documentation and handoff
 
-The root executable is a separate copy. Update it when delivering code changes
-for the user to run, or clearly say it still needs refreshing. Host execution
-requires compatible architecture and system libraries.
+Keep README limited to setup, everyday commands, and a short usage overview.
+Detailed usage belongs in `docs/REFERENCE.md`; development contracts belong in
+`docs/CONTRACTS.md`. Keep module explanations in their corresponding `docs/`
+paths and maintain `docs/TREE.md` when file responsibilities or inventory change.
+Update affected documents when behavior changes so the index remains reliable.
+Do not duplicate the architecture map here or load all module docs by default.
 
-Avoid `build.sh` until fixed: it removes the root binary, assumes Cargo is
-available in its environment, and does not stop on build failure.
-
-## Architecture and boundaries
-
-| Module | Responsibility |
-| --- | --- |
-| `src/main.rs` | CLI argument handling, command loop, standalone agent-creation entry point. |
-| `src/workflow.rs` | YAML schema, recursive validation, references, loop input and scope rules. |
-| `src/agents.rs` | Markdown front matter and instructions; model normalization, including snapshots. |
-| `src/runner.rs` | Sequential conversations, recursive LOOP execution, scope lifetime, resume validation. |
-| `src/history.rs` | Snapshot, transcript blocks and hierarchical labels, parsing, locks, atomic saves. |
-| `src/input.rs` | Shared `UserInput` interface and terminal implementation. |
-| `src/harness.rs` | Provider-neutral `RunRequest` and `HarnessAdapter` contracts. |
-| `src/adapters/` | Harness-specific CLI arguments and adapter registration. |
-| `src/services/bash.rs` | Quoted Bash invocation, streamed/captured output, child lifecycle. |
-| `src/tools/mod.rs` | Agent-callable tool recognition, shared dispatch, TREE JSON rendering. |
-| `src/tools/tree.rs` | Git-backed listing and additional `.treeignore` filtering. |
-| `src/tools/read.rs` | UTF-8 file reads within the execution directory. |
-| `src/tools/write.rs` | Workflow-only creation and explicit replacement of project-local files. |
-| `src/tools/edit.rs` | Version-checked line edits, prepared recovery, atomic replacement, and diff presentation. |
-| `src/tools/custom.rs` | Project-local Bash script resolution, positional arguments, and stdout capture. |
-| `src/tools/new_agent.rs` | Standalone model-generated agent creation and validation. |
-
-Keep orchestration out of `main.rs`, provider behavior out of workflow schemas,
-and external process execution in `BashService`. Build an executable and
-argument list through `Invocation`; never interpolate prompts or paths as
-executable shell code. Preserve binary capture for Git's NUL-delimited paths.
-
-To add an adapter, implement `HarnessAdapter`, register it in
-`src/adapters/mod.rs`, and verify permissions and output semantics.
-Check the installed harness CLI's help before changing flags.
-
-## Decisions to preserve
-
-### Language, files, and permissions
-
-- Tool-owned code, comments, messages, tests, logs, and documentation are English.
-  Preserve user-authored instructions and responses in their original language.
-- Resolve agent definitions and history from the execution working directory,
-  not the workflow file's parent. Resume uses the saved directory.
-- Validate every referenced agent, including nested loop bodies, before running
-  any workflow step.
-- Model names are trimmed and lowercased when loading Markdown and snapshots.
-- Keep Codex read-only with `approval_policy="never"` and
-  `--skip-git-repo-check`. Do not restore a `write` metadata option or automatic
-  write approvals. The orchestrator may write history and generated definitions.
-- Child stdin is closed; user interaction goes through `UserInput`.
-
-### Tools and loops
-
-- TREE must return a valid, pretty-printed JSON array with one path per line,
-  no descriptive header, and `[]` for no files. Do not use Rust debug formatting
-  as a substitute for JSON serialization.
-- Use Git to evaluate standard ignores. Tracked files survive standard ignores.
-  Evaluate `.treeignore` independently and subtract matches, including tracked
-  files. Its negations must not revive files excluded by standard Git rules.
-- Preserve path bytes in the low-level listing. JSON rendering rejects
-  non-UTF-8 paths rather than silently changing them.
-- READ returns exact UTF-8 contents, including empty text, without headers.
-  It accepts only regular files whose resolved paths stay within the execution
-  directory. TREE ignore rules are not READ access rules.
-- WRITE is YAML-only and is never advertised to agents. It creates missing
-  parent directories and writes text to a regular path inside the execution
-  directory; existing files fail unless the workflow explicitly sets `force: true`.
-  With `skip: true`, existing regular files complete without modification; missing
-  files are created normally. Reject force and skip when both are true. Skipped
-  writes have an empty successful result and must not run again on resume.
-- EDIT is YAML-only and edits existing regular UTF-8 files. Operations are insert,
-  delete, replace, prepend and append. Line coordinates are 1-based, ranges are
-  inclusive, and inserted text is exact. Coordinate operations require a SHA-256
-  version from READ's optional version-output; append/prepend may omit it.
-- Append/prepend create absent targets in existing parent directories. Persist
-  absence separately from empty content, publish creation without overwriting a
-  concurrently created file, and never recreate a deleted prepared-update target.
-- Keep READ's text result exact when emitting version-output. Its digest follows
-  ordinary output scope rules and is reconstructed from saved text on resume.
-- Persist EDIT's request and prepared original content in its INPUT block before
-  mutation. Resume distinguishes original, already-applied and conflicting file
-  contents. Validate prepared records and completed diffs before pending work.
-  Keep ANSI presentation out of saved diffs and preserve existing v2 markers.
-- CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
-  require a string-array input, pass each item as one positional argument, and
-  use exact UTF-8 stdout as the result. Keep script execution in `BashService`.
-- Recognize agent requests only as standalone `TREE` or one-line
-  `READ: <path>` responses. Use the same tool implementation for YAML steps.
-- LOOP is YAML-only. Do not register it in the agent tool dispatcher or
-  advertise it in model prompts.
-- IF is YAML-only, with is_true/is_false step lists and a strict true/false
-  condition (surrounding whitespace accepted). Validate both branches, including
-  agents, before execution. IF has no aggregate output and shares its enclosing
-  scope; only names available on both paths may be referenced afterward.
-- Persist IF's resolved condition in INPUT and include true/false in child labels.
-  Resume the saved branch, restore its outputs and reject opposite-branch records
-  or later records after pending work. Recurse through IF as well as LOOP when
-  validating agents and history. Preserve legacy workflows and v2 logs.
-- LOOP accepts string arrays, runs `iter` in order, and has no aggregate output.
-  Each iteration gets fresh locals and read-only `loop.item`. Inside a loop,
-  `output: content` assigns `loop.content`; outside it assigns
-  `outputs.content`. Preserve compatibility with `{{ loop.content }}` output
-  targets in older definitions.
-- Nested loops restore the parent scope. Local assignments must not leak into
-  another iteration or global outputs. Outer outputs remain readable.
-- Inserted content is never recursively expanded as a template.
-
-### Conversations and durable history
-
-- Keep the transcript as the sole execution-state document. Save configuration
-  once and reconstruct explicit context; do not silently adopt native provider
-  session resumption.
-- Keep body markers minimal: `==> ASK`, `==> INPUT`, `<== OUTPUT`,
-  `==> TREE`, and `==> READ`. Preserve escaping, exact content, and hierarchical
-  LOOP labels. Do not reintroduce per-turn numbering or repeated agent labels.
-- Save input before invoking a tool/model. Save only complete successful results
-  using atomic replacement, file/directory synchronization, and exclusive locks.
-- Resume must validate all existing records before executing pending work.
-  Reconstruct local scopes, reuse saved tool results, and reject later records
-  after a pending step.
-- Failed calls remain pending; empty agent responses fail, but empty READ
-  results are valid. Preserve the possibility of retry after a call completed
-  but its result was not saved.
-- Preserve existing transcripts. Legacy non-v2 logs are not resumable; avoid
-  breaking supported v2 logs when adding features.
-- The CLI prints no history banner or success footer. The no-argument command
-  loop remains available; it is not a general persistent chat UI.
-
-### Agent generation
-
-- `--newAgent` / `--new-agent` is standalone, not exposed to models or YAML.
-- Ask separately for the created agent's adapter/model and the generator's
-  adapter/model. Invoke the generator with its configuration and save the
-  target agent's configuration.
-- Generate the full definition from the description, validate it before
-  writing, and keep canonical target metadata. Reject changed metadata,
-  invalid definitions, and failed processes.
-- Do not overwrite existing agents. Retain model lowercase normalization.
-
-## Verification and handoff
-
-- Use `runner::run_with`, `run_interactive_with`, `continue_with`, and
-  `new_agent::create_with` to test without real model calls.
-- Cover meaningful behavior: template substitution, scope isolation, pending
-  iteration recovery, edited transcripts, exact file contents, Git ignore
-  semantics, generator/runtime model separation, and non-overwrite behavior.
-- Distinguish automated/fake-harness verification from a live Codex invocation.
-  Do not claim real model success from a mocked test.
-- Update README when user-visible behavior or usage changes; update this file
-  when development practices or architecture change.
-- Report changes, relevant checks, and limitations. Avoid stale container IDs,
-  fixed test counts, or historical success claims as ongoing guarantees.
-
-## Known implementation limitations
-
-No parallel execution or automatic retries. Conversation prompts
-and captured stdout grow in memory; there are no size limits, timeouts, or log
-rotation. Process cleanup handles the direct child, not the complete descendant
-tree. Terminal answers are single-line; no PTY management exists. JSON harness
-events are not normalized, so `json: true` is rejected.
-
-History records explicit requested configuration, not hidden harness
-instructions, verified model identity, or the original workflow source path.
-Arbitrary semantic edits require the user to truncate dependent history.
-
-The YAML dependency is `serde_yaml 0.9`, which Cargo reports as deprecated.
-Parser migration and the `build.sh` issue are separate maintenance work, not
-implicit tasks.
+Report changes, relevant checks, and limitations. Avoid stale container IDs,
+fixed test counts, or historical success claims as ongoing guarantees.
