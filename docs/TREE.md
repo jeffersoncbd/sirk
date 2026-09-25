@@ -7,15 +7,13 @@ src/input.rs - Define a interface de entrada do usuário e lê respostas do term
 src/lib.rs - Organiza e expõe publicamente os principais módulos da crate Rust, sem implementar lógica de negócio.
 src/main.rs - Gerencia a CLI do new-harness, iniciando sessões, executando workflows e retomando históricos.
 src/runner.rs - Executa workflows com agentes e ferramentas, persistindo o histórico e permitindo retomar execuções.
-
 src/services/bash.rs - Executa comandos Bash com argumentos protegidos, transmitindo e capturando saídas textuais ou binárias.
 src/tools/custom.rs - Executa com segurança scripts Bash locais, validando caminhos, argumentos e status, e captura sua saída.
 src/tools/edit.rs - Implementa edição segura de arquivos em workflows, com validação, versionamento, diffs e commits atômicos.
 src/tools/git_status_tree.rs - Lista arquivos existentes no status do Git, aplicando exclusões e retornando caminhos relativos ordenados.
-
 src/tools/new_agent.rs - Cria interativamente definições de agentes, gera suas instruções, valida metadados e grava arquivos Markdown.
 src/tools/read.rs - Valida caminhos dentro da raiz permitida e lê arquivos UTF-8, retornando conteúdo ou erros descritivos.
 src/tools/tree.rs - Lista arquivos rastreados e não ignorados da árvore Git, aplicando regras de exclusão e ordenação.
 src/tools/write.rs - Implementa a operação WRITE, criando arquivos UTF-8 com validação segura de caminhos e opções de sobrescrita.
 src/workflow.rs - Modela, valida e renderiza workflows YAML declarativos, incluindo etapas, escopos, outputs e edições.
-
+src/adapters/opencode.rs - Adapta requisições genéricas do harness para invocações seguras da CLI `opencode run`.
