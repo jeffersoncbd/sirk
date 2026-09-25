@@ -94,6 +94,60 @@ fn validate_snapshot(snapshot: &Snapshot) -> Result<(), String> {
 fn question(text: &str) -> Option<&str> {
     text.trim_start().strip_prefix("ASK:").map(str::trim)
 }
+
+const DUPLICATE_EDIT_RESULT: &str = "No changes applied: this EDIT request was already completed. Do not repeat it; provide a final response or a different edit.";
+const EDIT_FAILURE_PREFIX: &str = "EDIT failed: ";
+
+fn external_edit_request(text: &str) -> Option<Result<crate::tools::edit::Request, String>> {
+    let payload = text.trim().strip_prefix("EDIT:")?.trim();
+    Some(
+        serde_json::from_str(payload)
+            .map_err(|error| format!("invalid EDIT_TOOL request: {error}"))
+            .and_then(|request: crate::tools::edit::Request| {
+                if request.version.is_some() {
+                    return Err("EDIT_TOOL must not include `version`".into());
+                }
+                Ok(request)
+            }),
+    )
+}
+
+fn prepare_external_edit(
+    mut request: crate::tools::edit::Request,
+    directory: &Path,
+) -> Result<crate::tools::edit::Pending, String> {
+    let before = crate::tools::read::read(directory, &request.path)?;
+    request.version = Some(crate::tools::edit::version(&before));
+    let pending = crate::tools::edit::Pending {
+        request,
+        before: Some(before),
+        was_missing: false,
+    };
+    pending.validate()?;
+    Ok(pending)
+}
+
+fn external_edit_pending(blocks: &[Block]) -> Option<Result<crate::tools::edit::Pending, String>> {
+    let [.., Block::Output(request), Block::Input(pending)] = blocks else {
+        return None;
+    };
+    if let Err(error) = external_edit_request(request)? {
+        return Some(Err(error));
+    }
+    Some(
+        serde_json::from_str(pending)
+            .map_err(|error| format!("invalid EDIT_TOOL history: {error}")),
+    )
+}
+
+fn completed_external_edit(blocks: &[Block], request: &crate::tools::edit::Request) -> bool {
+    blocks.windows(3).any(|window| {
+        let [Block::Output(previous), Block::Input(_), Block::Edit(_)] = window else {
+            return false;
+        };
+        external_edit_request(previous).is_some_and(|previous| previous.as_ref() == Ok(request))
+    })
+}
 fn all_steps(steps: &[Step]) -> Vec<&Step> {
     let mut result = Vec::new();
     for step in steps {
@@ -160,7 +214,17 @@ fn validate_blocks(history: &History) -> Result<(), String> {
                 if !validate_edit_blocks(blocks)? {
                     return Ok(false);
                 }
-            } else if !validate_step_blocks(blocks, step.is_tool_step())? {
+            } else if let Some(id) = &step.agent {
+                let agent = history
+                    .snapshot
+                    .agents
+                    .iter()
+                    .find(|agent| &agent.id == id)
+                    .ok_or("missing agent configuration")?;
+                if !validate_agent_blocks(blocks, agent.edit_tool)? {
+                    return Ok(false);
+                }
+            } else if !validate_step_blocks(blocks, true)? {
                 return Ok(false);
             }
         }
@@ -214,11 +278,13 @@ fn validate_step_blocks(blocks: &[Block], tool_step: bool) -> Result<bool, Strin
                     || (question(text).is_none() && crate::tools::request(text).is_none());
                 valid
             }
-            Block::Tree(_) | Block::Read(_) => {
+            Block::Tree(_) | Block::Read(_) | Block::Edit(_) => {
                 let name = if matches!(block, Block::Tree(_)) {
                     "TREE"
-                } else {
+                } else if matches!(block, Block::Read(_)) {
                     "READ"
+                } else {
+                    "EDIT"
                 };
                 let valid = !tool_step
                     && position > 0
@@ -234,6 +300,92 @@ fn validate_step_blocks(blocks: &[Block], tool_step: bool) -> Result<bool, Strin
         }
     }
     Ok(complete)
+}
+
+fn validate_agent_blocks(blocks: &[Block], edit_tool: bool) -> Result<bool, String> {
+    let mut position = 0;
+    match blocks.get(position) {
+        Some(Block::Ask(text)) if !text.trim().is_empty() => position += 1,
+        Some(Block::Input(_)) => (),
+        Some(_) => return Err("invalid conversation; expected initial input".into()),
+        None => return Ok(false),
+    }
+    if matches!(blocks.get(position), Some(Block::Ask(_))) {
+        return Err("invalid conversation; ASK can only start an agent turn".into());
+    }
+    if matches!(blocks.get(position), Some(Block::Input(_))) {
+        position += 1;
+    } else if position != 0 {
+        return Ok(false);
+    }
+    while position < blocks.len() {
+        let Block::Output(output) = &blocks[position] else {
+            return Err("invalid conversation; expected agent output".into());
+        };
+        position += 1;
+        if let Some((tool, _)) = crate::tools::request(output) {
+            let expected = if tool == "TREE" { "TREE" } else { "READ" };
+            let Some(result) = blocks.get(position) else {
+                return Ok(false);
+            };
+            if !matches!(
+                (expected, result),
+                ("TREE", Block::Tree(_)) | ("READ", Block::Read(_))
+            ) {
+                return Err("invalid conversation; tool result does not match request".into());
+            }
+            position += 1;
+            continue;
+        }
+        if let Some(request) = external_edit_request(output) {
+            if !edit_tool {
+                return Err("agent requested EDIT_TOOL without permission".into());
+            }
+            let request = request?;
+            if matches!(blocks.get(position), Some(Block::Edit(result)) if result == DUPLICATE_EDIT_RESULT)
+            {
+                if !completed_external_edit(&blocks[..position - 1], &request) {
+                    return Err("invalid duplicate EDIT_TOOL result".into());
+                }
+                position += 1;
+                continue;
+            }
+            if matches!(blocks.get(position), Some(Block::Edit(result)) if result.starts_with(EDIT_FAILURE_PREFIX))
+            {
+                position += 1;
+                continue;
+            }
+            let Some(Block::Input(pending)) = blocks.get(position) else {
+                return Ok(false);
+            };
+            let pending: crate::tools::edit::Pending = serde_json::from_str(pending)
+                .map_err(|error| format!("invalid EDIT_TOOL history: {error}"))?;
+            pending.validate()?;
+            position += 1;
+            let Some(Block::Edit(diff)) = blocks.get(position) else {
+                return Ok(false);
+            };
+            if *diff != pending.diff()? {
+                return Err(
+                    "invalid EDIT_TOOL result; remove the response and later records".into(),
+                );
+            }
+            position += 1;
+            continue;
+        }
+        if let Some(ask) = question(output) {
+            if ask.is_empty() {
+                return Err("agent returned an empty ASK question".into());
+            }
+            if !matches!(blocks.get(position), Some(Block::Input(_))) {
+                return Ok(false);
+            }
+            position += 1;
+            continue;
+        }
+        return Ok(position == blocks.len());
+    }
+    Ok(false)
 }
 pub fn continue_with(
     history: &mut History,
@@ -376,6 +528,19 @@ where
             crate::tools::edit::display(&diff);
             return Ok(diff);
         }
+        if step.tool.as_deref() == Some("AWAIT") {
+            if history.steps[index].is_empty() {
+                history.steps[index].push(Block::Input(String::new()));
+                history.save()?;
+            }
+            if matches!(history.steps[index].last(), Some(Block::Input(_))) {
+                self.input
+                    .await_confirmation("Awaiting confirmation. Press Enter to continue...")?;
+                history.steps[index].push(Block::Output(String::new()));
+                history.save()?;
+            }
+            return Ok(String::new());
+        }
         if step.is_tool_step() {
             if history.steps[index].is_empty() {
                 history.steps[index].push(Block::Input(step.render_input(outputs, locals)?));
@@ -435,7 +600,25 @@ where
                     history.save()?;
                 }
                 Block::Output(ref text) => {
-                    if let Some((tool, argument)) = crate::tools::request(text) {
+                    if agent.edit_tool
+                        && let Some(request) = external_edit_request(text)
+                    {
+                        let request = request?;
+                        if completed_external_edit(&history.steps[index], &request) {
+                            history.steps[index].push(Block::Edit(DUPLICATE_EDIT_RESULT.into()));
+                        } else {
+                            match prepare_external_edit(request, &history.snapshot.directory) {
+                                Ok(pending) => history.steps[index].push(Block::Input(
+                                    serde_json::to_string(&pending)
+                                        .map_err(|error| error.to_string())?,
+                                )),
+                                Err(error) => history.steps[index].push(Block::Edit(format!(
+                                    "{EDIT_FAILURE_PREFIX}{error}. Correct the request and try again."
+                                ))),
+                            }
+                        }
+                        history.save()?;
+                    } else if let Some((tool, argument)) = crate::tools::request(text) {
                         let result = crate::tools::execute_with_input(
                             tool,
                             argument,
@@ -462,21 +645,40 @@ where
                         return Ok(text.clone());
                     }
                 }
-                Block::Input(_) | Block::Tree(_) | Block::Read(_) => {
+                Block::Input(_) if external_edit_pending(&history.steps[index]).is_some() => {
+                    let pending = external_edit_pending(&history.steps[index])
+                        .expect("matched external edit pending")?;
+                    let diff = pending.commit(&history.snapshot.directory)?;
+                    history.steps[index].push(Block::Edit(diff.clone()));
+                    history.save()?;
+                    crate::tools::edit::display(&diff);
+                }
+                Block::Input(_) | Block::Tree(_) | Block::Read(_) | Block::Edit(_) => {
                     let mut prompt = agent.instructions.clone();
                     prompt.push_str("\n\nAvailable tool: TREE. To list project files respecting Git ignores, respond with exactly TREE and nothing else. The tool result will be returned so you can continue your response.");
                     prompt.push_str("\nAvailable tool: READ. To read a UTF-8 file inside the execution directory, respond with exactly READ: <path> on one line, without quotes or code fences. Paths are relative to the execution directory. The file content will be returned so you can continue your response.");
+                    if agent.edit_tool {
+                        prompt.push_str("\n\nExternal tool: EDIT. This tool is executed after your response; do not try to use an internal tool. To request exactly one file edit, respond only with `EDIT:` followed by a JSON object, without code fences or any other text. The object must contain `path`, `operation`, and `input`. `operation` is one of `insert`, `delete`, `replace`, `prepend`, or `append`. For `insert`, also provide positive integer `line`. For `delete` and `replace`, also provide positive integer `start` and `end` (inclusive). `delete` requires an empty `input`. `prepend` and `append` take no coordinates. Paths are relative to the execution directory. Do not include `version`; the external tool verifies the current document before applying the edit. After a successful edit, you receive its diff and may request another edit or provide your final answer. A Tool result (EDIT) beginning with `EDIT failed:` means no change was made; correct the request and try again. Before requesting another edit, inspect every Tool result (EDIT) in the conversation. Never repeat a request that was already applied; if the diff completes the work, provide your final answer. Request edits only when necessary.");
+                    }
                     if agent.ask.is_some() && !initial.is_empty() {
                         prompt.push_str(&format!("\n\nWorkflow input:\n{initial}"));
                     }
                     prompt.push_str("\n\nConversation (continue from the last user message):\n");
-                    for block in &history.steps[index] {
+                    for (position, block) in history.steps[index].iter().enumerate() {
+                        if matches!(block, Block::Input(_))
+                            && position > 0
+                            && external_edit_request(history.steps[index][position - 1].text())
+                                .is_some()
+                        {
+                            continue;
+                        }
                         let role = match block {
                             Block::Ask(_) => "Initial question",
                             Block::Input(_) => "User",
                             Block::Output(_) => "Assistant",
                             Block::Tree(_) => "Tool result (TREE)",
                             Block::Read(_) => "Tool result (READ)",
+                            Block::Edit(_) => "Tool result (EDIT)",
                         };
                         prompt.push_str(&format!("\n{role}:\n{}\n", block.text()));
                     }
@@ -841,6 +1043,168 @@ mod tests {
             outputs,
             continue_with(&mut history, |_| panic!("completed"), &mut answers(&[])).unwrap()
         );
+    }
+
+    #[test]
+    fn agent_edit_tool_applies_one_external_edit_and_resumes_without_repeating_it() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/second.md"),
+            "---\nadapter: codex\nEDIT_TOOL: allow\n---\nUpdate the supplied document.",
+        )
+        .unwrap();
+        fs::write(project.0.join("document.md"), "before\nobsolete\nafter\n").unwrap();
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- agent: second\n  input: Update document.md\n  output: result\n",
+        )
+        .unwrap();
+        let mut calls = 0;
+        assert!(run_with(&workflow, &project.0, |invocation| {
+            calls += 1;
+            let prompt = invocation.arguments.last().unwrap();
+            if calls == 1 {
+                assert!(prompt.contains("External tool: EDIT"));
+                Ok("EDIT:\n{\"path\":\"document.md\",\"operation\":\"replace\",\"start\":2,\"end\":2,\"input\":\"current\\n\"}".into())
+            } else {
+                assert!(prompt.contains("Tool result (EDIT)"));
+                assert!(prompt.contains("+current"));
+                Err("interrupted after edit".into())
+            }
+        })
+        .is_err());
+        assert_eq!(
+            fs::read_to_string(project.0.join("document.md")).unwrap(),
+            "before\ncurrent\nafter\n"
+        );
+        let mut history = History::open(&project.log()).unwrap();
+        let output = continue_with(
+            &mut history,
+            |invocation| {
+                assert!(invocation.arguments.last().unwrap().contains("+current"));
+                Ok("Updated only the obsolete line.".into())
+            },
+            &mut answers(&[]),
+        )
+        .unwrap();
+        assert_eq!(output["result"], "Updated only the obsolete line.");
+        assert_eq!(
+            fs::read_to_string(project.0.join("document.md")).unwrap(),
+            "before\ncurrent\nafter\n"
+        );
+    }
+
+    #[test]
+    fn agent_edit_tool_ignores_a_repeated_completed_request() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/second.md"),
+            "---\nadapter: codex\nEDIT_TOOL: allow\n---\nUpdate the supplied document.",
+        )
+        .unwrap();
+        fs::write(project.0.join("document.md"), "before\nobsolete\nafter\n").unwrap();
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- agent: second\n  input: Update document.md\n  output: result\n",
+        )
+        .unwrap();
+        let request = "EDIT:\n{\"path\":\"document.md\",\"operation\":\"replace\",\"start\":2,\"end\":2,\"input\":\"current\\n\"}";
+        let mut calls = 0;
+        let output = run_with(&workflow, &project.0, |invocation| {
+            calls += 1;
+            match calls {
+                1 | 2 => Ok(request.into()),
+                3 => {
+                    assert!(
+                        invocation
+                            .arguments
+                            .last()
+                            .unwrap()
+                            .contains(DUPLICATE_EDIT_RESULT)
+                    );
+                    Ok("Updated only the obsolete line.".into())
+                }
+                _ => panic!("unexpected agent invocation"),
+            }
+        })
+        .unwrap();
+        assert_eq!(output["result"], "Updated only the obsolete line.");
+        assert_eq!(
+            fs::read_to_string(project.0.join("document.md")).unwrap(),
+            "before\ncurrent\nafter\n"
+        );
+        let mut history = History::open(&project.log()).unwrap();
+        continue_with(
+            &mut history,
+            |_| panic!("completed agent turn must not run again"),
+            &mut answers(&[]),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn agent_edit_tool_returns_invalid_coordinates_for_correction() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/second.md"),
+            "---\nadapter: codex\nEDIT_TOOL: allow\n---\nUpdate the supplied document.",
+        )
+        .unwrap();
+        fs::write(project.0.join("document.md"), "before\nobsolete\n").unwrap();
+        let workflow: Workflow = serde_yaml::from_str(
+            "version: 1\nsteps:\n- agent: second\n  input: Update document.md\n  output: result\n",
+        )
+        .unwrap();
+        let mut calls = 0;
+        let output = run_with(&workflow, &project.0, |invocation| {
+            calls += 1;
+            match calls {
+                1 => Ok("EDIT:\n{\"path\":\"document.md\",\"operation\":\"replace\",\"start\":1,\"end\":3,\"input\":\"current\\n\"}".into()),
+                2 => {
+                    let prompt = invocation.arguments.last().unwrap();
+                    assert!(prompt.contains(EDIT_FAILURE_PREFIX));
+                    assert!(prompt.contains("range is beyond EOF"));
+                    Ok("EDIT:\n{\"path\":\"document.md\",\"operation\":\"replace\",\"start\":1,\"end\":2,\"input\":\"current\\n\"}".into())
+                }
+                3 => Ok("Updated the document.".into()),
+                _ => panic!("unexpected agent invocation"),
+            }
+        })
+        .unwrap();
+        assert_eq!(output["result"], "Updated the document.");
+        assert_eq!(
+            fs::read_to_string(project.0.join("document.md")).unwrap(),
+            "current\n"
+        );
+        let mut history = History::open(&project.log()).unwrap();
+        continue_with(
+            &mut history,
+            |_| panic!("completed agent turn must not run again"),
+            &mut answers(&[]),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn await_pauses_once_and_is_complete_after_resume() {
+        let project = Project::new();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- tool: AWAIT\n  output: confirmed\n")
+                .unwrap();
+        let output = run_interactive_with(
+            &workflow,
+            &project.0,
+            |_| panic!("AWAIT does not invoke an agent"),
+            &mut answers(&[""]),
+        )
+        .unwrap();
+        assert_eq!(output["confirmed"], "");
+        let mut history = History::open(&project.log()).unwrap();
+        let output = continue_with(
+            &mut history,
+            |_| panic!("completed AWAIT does not invoke an agent"),
+            &mut answers(&[]),
+        )
+        .unwrap();
+        assert_eq!(output["confirmed"], "");
     }
     #[test]
     fn read_request_recovers_failure_and_reuses_empty_file_result() {

@@ -8,7 +8,10 @@ pub mod tree;
 pub mod write;
 
 pub fn supports(name: &str) -> bool {
-    matches!(name, "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "EDIT")
+    matches!(
+        name,
+        "TREE" | "GIT-STATUS-TREE" | "READ" | "WRITE" | "EDIT" | "AWAIT"
+    )
 }
 
 /// Only standalone tool requests are interpreted as control messages

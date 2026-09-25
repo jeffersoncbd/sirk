@@ -26,11 +26,17 @@ pub enum Block {
     Output(String),
     Tree(String),
     Read(String),
+    Edit(String),
 }
 impl Block {
     pub fn text(&self) -> &str {
         match self {
-            Self::Ask(s) | Self::Input(s) | Self::Output(s) | Self::Tree(s) | Self::Read(s) => s,
+            Self::Ask(s)
+            | Self::Input(s)
+            | Self::Output(s)
+            | Self::Tree(s)
+            | Self::Read(s)
+            | Self::Edit(s) => s,
         }
     }
     fn marker(&self) -> &str {
@@ -40,6 +46,7 @@ impl Block {
             Self::Output(_) => "<== OUTPUT",
             Self::Tree(_) => "==> TREE",
             Self::Read(_) => "==> READ",
+            Self::Edit(_) => "==> EDIT",
         }
     }
 }
@@ -60,7 +67,7 @@ impl Drop for History {
 fn reserved(line: &str) -> bool {
     matches!(
         line,
-        "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | SEPARATOR
+        "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | "==> EDIT" | SEPARATOR
     ) || line.starts_with("Step ")
         || line.starts_with('\\')
 }
@@ -135,6 +142,7 @@ impl History {
                     "==> INPUT" => Block::Input(value),
                     "==> TREE" => Block::Tree(value),
                     "==> READ" => Block::Read(value),
+                    "==> EDIT" => Block::Edit(value),
                     _ => Block::Output(value),
                 };
                 steps
@@ -149,7 +157,7 @@ impl History {
                 || line.starts_with("Step ")
                 || matches!(
                     line,
-                    "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ"
+                    "==> ASK" | "==> INPUT" | "<== OUTPUT" | "==> TREE" | "==> READ" | "==> EDIT"
                 )
             {
                 finish(&mut active, &mut steps)?;

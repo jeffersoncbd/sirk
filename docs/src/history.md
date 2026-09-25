@@ -26,10 +26,10 @@ Durante a gravação, linhas que poderiam ser confundidas com marcadores ou cabe
   - `Output`: saída produzida.
   - `Tree`: resultado de uma consulta de árvore de arquivos.
   - `Read`: conteúdo de um arquivo lido.
+  - `Edit`: descrição ou resultado de uma edição realizada.
 - `Block::text`: retorna o conteúdo textual do bloco.
 - `Block::marker`: retorna o marcador usado no formato persistido.
-- `History`: estado completo do histórico aberto, incluindo:
-  - caminho do transcript;
+- `History`: estado completo do histórico aberto, incluindo:  - caminho do transcript;
   - snapshot;
   - etapas e blocos;
   - rótulos das etapas;
@@ -43,15 +43,14 @@ Durante a gravação, linhas que poderiam ser confundidas com marcadores ou cabe
 - `Drop for History`: libera explicitamente o lock quando o histórico é destruído.
 - `ParsedHistory`: alias para o resultado interno do parser.
 
-### Dependências e integrações
+### integrações
 
 O arquivo usa:
 
 - `crate::agents::Agent` e `crate::workflow::Workflow`, que representam a configuração de agentes e do fluxo da aplicação.
-- `serde` e `serde_yaml` indiretamente via `Serialize`, `Deserialize` e desserialização YAML.
+- `serde` e `serde_yaml` diretamente via os derives `Serialize`, `Deserialize` e a serialização/desserialização YAML.
 - APIs de `std` para arquivos, diretórios, locks, caminhos, timestamps e escrita persistente.
 - `std::process::id()` para incluir o identificador do processo no nome do arquivo.
-
 ### Observações
 
 O parser aceita apenas históricos iniciados pelo cabeçalho v2 e rejeita formatos anteriores ou estruturas inválidas com `Result<String>`.

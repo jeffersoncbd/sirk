@@ -12,25 +12,49 @@ steps:
         input: "{{ loop.item }}"
         output: content
 
-      - agent: code-explainer
-        input: |
-          - Nome do arquivo: {{ loop.item }}
-          - Conteúdo do arquivo:
-          {{ loop.content }}
-        output: explain
-
       - custom-tool: doc-name
         input:
           - "{{ loop.item }}"
         output: doc_name
 
-      - tool: WRITE
-        path: "{{ loop.doc_name }}"
-        input: "{{ loop.explain }}"
-        force: true
+      - custom-tool: file-exists
+        input:
+          - "{{ loop.doc_name }}"
+        output: doc_exists
+
+      - tool: IF
+        input: "{{ loop.doc_exists }}"
+        is_true:
+          - tool: READ
+            input: "{{ loop.doc_name }}"
+            output: current_document
+
+          - agent: code-explainer
+            input: |
+              - Arquivo documentado: {{ loop.item }}
+              - Documento existente a atualizar: {{ loop.doc_name }}
+              - Conteúdo atual do documento:
+              {{ loop.current_document }}
+              - Conteúdo atual do arquivo:
+              {{ loop.content }}
+        is_false:
+          - agent: code-explainer
+            input: |
+              - Nome do arquivo: {{ loop.item }}
+              - Conteúdo do arquivo:
+              {{ loop.content }}
+            output: explain
+
+          - tool: WRITE
+            path: "{{ loop.doc_name }}"
+            input: "{{ loop.explain }}"
+
+      - tool: READ
+        input: "{{ loop.doc_name }}"
+        output: document
 
       - agent: explain-resume
-        input: "{{ loop.explain }}"
+        input: "{{ loop.document }}"
         output: explain_resume
 
       - tool: READ
@@ -67,6 +91,7 @@ steps:
             operation: append
             input: |
               {{ loop.item }} - {{ loop.explain_resume }}
+
   - custom-tool: sort-tree
     input: []
     output: sorted_tree
@@ -75,6 +100,8 @@ steps:
     path: docs/TREE.md
     input: "{{ outputs.sorted_tree }}"
     force: true
+
+  - tool: AWAIT
 
   - custom-tool: git-add
     input: []

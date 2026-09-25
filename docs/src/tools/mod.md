@@ -6,14 +6,12 @@ O arquivo `src/tools/mod.rs` centraliza o despacho e a interpretação de ferram
 
 O módulo declara submódulos para ferramentas específicas: `custom`, `edit`, `git_status_tree`, `new_agent`, `read`, `tree` e `write`.
 
-A função `supports` verifica se um nome corresponde a uma ferramenta reconhecida. A função `request` interpreta apenas mensagens isoladas nos formatos `TREE` ou `READ: <caminho>`. Requisições com texto adicional ou caminhos contendo quebras de linha são rejeitadas.
+A função `supports` reconhece os nomes `TREE`, `GIT-STATUS-TREE`, `READ`, `WRITE`, `EDIT` e `AWAIT`, enquanto `request` interpreta apenas mensagens isoladas nos formatos `TREE`, `READ: <caminho>` ou `READ:`. Requisições com texto adicional ou caminhos contendo quebras de linha são rejeitadas.
 
-A execução ocorre por `execute` e `execute_with_input`. Atualmente, o despacho efetivo trata:
-
+A execução ocorre por `execute` e `execute_with_input`. Embora `supports` também reconheça `WRITE`, `EDIT` e `AWAIT`, o despacho efetivo atualmente trata apenas:
 - `TREE`, listando arquivos e serializando os caminhos como JSON.
 - `GIT-STATUS-TREE`, listando arquivos relacionados ao estado do Git.
 - `READ`, lendo o conteúdo de um caminho no diretório informado.
-
 Nomes desconhecidos produzem um `Result::Err`. Caminhos não representáveis como UTF-8 e falhas de serialização também são convertidos em mensagens de erro. A função `format_paths` garante que a saída seja um array JSON formatado e terminado por nova linha.
 
 Os testes verificam a preservação correta de caracteres especiais em caminhos e a aceitação somente de requisições autônomas.

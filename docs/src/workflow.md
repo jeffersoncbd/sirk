@@ -41,18 +41,18 @@ Condicionais validam os dois ramos. Após um `IF`, apenas outputs definidos em a
 
 Os testes cobrem validação de branches, escopos de loop, operações de edição, outputs, referências, ferramentas, escrita de arquivos e ferramentas customizadas.
 
-### Dependências e integrações
+### Integrações
 
-- `serde` e `serde_yaml`: desserialização e serialização dos workflows.
-- `std::fs` e `std::path::Path`: leitura de workflows do sistema de arquivos.
+- `serde` e `serde_yaml`: desserialização e serialização dos workflows, com `serde(deny_unknown_fields)` rejeitando campos YAML desconhecidos.
+- `std::fs` e `std::path::Path`: leitura do arquivo de workflow.
 - `BTreeMap` e `BTreeSet`: armazenamento determinístico de outputs, variáveis locais e nomes declarados.
-- `crate::agents::valid_id`: valida agentes conhecidos.
-- `crate::tools::supports`: valida ferramentas internas suportadas.
-- `crate::tools::custom::valid_name` e `arguments`: validam e processam ferramentas customizadas.
-- `crate::tools::edit::{Operation, Request}`: representam operações e requisições de edição.
+- `crate::agents::valid_id`: validação de agentes conhecidos.
+- `crate::tools::supports`: validação de ferramentas internas suportadas.
+- `crate::tools::custom::{valid_name, arguments}`: validação de ferramentas customizadas e interpretação de seus argumentos.
+- `crate::tools::edit::{Operation, Request}`: representação e validação das operações de edição.
 
-O arquivo fornece os tipos e métodos usados pelo restante do projeto para interpretar, validar e preparar workflows para execução.
+O arquivo expõe os modelos `Workflow`, `Step`, `EditCoordinate` e `StepInput`, além das funções de validação e renderização usadas para preparar workflows. `Step::edit_request` renderiza os campos e monta um `Request`; durante a validação do workflow, esse request também é submetido às regras de `Request::validate`.
 
-### Observações
+A execução efetiva dos agentes e ferramentas não está implementada neste arquivo. A resolução de templates depende de outputs já disponíveis e falha com `Result<String, String>` quando uma referência é inválida, está fora de escopo ou não foi declarada. Dentro de loops, `loop.item` é somente leitura, e outputs locais permanecem restritos ao corpo da iteração; após um `IF`, apenas nomes definidos nos dois ramos permanecem disponíveis.
 
-A execução efetiva dos agentes e ferramentas não está implementada neste arquivo; ele apenas modela, valida e renderiza os dados necessários. A resolução de templates depende de outputs já disponíveis e falha com `Result<String, String>` quando uma referência é inválida, está fora de escopo ou não foi declarada.
+As APIs públicas também incluem métodos de consulta e preparação em `Step`, como `branch`, `name`, `is_tool_step`, `force`, `render_input`, `render_path` e `edit_request`, além das funções de renderização e validação de condições e loops.

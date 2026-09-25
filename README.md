@@ -93,6 +93,7 @@ iteration. Templates do not expand inserted content again.
 | READ | Read exact UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; optional `version-output` supports EDIT. |
 | WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
 | EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
+| AWAIT | Pause and wait for the user to press Enter before continuing. |
 | CUSTOM-TOOL | Run `tools/<name>.sh` with a string array of arguments via `custom-tool: name`. |
 | LOOP | Run `iter` steps for each string in an array. |
 | IF | Select `is_true` or `is_false` steps from a strict boolean condition. |

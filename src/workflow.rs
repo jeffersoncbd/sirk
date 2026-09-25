@@ -368,7 +368,7 @@ fn validate_steps(
                 }
             }
             (None, Some(tool), None) if crate::tools::supports(tool) => {
-                if matches!(tool.as_str(), "TREE" | "GIT-STATUS-TREE")
+                if matches!(tool.as_str(), "TREE" | "GIT-STATUS-TREE" | "AWAIT")
                     && step.input.text() != Some("")
                 {
                     return Err(format!("step {}: {tool} does not accept input", index + 1));
@@ -420,7 +420,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, EDIT, LOOP, IF), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, EDIT, AWAIT, LOOP, IF), or custom-tool",
                     index + 1
                 ));
             }
@@ -849,5 +849,12 @@ mod tests {
             render_input("Fix this: {{ outputs.analysis }}", &outputs).unwrap(),
             "Fix this: found one bug"
         );
+    }
+
+    #[test]
+    fn bundled_documentation_workflow_validates() {
+        let workflow: Workflow =
+            serde_yaml::from_str(include_str!("../update-documentation.yml")).unwrap();
+        workflow.validate().unwrap();
     }
 }

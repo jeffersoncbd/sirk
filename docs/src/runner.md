@@ -1,54 +1,52 @@
 ### Resumo
 
-O arquivo `src/runner.rs` implementa o motor de execução de workflows sequenciais. Ele coordena agentes, ferramentas, entradas do usuário, histórico persistente e retomada de execuções interrompidas.
+O arquivo `src/runner.rs` implementa o motor de execução e retomada de workflows sequenciais. Ele valida workflows e agentes, coordena conversas, ferramentas, entradas do usuário e edições de arquivos, mantendo um histórico persistente para recuperação após interrupções.
 
 ### Funcionamento
 
-A execução começa validando o `Workflow`, canonicalizando o diretório e carregando as configurações dos agentes definidos nos passos. Em seguida, cria um `Snapshot` com o workflow, diretório e agentes, valida esse estado e inicializa um `History`.
+A execução valida o `Workflow`, canonicaliza o diretório e carrega todas as configurações de agentes presentes nos passos, inclusive em loops e ramificações condicionais. Em seguida, cria um `Snapshot` com o workflow, o diretório e os agentes — preservando essas configurações para retomadas futuras — e inicializa um `History` persistente.
 
-O `Engine` percorre os passos em ordem e mantém um cursor alinhado ao histórico. Cada passo é registrado antes ou depois de sua execução, permitindo retomar a execução sem repetir etapas concluídas.
+O `Engine` percorre os passos em ordem, mantendo um cursor alinhado aos registros do histórico. Cada entrada, resposta, resultado de ferramenta e alteração é salvo progressivamente. Assim, uma falha deixa apenas o passo pendente para retomada, sem repetir etapas concluídas.
 
-O arquivo trata diferentes tipos de passos:
+Os passos suportados incluem:
 
-- Agentes: constroem prompts com instruções, entradas, respostas anteriores e resultados de `TREE`/`READ`. Podem fazer perguntas ao usuário através de respostas `ASK:`.
-- Ferramentas: executam operações como `TREE`, `READ`, `WRITE`, ferramentas customizadas e `EDIT`.
-- `LOOP`: percorre arrays de strings, criando escopos locais com `loop.item` e preservando resultados por iteração.
-- `IF`: avalia uma condição e executa apenas o ramo correspondente.
-- `EDIT`: prepara, valida e aplica alterações de arquivos de forma recuperável, registrando o diff no histórico.
+- Agentes, que recebem instruções, entradas renderizadas, respostas anteriores e resultados de `TREE`, `READ` ou `EDIT`. Podem solicitar entrada com `ASK:` e, quando autorizados pela configuração `edit_tool`, alterações externas com `EDIT:`.
+- Ferramentas internas, como `TREE`, `READ`, `WRITE`, ferramentas customizadas e `AWAIT`.
+- `LOOP`, que percorre arrays de strings e cria escopos locais com `loop.item` e outros outputs da iteração.
+- `IF`, que avalia uma condição persistida e executa somente o ramo selecionado.
+- `EDIT`, que prepara, valida, aplica e recupera alterações de arquivos, incluindo conflitos de versão e criação de arquivos ausentes.
 
-O histórico é validado antes da retomada. Registros inconsistentes, passos removidos ou resultados editados com etapas posteriores são rejeitados. Resultados e entradas são salvos progressivamente; falhas deixam o ponto pendente para uma execução posterior.
+Antes da retomada, o histórico é validado contra a estrutura atual do workflow. Registros inconsistentes, passos removidos, condições ou resultados alterados e registros posteriores a um passo pendente são rejeitados. Os resultados de agentes e ferramentas são propagados por outputs globais ou locais de loops.
 
-Erros são propagados por `Result<String, String>` e pelo operador `?`. Também há validações explícitas para agentes inexistentes, adaptadores desconhecidos, respostas vazias, arquivos inválidos e histórico incompatível. A execução externa é feita por `BashService` através de `Invocation`, verificando o status do processo.
+Erros são representados como `Result<_, String>` e propagados com `?`, com validações explícitas para diretórios, agentes, adaptadores, permissões de edição, respostas vazias, pedidos `ASK:` ou `EDIT:` inválidos, arquivos e histórico incompatível. A execução de processos externos passa por `BashService` e `Invocation`, verificando o status do processo antes de confirmar sua saída.
 
 ### Componentes principais
 
-- `execute`: executa uma `Invocation` usando `BashService`, captura a saída e rejeita processos com status de erro.
-- `run`: inicia uma execução interativa usando entrada do terminal.
-- `resume`: abre um histórico existente e continua sua execução.
-- `run_with`: executa sem interação, rejeitando perguntas que exigiriam entrada do usuário.
-- `run_interactive_with`: valida o workflow, carrega agentes e cria o snapshot inicial.
-- `validate_snapshot`: verifica diretório, agentes, adaptadores, configurações `ask` e compatibilidade com histórico.
-- `all_steps`: percorre recursivamente passos normais, loops e ramificações condicionais.
-- `validate_blocks`, `validate_edit_blocks` e `validate_step_blocks`: verificam se os registros persistidos correspondem à estrutura esperada do workflow.
-- `continue_with`: valida o histórico e inicia o `Engine`.
-- `Engine::run_steps`: percorre passos, controla IDs hierárquicos, escopos locais, loops, condições e propagação de outputs.
-- `Engine::run_step`: executa passos de edição, ferramentas e agentes, atualizando o histórico.
+- `execute`: executa uma `Invocation` com `BashService`, captura a saída e rejeita processos que terminam com erro.
+- `run`, `resume`, `run_with` e `run_interactive_with`: iniciam execuções interativas, sem entrada, novas ou retomadas a partir de histórico.
+- `validate_snapshot`: verifica o workflow, o diretório, agentes, adaptadores, permissões de edição e configurações de perguntas.
+- `all_steps`: percorre recursivamente passos comuns, loops e os dois ramos de condições para localizar agentes.
+- `validate_blocks`, `validate_edit_blocks`, `validate_step_blocks` e `validate_agent_blocks`: conferem se os blocos persistidos correspondem ao tipo e à posição esperados no workflow.
+- `external_edit_request`, `prepare_external_edit` e `completed_external_edit`: interpretam pedidos externos `EDIT:`, preparam alterações e detectam pedidos já aplicados.
+- `continue_with`: valida o histórico e cria o `Engine` para continuar a execução.
+- `Engine::run_steps`: controla a sequência, IDs hierárquicos, loops, condições, escopos locais e propagação de outputs.
+- `Engine::run_step`: executa edições, confirmações, ferramentas e conversas com agentes, salvando cada transição no histórico.
 - `question`: reconhece respostas de agentes no formato `ASK:`.
-- Módulo `tests`: contém testes de retomada, perguntas, ferramentas, loops, condições, edições, arquivos e recuperação após falhas.
+- Módulo `tests`: cobre retomada, perguntas, ferramentas, loops, condições, edições, conflitos, arquivos, histórico e recuperação após falhas.
 
-### integrações
+### Integrações
 
-O arquivo expõe as funções públicas `run`, `resume`, `run_with`, `run_interactive_with` e `continue_with`, que retornam `BTreeMap<String, String>` com os outputs finais ou um erro textual.
+O arquivo expõe as funções públicas `run`, `resume`, `run_with`, `run_interactive_with` e `continue_with`, que retornam `BTreeMap<String, String>` com outputs globais ou um erro textual. `run` e `run_interactive_with` usam entrada de terminal; `run_with` rejeita pedidos que exigem entrada; `resume` e `continue_with` retomam um `History` existente.
 
 Ele integra os módulos internos de:
 
-- `adapters`, para resolver adaptadores e criar invocações de agentes;
-- `agents`, para carregar configurações;
+- `adapters`, para resolver adaptadores e construir invocações de agentes;
+- `agents`, para carregar configurações persistidas;
 - `harness`, para representar requisições aos agentes;
-- `history`, para snapshots, blocos e persistência;
-- `input`, para entrada interativa;
+- `history`, para snapshots, blocos, labels e persistência;
+- `input`, para entrada interativa e confirmações;
 - `services`, para execução de processos externos;
-- `workflow`, para passos, loops, condições e templates;
-- `tools`, para leitura, escrita, edição, execução de ferramentas e solicitações `TREE`/`READ`.
+- `workflow`, para passos, loops, condições, branches e templates;
+- `tools`, para leitura, escrita, edição, ferramentas customizadas e operações `TREE`/`READ`.
 
-O comportamento detalhado dessas estruturas depende dos módulos importados, que não estão incluídos no conteúdo analisado.
+Os detalhes das estruturas importadas e dos adaptadores dependem dos respectivos módulos, que não fazem parte do conteúdo analisado.

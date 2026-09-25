@@ -11,6 +11,8 @@ pub struct Agent {
     pub model: Option<String>,
     pub json: bool,
     pub ask: Option<String>,
+    #[serde(default, rename = "EDIT_TOOL")]
+    pub edit_tool: bool,
 }
 
 #[derive(Deserialize)]
@@ -22,6 +24,23 @@ struct Metadata {
     #[serde(default)]
     json: bool,
     ask: Option<String>,
+    #[serde(
+        default,
+        rename = "EDIT_TOOL",
+        deserialize_with = "deserialize_edit_tool"
+    )]
+    edit_tool: bool,
+}
+
+fn deserialize_edit_tool<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value == "allow" {
+        Ok(true)
+    } else {
+        Err(serde::de::Error::custom("`EDIT_TOOL` must be `allow`"))
+    }
 }
 
 fn deserialize_model<'de, D: serde::Deserializer<'de>>(
@@ -94,6 +113,7 @@ impl Agent {
             model: metadata.model,
             json: metadata.json,
             ask: metadata.ask,
+            edit_tool: metadata.edit_tool,
         })
     }
 }
@@ -113,6 +133,7 @@ mod tests {
         assert_eq!(agent.instructions, "# Review\n\nBe careful.");
         assert_eq!(agent.model.as_deref(), Some("custom"));
         assert!(!agent.json);
+        assert!(!agent.edit_tool);
     }
 
     #[test]
@@ -137,11 +158,27 @@ mod tests {
             "---\nadapter: codex\nunknown: true\n---\nReview",
             "---\nadapter: codex\nwrite: true\n---\nReview",
             "---\nadapter: codex\njson: true\n---\nReview",
+            "---\nadapter: codex\nEDIT_TOOL: deny\n---\nReview",
         ] {
             assert!(Agent::parse("reviewer", source).is_err());
         }
         for id in ["", "../outside", "/tmp/agent", "agent.md"] {
             assert!(Agent::load(Path::new(".agents"), id).is_err());
         }
+    }
+
+    #[test]
+    fn enables_the_external_edit_tool_only_when_allowed() {
+        let agent = Agent::parse(
+            "editor",
+            "---\nadapter: codex\nEDIT_TOOL: allow\n---\nUpdate documentation.",
+        )
+        .unwrap();
+        assert!(agent.edit_tool);
+        assert!(
+            serde_yaml::to_string(&agent)
+                .unwrap()
+                .contains("EDIT_TOOL: true")
+        );
     }
 }

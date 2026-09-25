@@ -36,14 +36,15 @@ O caminho do arquivo é resolvido dentro de um diretório-base. Arquivos simból
   - `prepare`: captura o conteúdo atual e prepara a edição.
   - `diff`: gera o diff da alteração.
   - `commit`: confirma a alteração no filesystem.
+
+### integrações
+
 - `sync_parent`: sincroniza o diretório que contém o arquivo.
 - `read_optional`: lê um arquivo UTF-8, diferenciando arquivo ausente de erro de leitura.
 - `target`: valida e resolve o caminho do arquivo dentro do diretório de execução.
 - `display`: imprime um diff com cores quando a saída é um terminal e `NO_COLOR` não está definido.
 - `render`: aplica destaque visual a linhas adicionadas e removidas e escapa caracteres de controle.
-- Módulo de testes: cobre edições por linha, preservação de bytes, fim de arquivo, conflitos de versão e renderização de diffs.
-
-### Dependências e integrações
+- Módulo de testes: cobre edições por linha, preservação de bytes, fim de arquivo, conflitos de versão e renderização de diffs.### Dependências e integrações
 
 - `serde`: serialização e desserialização de `Operation`, `Request` e `Pending`.
 - `sha2`: cálculo do SHA-256 usado no controle otimista de versão.
