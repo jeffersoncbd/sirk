@@ -6,9 +6,11 @@
 - The entire `docs/` directory is read-only. You may consult files under
   `docs/`, but never create, edit, rename, or delete anything there.
 - [docs/TREE.md](docs/TREE.md) is the trusted source-file and architecture index.
-  Start there to locate the relevant modules instead of scanning all source or
-  loading every document. For `src/foo/bar.rs`, read `docs/src/foo/bar.md`;
-  `Cargo.toml` maps to `docs/Cargo.md`.
+  At the start of a task, read only this file from `docs/`; do not enumerate or
+  load the rest of that directory. Use it to locate the relevant modules, then
+  consult only their documentation when the task requires it. For
+  `src/foo/bar.rs`, read `docs/src/foo/bar.md`; `Cargo.toml` maps to
+  `docs/Cargo.md`.
 - Consult [REFERENCE.md](REFERENCE.md) for detailed user-facing syntax
   and behavior, and the relevant sections of [CONTRACTS.md](CONTRACTS.md)
   for compatibility requirements. Neither needs to be loaded in full each session.

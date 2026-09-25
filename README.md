@@ -99,7 +99,8 @@ iteration. Templates do not expand inserted content again.
 | LOOP | Run `iter` steps for each string in an array. |
 | IF | Select `is_true` or `is_false` steps from a strict boolean condition. |
 
-Agents run read-only and can request `TREE`, `READ: <path>`, or `ASK: <question>`.
+Agents run read-only and can request `READ: <path>` or `ASK: <question>`. An
+agent may request `TREE` only with explicit `TREE_TOOL: allow` metadata.
 An agent with explicit `DELETE_TOOL: allow` metadata may also request deletion.
 Other tools are workflow-only. File tools operate inside the execution directory.
 Agent definitions and history also resolve there, regardless of the YAML's path.

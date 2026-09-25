@@ -20,6 +20,7 @@ underscores, or hyphens. Example:
 adapter: codex
 model: gpt-6-sol
 ask: "What shall we plan?"
+call_prefix: [docker, exec, -i, harness]
 ---
 
 You are a software planner. Produce an actionable implementation plan.
@@ -31,6 +32,8 @@ If clarification is needed, respond only with ASK: followed by your question.
 | `adapter` | Required; `codex` or `opencode`. |
 | `model` | Optional; omitted uses the harness default. Trimmed and lowercased on load. |
 | `ask` | Optional initial question, asked before the first model call. |
+| `call_prefix` | Optional command token or YAML string array prepended to the adapter invocation. Use `[docker, exec, -i, container]` to run the adapter CLI in a container. Every item is one literal argument; shell syntax is not interpreted. Include Docker's `--workdir` option when the container needs a specific working directory. |
+| `TREE_TOOL` | Defaults to disabled. Set to `allow` to let the agent request `TREE`. |
 | `json` | Defaults to false. True is rejected until event normalization exists. |
 
 The Markdown body contains the agent instructions and must not be empty.
@@ -123,7 +126,7 @@ and control characters; non-UTF-8 paths produce an explicit serialization error.
   output: tree
 ```
 
-TREE accepts no nonempty input. An agent can request it by responding with
+TREE accepts no nonempty input. An agent with `TREE_TOOL: allow` can request it by responding with
 exactly `TREE`, ignoring surrounding whitespace. Sentences, code fences,
 `tree`, and `TREE: ...` do not invoke it. The result is returned to the same
 agent, which continues its response.

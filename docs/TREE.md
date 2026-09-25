@@ -6,13 +6,13 @@ src/adapters/ollama.rs - Adapta requisições genéricas do harness para invoca�
 src/adapters/ollama_web.rs - Adapta solicitações do harness para chamadas HTTP ao Ollama via curl e extrai o texto gerado.
 src/adapters/opencode.rs - Adapta requisições do harness para comandos seguros e executáveis pela CLI do OpenCode.
 src/adapters/openrouter.rs - Implementa o adaptador OpenRouter, criando requisições curl e interpretando respostas JSON da API.
-src/agents.rs - Define, valida e carrega agentes a partir de arquivos Markdown com metadados YAML e permissões configuráveis.
+src/agents.rs - Define, valida e carrega agentes a partir de arquivos Markdown com metadados YAML e permissões.
 src/harness.rs - Define a abstração comum para adaptar CLIs de agentes, construir execuções e tratar suas respostas e erros.
 src/history.rs - Gerencia a criação, leitura, gravação e recuperação persistente dos históricos de execução em formato v2.
 src/input.rs - Define a interface síncrona de entrada do usuário e implementa perguntas e confirmações via terminal.
 src/lib.rs - Organiza e expõe publicamente os principais módulos da crate Rust, sem implementar lógica de negócio.
 src/main.rs - Ponto de entrada que interpreta comandos e executa ou retoma workflows em modo interativo ou direto.
-src/runner.rs - Executa e retoma workflows, coordenando agentes, ferramentas, interações e histórico persistido.
+src/runner.rs - Executa e retoma workflows sequenciais, coordenando agentes, ferramentas, histórico e alterações de arquivos.
 src/services/bash.rs - Executa processos Bash com argumentos seguros, transmite e captura suas saídas textual ou binária.
 src/services/mod.rs - Define invocações estruturadas e expõe os serviços e resultados da execução de comandos Bash.
 src/tools/custom.rs - Executa scripts Bash personalizados do diretório `tools`, validando caminhos e argumentos com segurança.

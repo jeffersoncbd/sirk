@@ -759,6 +759,9 @@ where
                         }
                         history.save()?;
                     } else if let Some((tool, argument)) = crate::tools::request(text) {
+                        if tool == "TREE" && !agent.tree_tool {
+                            return Err("agent requested TREE_TOOL without permission".into());
+                        }
                         let result = crate::tools::execute_with_input(
                             tool,
                             argument,
@@ -820,7 +823,9 @@ where
                 | Block::Edit(_)
                 | Block::Delete(_) => {
                     let mut prompt = agent.instructions.clone();
-                    prompt.push_str("\n\nAvailable tool: TREE. To list project files respecting Git ignores, respond with exactly TREE and nothing else. The tool result will be returned so you can continue your response.");
+                    if agent.tree_tool {
+                        prompt.push_str("\n\nAvailable tool: TREE. To list project files respecting Git ignores, respond with exactly TREE and nothing else. The tool result will be returned so you can continue your response.");
+                    }
                     prompt.push_str("\nAvailable tool: READ. To read a UTF-8 file inside the execution directory, respond with exactly READ: <path> on one line, without quotes or code fences. Paths are relative to the execution directory. The file content will be returned so you can continue your response.");
                     if agent.edit_tool {
                         prompt.push_str("\n\nExternal tool: EDIT. This tool is executed after your response; do not try to use an internal tool. To request exactly one file edit, respond only with `EDIT:` followed by a JSON object, without code fences or any other text. The object must contain `path`, `operation`, and `input`. `operation` is one of `insert`, `delete`, `replace`, `prepend`, or `append`. For `insert`, also provide positive integer `line`. For `delete` and `replace`, also provide positive integer `start` and `end` (inclusive). `delete` requires an empty `input`. `prepend` and `append` take no coordinates. Paths are relative to the execution directory. Do not include `version`; the external tool verifies the current document before applying the edit. After a successful edit, you receive its diff and may request another edit or provide your final answer. A Tool result (EDIT) beginning with `EDIT failed:` means no change was made; correct the request and try again. Before requesting another edit, inspect every Tool result (EDIT) in the conversation. Never repeat a request that was already applied; if the diff completes the work, provide your final answer. Request edits only when necessary.");
@@ -863,7 +868,8 @@ where
                             model: agent.model.clone(),
                             event_stream: false,
                         })
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| e.to_string())?
+                        .with_prefix(&agent.call_prefix);
                     let response = adapter
                         .response((self.execute)(&invocation)?)
                         .map_err(|e| e.to_string())?;
@@ -949,6 +955,56 @@ mod tests {
     }
     fn workflow() -> Workflow {
         serde_yaml::from_str("version: 1\nsteps:\n- agent: planner\n  input: Initial context\n  output: plan\n- agent: second\n  input: '{{ outputs.plan }}'\n  output: review\n").unwrap()
+    }
+    #[test]
+    fn runs_an_agent_through_its_call_prefix() {
+        let project = Project::new();
+        fs::write(
+            project.0.join(".agents/planner.md"),
+            "---\nadapter: codex\ncall_prefix: [docker, exec, -i, harness]\n---\nMake a plan.",
+        )
+        .unwrap();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- agent: planner\n  output: plan\n").unwrap();
+
+        let output = run_with(&workflow, &project.0, |invocation| {
+            assert_eq!(invocation.program, "docker");
+            assert_eq!(
+                invocation.arguments[..5],
+                ["exec", "-i", "harness", "codex", "exec"]
+            );
+            assert!(
+                invocation
+                    .arguments
+                    .last()
+                    .unwrap()
+                    .contains("Make a plan.")
+            );
+            Ok("Plan".into())
+        })
+        .unwrap();
+
+        assert_eq!(output["plan"], "Plan");
+    }
+    #[test]
+    fn tree_is_not_advertised_or_executed_without_permission() {
+        let project = Project::new();
+        let workflow: Workflow =
+            serde_yaml::from_str("version: 1\nsteps:\n- agent: second\n  output: final\n").unwrap();
+
+        let error = run_with(&workflow, &project.0, |invocation| {
+            assert!(
+                !invocation
+                    .arguments
+                    .last()
+                    .unwrap()
+                    .contains("Available tool: TREE")
+            );
+            Ok("TREE".into())
+        })
+        .unwrap_err();
+
+        assert_eq!(error, "agent requested TREE_TOOL without permission");
     }
     #[test]
     fn resumes_failed_turn_with_context_and_replays_edited_output() {
@@ -1141,6 +1197,11 @@ mod tests {
     #[test]
     fn agent_tree_request_and_result_survive_interruptions() {
         let project = Project::new();
+        fs::write(
+            project.0.join(".agents/second.md"),
+            "---\nadapter: codex\nTREE_TOOL: allow\n---\nReview the plan.",
+        )
+        .unwrap();
         let workflow: Workflow =
             serde_yaml::from_str("version: 1\nsteps:\n- agent: second\n  output: final\n").unwrap();
         // The request is saved even if TREE fails (no repository yet).

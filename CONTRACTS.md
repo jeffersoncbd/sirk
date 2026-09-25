@@ -67,8 +67,8 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
 - CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
   require a string-array input, pass each item as one positional argument, and
   use exact UTF-8 stdout as the result. Keep script execution in `BashService`.
-- Recognize ordinary agent requests only as standalone `TREE` or one-line
-  `READ: <path>` responses. DELETE is an explicit external tool with separate,
+- Recognize ordinary agent requests only as standalone `TREE` from agents with
+  `TREE_TOOL: allow`, or one-line `READ: <path>` responses. DELETE is an explicit external tool with separate,
   validated agent permissions; use the same deletion implementation for YAML
   steps and that external tool.
 - LOOP is YAML-only. Do not register it in the agent tool dispatcher or

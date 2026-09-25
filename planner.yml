@@ -1,0 +1,9 @@
+version: 1
+
+steps:
+  - agent: planner
+    output: plan
+  
+  - tool: WRITE
+    path: "PLAN.md"
+    input: "{{ outputs.plan }}"

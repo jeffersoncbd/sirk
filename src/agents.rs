@@ -9,6 +9,10 @@ pub struct Agent {
     pub instructions: String,
     #[serde(default, deserialize_with = "deserialize_model")]
     pub model: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_call_prefix")]
+    pub call_prefix: Vec<String>,
+    #[serde(default = "legacy_tree_tool_default", rename = "TREE_TOOL")]
+    pub tree_tool: bool,
     pub json: bool,
     pub ask: Option<String>,
     #[serde(default, rename = "EDIT_TOOL")]
@@ -25,6 +29,14 @@ struct Metadata {
     adapter: String,
     #[serde(default, deserialize_with = "deserialize_model")]
     model: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_call_prefix")]
+    call_prefix: Vec<String>,
+    #[serde(
+        default,
+        rename = "TREE_TOOL",
+        deserialize_with = "deserialize_tree_permission"
+    )]
+    tree_tool: bool,
     #[serde(default)]
     json: bool,
     ask: Option<String>,
@@ -72,10 +84,50 @@ fn deserialize_delete_permission<'de, D: serde::Deserializer<'de>>(
     }
 }
 
+fn deserialize_tree_permission<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value == "allow" {
+        Ok(true)
+    } else {
+        Err(serde::de::Error::custom("`TREE_TOOL` must be `allow`"))
+    }
+}
+
+// Agent snapshots created before TREE_TOOL existed implicitly allowed TREE.
+fn legacy_tree_tool_default() -> bool {
+    true
+}
+
 fn deserialize_model<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     Ok(Option::<String>::deserialize(deserializer)?.map(|model| model.trim().to_lowercase()))
+}
+
+fn deserialize_call_prefix<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<String>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum CallPrefix {
+        One(String),
+        Many(Vec<String>),
+    }
+
+    let prefix = Option::<CallPrefix>::deserialize(deserializer)?
+        .map(|prefix| match prefix {
+            CallPrefix::One(token) => vec![token],
+            CallPrefix::Many(tokens) => tokens,
+        })
+        .unwrap_or_default();
+    if prefix.iter().any(|token| token.is_empty()) {
+        return Err(serde::de::Error::custom(
+            "`call_prefix` cannot contain an empty argument",
+        ));
+    }
+    Ok(prefix)
 }
 
 pub fn valid_id(id: &str) -> bool {
@@ -143,6 +195,8 @@ impl Agent {
             adapter: metadata.adapter,
             instructions,
             model: metadata.model,
+            call_prefix: metadata.call_prefix,
+            tree_tool: metadata.tree_tool,
             json: metadata.json,
             ask: metadata.ask,
             edit_tool: metadata.edit_tool,
@@ -166,6 +220,8 @@ mod tests {
         assert_eq!(agent.id, "reviewer");
         assert_eq!(agent.instructions, "# Review\n\nBe careful.");
         assert_eq!(agent.model.as_deref(), Some("custom"));
+        assert!(agent.call_prefix.is_empty());
+        assert!(!agent.tree_tool);
         assert!(!agent.json);
         assert!(!agent.edit_tool);
         assert!(!agent.delete_tool);
@@ -184,6 +240,43 @@ mod tests {
         let restored: Agent = serde_yaml::from_str(&snapshot).unwrap();
         assert_eq!(restored.model.as_deref(), Some("gpt-6-astra"));
     }
+
+    #[test]
+    fn reads_call_prefix_as_one_token_or_an_argument_list() {
+        let single = Agent::parse(
+            "containerized",
+            "---\nadapter: codex\ncall_prefix: wrapper\n---\nReview.",
+        )
+        .unwrap();
+        assert_eq!(single.call_prefix, ["wrapper"]);
+
+        let docker = Agent::parse(
+            "containerized",
+            "---\nadapter: codex\ncall_prefix: [docker, exec, -i, harness]\n---\nReview.",
+        )
+        .unwrap();
+        assert_eq!(docker.call_prefix, ["docker", "exec", "-i", "harness"]);
+        assert!(
+            serde_yaml::to_string(&docker)
+                .unwrap()
+                .contains("call_prefix:\n- docker\n- exec")
+        );
+    }
+
+    #[test]
+    fn enables_tree_only_when_explicitly_allowed() {
+        let agent = Agent::parse(
+            "explorer",
+            "---\nadapter: codex\nTREE_TOOL: allow\n---\nInspect the project.",
+        )
+        .unwrap();
+        assert!(agent.tree_tool);
+        assert!(
+            serde_yaml::to_string(&agent)
+                .unwrap()
+                .contains("TREE_TOOL: true")
+        );
+    }
     #[test]
     fn rejects_malformed_definitions_and_paths() {
         for source in [
@@ -196,6 +289,8 @@ mod tests {
             "---\nadapter: codex\nEDIT_TOOL: deny\n---\nReview",
             "---\nadapter: codex\nDELETE_TOOL: deny\n---\nReview",
             "---\nadapter: codex\nDELETE_WITHOUT_CONFIRM: allow\n---\nReview",
+            "---\nadapter: codex\nTREE_TOOL: deny\n---\nReview",
+            "---\nadapter: codex\ncall_prefix: [docker, '']\n---\nReview",
         ] {
             assert!(Agent::parse("reviewer", source).is_err());
         }

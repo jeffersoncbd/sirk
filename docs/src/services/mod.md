@@ -13,6 +13,8 @@ O módulo interno `bash` é declarado com `mod bash`, tornando sua implementaç�
 
 As variáveis de ambiente ficam armazenadas em um `BTreeMap` e não devem ser incorporadas ao texto do comando shell, conforme indicado pelo comentário da estrutura.
 
+
+O método público `Invocation::with_prefix` adiciona um prefixo não vazio ao programa e aos argumentos da invocação, sem usar parsing de shell. O primeiro item do prefixo substitui `program`, os demais precedem o programa original, e as configurações de diretório e ambiente permanecem inalteradas.
 ### Componentes principais
 
 - `BashService`: reexportado de `bash`; representa o serviço de execução de comandos Bash.
