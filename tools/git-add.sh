@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-git add docs/*
+git add -- docs
