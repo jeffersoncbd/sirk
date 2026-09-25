@@ -3,16 +3,18 @@
 ## Read only what the task needs
 
 - [README.md](README.md) is the concise user manual.
+- The entire `docs/` directory is read-only. You may consult files under
+  `docs/`, but never create, edit, rename, or delete anything there.
 - [docs/TREE.md](docs/TREE.md) is the trusted source-file and architecture index.
   Start there to locate the relevant modules instead of scanning all source or
   loading every document. For `src/foo/bar.rs`, read `docs/src/foo/bar.md`;
   `Cargo.toml` maps to `docs/Cargo.md`.
-- Consult [docs/REFERENCE.md](docs/REFERENCE.md) for detailed user-facing syntax
-  and behavior, and the relevant sections of [docs/CONTRACTS.md](docs/CONTRACTS.md)
+- Consult [REFERENCE.md](REFERENCE.md) for detailed user-facing syntax
+  and behavior, and the relevant sections of [CONTRACTS.md](CONTRACTS.md)
   for compatibility requirements. Neither needs to be loaded in full each session.
 - Inspect the relevant current source before editing. Documentation is the
-  navigation reference; reconcile any discrepancy with code and tests, and update
-  affected documentation as part of the change.
+  navigation reference; reconcile any discrepancy with code and tests, and
+  report documentation that became stale without modifying `docs/`.
 
 These instructions apply to development. Workflow agents and definition
 generators should perform their assigned task without repository maintenance or
@@ -27,8 +29,8 @@ instructions.
   workflow is [create-documentation.yml](create-documentation.yml).
 - Stay within the requested feature. Known limitations, the deprecated
   `serde_yaml 0.9` dependency, and the broken `build.sh` are not implicit tasks.
-- Write tool-owned code, comments, messages, tests, logs, and documentation in
-  English. Preserve user-authored text in its original language.
+- Write tool-owned code, comments, messages, tests, and logs in English.
+  Preserve user-authored text in its original language.
 
 ## Implementation boundaries
 
@@ -45,7 +47,7 @@ before changing flags. New adapters implement `HarnessAdapter` and register in
 
 Preserve supported v2 transcripts and workflow compatibility. Before changing
 execution, tools, scopes, or recovery, consult the corresponding
-[contracts](docs/CONTRACTS.md) and module documents indexed by [TREE](docs/TREE.md).
+[contracts](CONTRACTS.md) and module documents indexed by [TREE](docs/TREE.md).
 
 ## Build and verify
 
@@ -79,11 +81,10 @@ compatible.
 ## Documentation and handoff
 
 Keep README limited to setup, everyday commands, and a short usage overview.
-Detailed usage belongs in `docs/REFERENCE.md`; development contracts belong in
-`docs/CONTRACTS.md`. Keep module explanations in their corresponding `docs/`
-paths and maintain `docs/TREE.md` when file responsibilities or inventory change.
-Update affected documents when behavior changes so the index remains reliable.
-Do not duplicate the architecture map here or load all module docs by default.
+Never modify files under `docs/`, even when behavior, contracts, file
+responsibilities, or inventory change. Report any resulting documentation gap
+in the handoff. Do not duplicate the architecture map here or load all module
+docs by default.
 
 Report changes, relevant checks, and limitations. Avoid stale container IDs,
 fixed test counts, or historical success claims as ongoing guarantees.
