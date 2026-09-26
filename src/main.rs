@@ -1,6 +1,5 @@
 use std::env;
-use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use new_harness::runner;
@@ -18,7 +17,10 @@ fn main() -> ExitCode {
 
 fn run(arguments: Vec<String>) -> Result<(), String> {
     match arguments.as_slice() {
-        [] => interactive(),
+        [] => {
+            print_usage();
+            Ok(())
+        }
         [command] if matches!(command.as_str(), "--newAgent" | "--new-agent") => {
             let path = new_harness::tools::new_agent::create(
                 &env::current_dir().map_err(|e| e.to_string())?,
@@ -27,7 +29,7 @@ fn run(arguments: Vec<String>) -> Result<(), String> {
             println!("Agent created: {}", path.display());
             Ok(())
         }
-        [command, path] if command == "run" => run_workflow(Path::new(path)),
+        [command, name] if command == "run" => run_workflow(name),
         [command, path] if command == "resume" => resume_workflow(Path::new(path)),
         [command] if matches!(command.as_str(), "help" | "--help" | "-h") => {
             print_usage();
@@ -37,49 +39,27 @@ fn run(arguments: Vec<String>) -> Result<(), String> {
     }
 }
 
-fn interactive() -> Result<(), String> {
-    println!("New Harness — workflow orchestrator");
-    println!("Enter `run <workflow.yml>`, a workflow path, or `/help`.");
-    let stdin = io::stdin();
-    loop {
-        print!("new-harness> ");
-        io::stdout().flush().map_err(|error| error.to_string())?;
-        let mut line = String::new();
-        if stdin
-            .read_line(&mut line)
-            .map_err(|error| error.to_string())?
-            == 0
-        {
-            return Ok(());
-        }
-        let line = line.trim();
-        match line {
-            "" => continue,
-            "/quit" | "/exit" => return Ok(()),
-            "/help" => print_usage(),
-            _ => {
-                if let Some(path) = line.strip_prefix("resume ") {
-                    if let Err(error) = resume_workflow(Path::new(path)) {
-                        eprintln!("error: {error}");
-                    }
-                    continue;
-                }
-                let path = line.strip_prefix("run ").unwrap_or(line);
-                if let Err(error) = run_workflow(Path::new(path)) {
-                    eprintln!("error: {error}");
-                }
-            }
-        }
-    }
-}
-
-fn run_workflow(path: &Path) -> Result<(), String> {
-    let workflow = Workflow::from_file(path)?;
+fn run_workflow(name: &str) -> Result<(), String> {
+    let path = workflow_path(name)?;
+    let workflow = Workflow::from_file(&path)?;
     let working_directory = env::current_dir()
         .and_then(|directory| directory.canonicalize())
         .map_err(|error| format!("could not resolve current working directory: {error}"))?;
     runner::run(&workflow, &working_directory)?;
     Ok(())
+}
+
+fn workflow_path(name: &str) -> Result<PathBuf, String> {
+    if name.is_empty()
+        || !name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
+    {
+        return Err(format!(
+            "invalid flow name `{name}`; use letters, digits, `_` or `-`"
+        ));
+    }
+    Ok(Path::new("flows").join(format!("{name}.yml")))
 }
 
 fn print_usage() {
@@ -92,7 +72,7 @@ fn resume_workflow(path: &Path) -> Result<(), String> {
 }
 
 fn usage() -> &'static str {
-    "Usage:\n  new-harness\n  new-harness --newAgent\n  new-harness run <workflow.yml>\n  new-harness resume <history.log>\n\n--newAgent (alias --new-agent) creates an agent interactively.\nWith no arguments, opens an interactive workflow session.\n\nInteractive commands:\n  run <workflow.yml>  Start a workflow\n  <workflow.yml>      Start a workflow directly\n  resume <history.log> Resume an editable transcript\n  /help               Show this help\n  /quit               Leave the session\n\nDuring a question, /cancel cancels input. Workflow history can be resumed.\n"
+    "Usage:\n  new-harness --newAgent\n  new-harness run <flow-name>\n  new-harness resume <history.log>\n\nFlows resolve to flows/<flow-name>.yml.\n\n--newAgent (alias --new-agent) creates an agent interactively. During a question, /cancel cancels input. Workflow history can be resumed.\n"
 }
 
 #[cfg(test)]
@@ -109,10 +89,35 @@ mod tests {
     }
 
     #[test]
-    fn usage_distinguishes_cli_and_interactive_workflow_commands() {
+    fn usage_lists_explicit_flow_commands() {
         let text = usage();
-        assert!(text.contains("new-harness run <workflow.yml>"));
-        assert!(text.contains("  <workflow.yml>      Start a workflow directly"));
-        assert!(!text.contains("Workflow commands:"));
+        assert!(text.contains("new-harness run <flow-name>"));
+        assert!(text.contains("Flows resolve to flows/<flow-name>.yml."));
+        assert!(!text.contains("Interactive commands:"));
+        assert!(!text.contains("<flow-name>      Start a flow directly"));
+    }
+
+    #[test]
+    fn accepts_no_arguments_without_starting_a_prompt() {
+        run(vec![]).unwrap();
+    }
+
+    #[test]
+    fn resolves_flow_names_inside_the_flows_directory() {
+        assert_eq!(
+            workflow_path("documentation").unwrap(),
+            Path::new("flows/documentation.yml")
+        );
+        assert_eq!(
+            workflow_path("release_notes-2").unwrap(),
+            Path::new("flows/release_notes-2.yml")
+        );
+    }
+
+    #[test]
+    fn rejects_flow_paths_and_extensions() {
+        for invalid in ["", "documentation.yml", "../documentation", "nested/flow"] {
+            assert!(workflow_path(invalid).is_err(), "{invalid:?}");
+        }
     }
 }

@@ -11,4 +11,4 @@ if [[ ! -x ./new-harness ]]; then
 fi
 
 printf '%s\n' 'pre-commit: updating project documentation...'
-exec ./new-harness run documentation.yml
+exec ./new-harness run documentation

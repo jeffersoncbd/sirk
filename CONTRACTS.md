@@ -36,9 +36,13 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
 - GIT-STATUS-TREE includes deleted paths as well as existing status entries, so
   workflows can remove derived artifacts. It still applies `.treeignore` to
   every status entry.
-- READ returns exact UTF-8 contents, including empty text, without headers.
-  It accepts only regular files whose resolved paths stay within the execution
-  directory. TREE ignore rules are not READ access rules.
+- READ returns exact UTF-8 contents, including empty text, without headers by
+  default. A READ workflow step with `enumerate: true` returns a `Line | Content`
+  presentation with one-based source-line prefixes; its version output still
+  hashes the exact unformatted contents. Agents with EDIT_TOOL permission receive
+  the same presentation for READ requests. READ accepts only regular files whose
+  resolved paths stay within the execution directory. TREE ignore rules are not
+  READ access rules.
 - WRITE is YAML-only and is never advertised to agents. It creates missing
   parent directories and writes text to a regular path inside the execution
   directory; existing files fail unless the workflow explicitly sets `force: true`.
@@ -58,8 +62,9 @@ Development workflow and checks are in [AGENTS.md](../AGENTS.md).
 - Append/prepend create absent targets in existing parent directories. Persist
   absence separately from empty content, publish creation without overwriting a
   concurrently created file, and never recreate a deleted prepared-update target.
-- Keep READ's text result exact when emitting version-output. Its digest follows
-  ordinary output scope rules and is reconstructed from saved text on resume.
+- Keep READ's unformatted text exact when emitting version-output. Its digest
+  follows ordinary output scope rules and is reconstructed from saved text on
+  resume, including enumerated READ results.
 - Persist EDIT's request and prepared original content in its INPUT block before
   mutation. Resume distinguishes original, already-applied and conflicting file
   contents. Validate prepared records and completed diffs before pending work.

@@ -155,19 +155,29 @@ omitted. Symlinks are listed without traversal.
 ### READ
 
 Returns only the UTF-8 content of a regular file, with no header or added
-newline. An empty file returns empty text.
+newline by default. An empty file returns empty text.
 
 ```yaml
 - tool: READ
   input: src/main.rs
+  enumerate: true
   output: source
 ```
+
+With `enumerate: true`, READ returns a presentation suitable for selecting EDIT
+coordinates. It starts with `Line | Content`, then prefixes each original line
+with its one-based number and ` | `. Empty lines are represented too. The
+returned value is formatted; `version-output`, when set, still hashes the exact
+unformatted file content.
 
 Agents request it with a standalone, single-line response:
 
 ```text
 READ: src/main.rs
 ```
+
+When an agent has `EDIT_TOOL: allow`, its READ results are automatically
+enumerated in this format so coordinate-based edits can use current line numbers.
 
 Paths are literal, without shell expansion, surrounding quotes, or code fences.
 Spaces are supported. Relative paths resolve from the execution directory;
@@ -176,8 +186,9 @@ Ignore rules affect TREE listings, not explicit READ requests. Git is not
 required. Workflow paths can reference earlier outputs.
 
 Workflow READ steps may additionally set `version-output: revision`. This assigns
-the SHA-256 digest of the exact returned content to a separate output, for use in
-EDIT's `version`. It does not change READ's returned text or add line numbers.
+the SHA-256 digest of the exact unformatted content to a separate output, for use
+in EDIT's `version`. It does not change READ's returned text when `enumerate` is
+not set.
 The version output follows the same global/loop scope rules as `output` and is
 reconstructed from the saved READ result on resume. Use different names for
 `output` and `version-output`.
@@ -483,6 +494,18 @@ output. The transcript retains results for recovery.
 
 ## Questions to the user
 
+A workflow can ask directly, without invoking an agent:
+
+```yaml
+- tool: ASK
+  input: "Which database should the application use?"
+  output: database
+```
+
+`ASK` requires a nonempty text `input`. Its answer is saved before following
+steps run, so `{{ outputs.database }}` can be used later and resuming a run
+does not ask again after an answer was recorded.
+
 An agent's `ask` question is shown before its first call, even when its step
 also has an input. Both the supplied input and the user's answer enter the
 conversation.
@@ -494,8 +517,14 @@ ASK: Which database should the application use?
 ```
 
 The CLI asks the user, saves the answer, and calls the agent again with the
-preceding conversation. TREE, READ, and clarification rounds can be combined
-within a step. Only a final response is published as its named output.
+preceding conversation. Instead of answering with ordinary text, the user may
+enter a standalone `READ: <path>` or `TREE`. The harness records the request,
+executes that read-only tool, and returns its result to the agent before asking
+for a final response. This lets a user supply project context without pasting
+file contents. A user-initiated `TREE` does not require the agent's
+`TREE_TOOL: allow` permission; the user explicitly chose to provide the listing.
+TREE, READ, and clarification rounds can be combined within a step. Only a
+final response is published as its named output.
 
 Terminal answers are single-line; empty answers are retried. `/cancel` or EOF
 stops the run with its current transcript available for resume.

@@ -30,6 +30,9 @@ solicite apenas as edições necessárias pela ferramenta externa EDIT. Preserve
 correto e detalhes ainda válidos. Após receber o diff de uma edição, revise se há
 outra alteração realmente necessária.
 
+Antes de solicitar uma edição por coordenadas, peça READ para o documento-alvo e
+use o resultado numerado atual para definir as coordenadas.
+
 # Diretrizes de análise
 - Não explique nem fale sobre uso do código, pois não será informado quais módulos usam o código informado.
 - Explique a intenção e o comportamento do código, não apenas repita nomes de funções ou traduza cada linha.

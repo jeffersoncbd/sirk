@@ -34,7 +34,7 @@ Enable the repository's documentation pre-commit hook once per clone:
 git config core.hooksPath .githooks
 ```
 
-The hook runs `./new-harness run documentation.yml` before every commit.
+The hook runs `./new-harness run documentation` before every commit.
 It requires the root executable and an authenticated Codex installation, and a
 workflow failure cancels the commit. Generated documentation remains available
 in the working tree for a subsequent commit.
@@ -51,7 +51,7 @@ adapter: codex
 Produce a concise implementation plan for the user's request.
 ```
 
-Create `workflow.yml`:
+Create `flows/workflow.yml`:
 
 ```yaml
 version: 1
@@ -61,10 +61,10 @@ steps:
     output: plan
 ```
 
-Run from the directory containing `.agents/`:
+Run from the project directory containing `.agents/` and `flows/`:
 
 ```bash
-./new-harness run workflow.yml
+./new-harness run workflow
 ./new-harness resume history/run-<id>.log
 ./new-harness --new-agent
 ```
@@ -74,8 +74,8 @@ replacing existing files. It asks separately for the created agent's and the
 generator's adapter/model. Optional agent metadata: `model` and an initial `ask`
 question. Omit `model` to use the harness default.
 
-Without arguments, `./new-harness` opens a command prompt accepting `run <file>`,
-a YAML path, `resume <log>`, `/help`, and `/quit` (also `/exit` or EOF).
+Run `./new-harness --help` to show the available commands. Flow names resolve
+to `flows/<flow-name>.yml`.
 User answers are single-line; `/cancel` or EOF interrupts a workflow.
 Non-interactive commands exit with 0 on success and 2 on failure.
 
@@ -90,10 +90,11 @@ iteration. Templates do not expand inserted content again.
 | --- | --- |
 | TREE | List files as JSON, respecting Git ignores and `.treeignore`. |
 | GIT-STATUS-TREE | List changed, untracked, and deleted paths as JSON, filtered by `.treeignore`. |
-| READ | Read exact UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; optional `version-output` supports EDIT. |
+| READ | Read UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; `enumerate: true` adds line numbers and `version-output` supports EDIT. |
 | WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
 | DELETE | Delete one regular file; confirmation is required unless `force: true` is set. |
 | EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
+| ASK | Ask the user for a nonempty answer; `input` is the question and `output` can pass on the answer. |
 | AWAIT | Pause and wait for the user to press Enter before continuing. |
 | CUSTOM-TOOL | Run `tools/<name>.sh` with a string array of arguments via `custom-tool: name`. |
 | LOOP | Run `iter` steps for each string in an array. |
@@ -104,6 +105,8 @@ agent may request `TREE` only with explicit `TREE_TOOL: allow` metadata.
 An agent with explicit `DELETE_TOOL: allow` metadata may also request deletion.
 Other tools are workflow-only. File tools operate inside the execution directory.
 Agent definitions and history also resolve there, regardless of the YAML's path.
+When answering an `ASK`, the user may instead enter a standalone `READ: <path>`
+or `TREE`; its read-only result is returned to the agent before it continues.
 
 Use `.readignore` to prevent READ from exposing sensitive files. It accepts one
 relative pattern per line; blank lines and `#` comments are ignored. A pattern

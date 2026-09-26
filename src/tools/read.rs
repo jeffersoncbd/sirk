@@ -24,6 +24,46 @@ pub fn read(directory: &Path, path: &str) -> Result<String, String> {
     fs::read_to_string(&file).map_err(|e| format!("READ cannot read `{path}` as UTF-8: {e}"))
 }
 
+/// Presents exact file content with stable, one-based line coordinates.
+///
+/// The header makes the prefix self-describing while each source line, including
+/// its original line ending, remains after its `N | ` prefix.
+pub fn enumerate(content: &str) -> String {
+    let mut numbered = String::from("Line | Content\n");
+    for (index, line) in content.split_inclusive('\n').enumerate() {
+        numbered.push_str(&(index + 1).to_string());
+        numbered.push_str(" | ");
+        numbered.push_str(line);
+    }
+    numbered
+}
+
+/// Recovers exact source content from `enumerate` output saved in a transcript.
+pub fn enumerated_content(numbered: &str) -> Result<String, String> {
+    let body = numbered
+        .strip_prefix("Line | Content\n")
+        .ok_or("invalid enumerated READ result")?;
+    let mut content = String::new();
+    let mut expected = 1usize;
+    let mut remaining = body;
+    while !remaining.is_empty() {
+        let line_end = remaining
+            .find('\n')
+            .map_or(remaining.len(), |index| index + 1);
+        let line = &remaining[..line_end];
+        let (number, source) = line
+            .split_once(" | ")
+            .ok_or("invalid enumerated READ result")?;
+        if number.parse::<usize>().ok() != Some(expected) {
+            return Err("invalid enumerated READ result".into());
+        }
+        content.push_str(source);
+        remaining = &remaining[line_end..];
+        expected += 1;
+    }
+    Ok(content)
+}
+
 fn read_ignored(root: &Path, file: &Path) -> Result<bool, String> {
     let source = match fs::read_to_string(root.join(".readignore")) {
         Ok(source) => source,
@@ -150,5 +190,17 @@ mod tests {
         assert_eq!(read(&directory, "secrets/key"), Err("AccessDenied".into()));
         assert_eq!(read(&directory, "notes.txt"), Ok("notes".into()));
         fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn enumerates_lines_without_losing_exact_content() {
+        for content in ["", "one", "one\n", "one\r\ntwo\n\n"] {
+            let numbered = enumerate(content);
+            assert!(numbered.starts_with("Line | Content\n"));
+            assert_eq!(enumerated_content(&numbered).unwrap(), content);
+        }
+        assert_eq!(enumerate("one\ntwo"), "Line | Content\n1 | one\n2 | two");
+        assert!(enumerated_content("1 | one\n").is_err());
+        assert!(enumerated_content("Line | Content\n2 | one\n").is_err());
     }
 }

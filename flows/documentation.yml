@@ -52,6 +52,7 @@ steps:
               - tool: READ
                 input: "{{ loop.doc_name }}"
                 output: current_document
+                enumerate: true
 
               - agent: code-explainer
                 input: |

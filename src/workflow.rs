@@ -48,6 +48,8 @@ pub struct Step {
         skip_serializing_if = "Option::is_none"
     )]
     pub version_output: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enumerate: Option<bool>,
     pub output: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iter: Vec<Step>,
@@ -213,6 +215,10 @@ impl Step {
         self.force.unwrap_or(false)
     }
 
+    pub fn enumerate(&self) -> bool {
+        self.enumerate.unwrap_or(false)
+    }
+
     pub fn edit_request(
         &self,
         outputs: &BTreeMap<String, String>,
@@ -313,6 +319,9 @@ fn validate_steps(
         if step.version_output.is_some() && step.tool.as_deref() != Some("READ") {
             return Err("version-output is only accepted on READ".into());
         }
+        if step.enumerate.is_some() && step.tool.as_deref() != Some("READ") {
+            return Err("enumerate is only accepted on READ".into());
+        }
         if step.version_output.is_some() && step.version_output == step.output {
             return Err("READ output and version-output must have different names".into());
         }
@@ -374,6 +383,17 @@ fn validate_steps(
                 {
                     return Err(format!("step {}: {tool} does not accept input", index + 1));
                 }
+                if tool == "ASK"
+                    && step
+                        .input
+                        .text()
+                        .is_none_or(|input| input.trim().is_empty())
+                {
+                    return Err(format!(
+                        "step {}: ASK requires a nonempty text question in input",
+                        index + 1
+                    ));
+                }
                 if tool == "READ"
                     && step
                         .input
@@ -424,7 +444,7 @@ fn validate_steps(
             }
             _ => {
                 return Err(format!(
-                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, DELETE, EDIT, AWAIT, LOOP, IF), or custom-tool",
+                    "step {} must specify exactly one valid agent, tool (TREE, GIT-STATUS-TREE, READ, WRITE, DELETE, EDIT, ASK, AWAIT, LOOP, IF), or custom-tool",
                     index + 1
                 ));
             }
@@ -655,6 +675,12 @@ mod tests {
             valid.replace("operation: replace", "operation: insert"),
             valid.replace("operation: replace", "operation: delete"),
             valid.replace("version-output: revision", "version-output: source"),
+            valid
+                .replace(
+                    "version-output: revision",
+                    "enumerate: true\n  version-output: revision",
+                )
+                .replace("tool: READ", "tool: TREE"),
             valid.replace("outputs.revision", "outputs.missing"),
             valid.replace("tool: EDIT", "tool: WRITE"),
             valid.replace("input: new", "input: [new]"),
@@ -790,6 +816,9 @@ mod tests {
             "tool: DELETE\n  input: content",
             "tool: DELETE\n  path: output.txt\n  input: [content]",
             "tool: READ\n  path: output.txt\n  input: source.txt",
+            "tool: ASK",
+            "tool: ASK\n  input: ' '",
+            "tool: ASK\n  input: [question]",
             "agent: planner\n  force: false",
             "agent: planner\n  skip: false",
             "tool: WRITE\n  path: file\n  force: true\n  skip: true",
@@ -866,7 +895,7 @@ mod tests {
     #[test]
     fn unified_documentation_workflow_validates() {
         let workflow: Workflow =
-            serde_yaml::from_str(include_str!("../documentation.yml")).unwrap();
+            serde_yaml::from_str(include_str!("../flows/documentation.yml")).unwrap();
         workflow.validate().unwrap();
     }
 }

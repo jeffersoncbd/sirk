@@ -2,14 +2,15 @@
 /.devcontainer/
 /.githooks/
 /docs/
+/examples/
+/flows/
 /tools/
 
 /*.md
 /*.yml
-/build.sh
-/examples/*.yml
 
 .gitignore
-.treeignore
 .readignore
+.treeignore
+/build.sh
 Cargo.lock

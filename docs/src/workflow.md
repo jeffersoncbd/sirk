@@ -33,12 +33,12 @@ Condicionais validam os dois ramos. Após um `IF`, apenas outputs definidos em a
 - `Step`: representa uma etapa e seus parâmetros, como agente, ferramenta, ferramenta customizada, entrada, caminho, flags `force`/`skip`, operação de edição, versão esperada, outputs, branches e iterações.
 - `validate_steps`: executa a validação recursiva de etapas, incluindo branches de `IF` e corpo de `LOOP`.
 - `Step::render_input` e `Step::render_path`: renderizam templates presentes na entrada ou no caminho.
-- `Step::edit_request`: cria uma requisição para `EDIT`, validando coordenadas, operação, versão e conteúdo.
-- `loop_items`: interpreta a entrada de `LOOP` como um array JSON de strings.- `condition`: aceita somente os valores booleanos textuais `true` ou `false`.
+- `Step::edit_request`: renderiza os campos e monta uma requisição para `EDIT`; a validação completa da requisição ocorre durante `Workflow::validate`.
+- `loop_items`: interpreta a entrada de `LOOP` como um array JSON de strings.
+- `condition`: aceita somente os valores booleanos textuais `true` ou `false`.
 - `loop_target`: identifica outputs destinados a variáveis locais de loop.
 - `render_scoped` e `render_input`: substituem referências a outputs e variáveis de loop.
 - `valid_output_name`: restringe nomes de outputs a letras, números, `_` e `-`.
-
 Os testes cobrem validação de branches, escopos de loop, operações de edição, outputs, referências, ferramentas, escrita de arquivos e ferramentas customizadas.
 
 ### Integrações
