@@ -1,4 +1,11 @@
-use std::{collections::BTreeMap, io, path::Path};
+mod api_key;
+mod default;
+mod dotenv;
+mod endpoint;
+mod new;
+mod nonempty;
+
+use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use serde_json::json;
@@ -13,103 +20,6 @@ pub struct OpenRouterAdapter {
     executable: String,
     base_url: Option<String>,
     api_key: Option<String>,
-}
-
-impl Default for OpenRouterAdapter {
-    fn default() -> Self {
-        Self {
-            executable: "curl".to_owned(),
-            base_url: None,
-            api_key: None,
-        }
-    }
-}
-
-impl OpenRouterAdapter {
-    pub fn new(
-        executable: impl Into<String>,
-        base_url: impl Into<String>,
-        api_key: Option<String>,
-    ) -> Self {
-        Self {
-            executable: executable.into(),
-            base_url: nonempty(base_url.into()),
-            api_key: api_key.filter(|key| !key.trim().is_empty()),
-        }
-    }
-
-    fn endpoint(&self, directory: &Path) -> Result<String, HarnessError> {
-        let base_url = match self
-            .base_url
-            .clone()
-            .or_else(|| std::env::var("OPENROUTER_URL").ok().and_then(nonempty))
-        {
-            Some(base_url) => base_url,
-            None => self
-                .dotenv_value(directory, "OPENROUTER_URL")?
-                .unwrap_or_else(|| DEFAULT_URL.to_owned()),
-        };
-        let base_url = base_url.trim_end_matches('/');
-        if base_url.is_empty() {
-            return Err(HarnessError::InvalidConfiguration {
-                adapter: self.id(),
-                message: "OPENROUTER_URL cannot be empty".to_owned(),
-            });
-        }
-        if base_url.ends_with("/chat/completions") {
-            Ok(base_url.to_owned())
-        } else if base_url.ends_with("/api/v1") {
-            Ok(format!("{base_url}/chat/completions"))
-        } else {
-            Ok(format!("{base_url}/api/v1/chat/completions"))
-        }
-    }
-
-    fn api_key(&self, directory: &Path) -> Result<String, HarnessError> {
-        match self
-            .api_key
-            .clone()
-            .or_else(|| std::env::var("OPENROUTER_API_KEY").ok().and_then(nonempty))
-        {
-            Some(api_key) => Ok(api_key),
-            None => self
-                .dotenv_value(directory, "OPENROUTER_API_KEY")?
-                .ok_or_else(|| HarnessError::InvalidConfiguration {
-                    adapter: self.id(),
-                    message: "OPENROUTER_API_KEY is required".to_owned(),
-                }),
-        }
-    }
-
-    fn dotenv_value(&self, directory: &Path, key: &str) -> Result<Option<String>, HarnessError> {
-        let dotenv = directory.join(".env");
-        let variables = match dotenvy::from_path_iter(&dotenv) {
-            Ok(variables) => variables,
-            Err(dotenvy::Error::Io(error)) if error.kind() == io::ErrorKind::NotFound => {
-                return Ok(None);
-            }
-            Err(error) => {
-                return Err(HarnessError::InvalidConfiguration {
-                    adapter: self.id(),
-                    message: format!("cannot read `{}`: {error}", dotenv.display()),
-                });
-            }
-        };
-        for variable in variables {
-            let (name, value) = variable.map_err(|error| HarnessError::InvalidConfiguration {
-                adapter: self.id(),
-                message: format!("cannot parse `{}`: {error}", dotenv.display()),
-            })?;
-            if name == key {
-                return Ok(nonempty(value));
-            }
-        }
-        Ok(None)
-    }
-}
-
-fn nonempty(value: String) -> Option<String> {
-    (!value.trim().is_empty()).then_some(value)
 }
 
 impl HarnessAdapter for OpenRouterAdapter {

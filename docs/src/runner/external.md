@@ -1,40 +1,18 @@
 ## Resumo
-
-`src/runner/external.rs` reúne funções auxiliares para interpretar solicitações de ferramentas externas feitas por um agente, validar seus resultados e preparar operações de edição ou exclusão de arquivos antes da execução.
+Agrega os submódulos de parsing e recuperação das ferramentas externas (EDIT/DELETE) e define a estrutura `ExternalDeleteRequest` com as mensagens de erro padronizadas.
 
 ## Funcionamento
+O arquivo funciona apenas como ponto de entrada do diretório `external/`: declara cada submódulo com `#[path]` e reexporta suas funções com visibilidade `pub(super)`, além de expor as constantes `DUPLICATE_EDIT_RESULT`, `EDIT_FAILURE_PREFIX`, `DUPLICATE_DELETE_RESULT` e `DELETE_FAILURE_PREFIX` usadas para sinalizar requisições duplicadas e falhas. `ExternalDeleteRequest` representa o payload de deleção com `deny_unknown_fields` (campos extras são rejeitados) e `force` com valor padrão `false` via `#[serde(default)]`, garantindo erro na desserialização de JSON inesperado.
 
-O arquivo analisa blocos de histórico (`Block`) para identificar:
-
-- solicitações de ferramentas `READ` e `TREE`;
-- resultados correspondentes a essas solicitações;
-- pedidos `EDIT:` e `DELETE:` em formato JSON;
-- operações já concluídas, evitando repetições.
-
-Solicitações de edição são desserializadas em `crate::tools::edit::Request`. O código rejeita o campo `version` vindo externamente, lê o arquivo alvo, valida limites de linha, calcula uma versão do conteúdo atual e cria um `Pending` para a operação.
-
-Solicitações de exclusão usam uma estrutura própria, `ExternalDeleteRequest`, com caminho e opção `force`. O histórico pendente é comparado com a solicitação original para garantir consistência.
-
-Os erros são propagados por `Result<String>` ou convertidos em mensagens textuais. Não há `panic!`, `unsafe`, concorrência ou execução direta de processos neste arquivo.
-
-## Componentes principais
-
-- `user_tool_request`: identifica, no histórico, uma resposta do usuário que corresponde a uma solicitação `READ` ou `TREE`.
-- `tool_result`: converte o resultado textual de `TREE` ou `READ` no respectivo `Block`.
-- `validate_user_tool_result`: verifica se o próximo bloco do histórico corresponde ao tipo de ferramenta solicitado.
-- `DUPLICATE_EDIT_RESULT` e `DUPLICATE_DELETE_RESULT`: mensagens para operações repetidas.
-- `EDIT_FAILURE_PREFIX` e `DELETE_FAILURE_PREFIX`: prefixos padronizados para erros.
-- `ExternalDeleteRequest`: representa uma solicitação externa de exclusão, com `path` e `force`.
-- `external_edit_request`: reconhece o prefixo `EDIT:`, desserializa o JSON e rejeita versões fornecidas externamente.
-- `prepare_external_edit`: lê o arquivo, valida as linhas solicitadas, calcula sua versão e cria uma edição pendente.
-- `external_edit_pending`: recupera e desserializa uma edição pendente armazenada no histórico.
-- `completed_external_edit`: verifica se uma edição já aparece como concluída no histórico.
-- `external_delete_request`: reconhece e desserializa solicitações com prefixo `DELETE:`.
-- `external_delete_pending`: valida e compara o pedido de exclusão com seu registro pendente.
-- `completed_external_delete`: verifica se uma exclusão já foi registrada como concluída.
-
-## integrações
-
-O arquivo importa `Block` do módulo de histórico, `question` do bootstrap e utiliza `serde` para serialização e desserialização JSON.
-
-Os símbolos públicos para o restante da crate são as constantes `DUPLICATE_EDIT_RESULT` e `EDIT_FAILURE_PREFIX`. As demais estruturas e funções são `pub(super)`, ficando acessíveis apenas ao módulo pai e seus módulos relacionados.
+## Importações
+- `completed_delete`: Detecta e normaliza resultados de deleções já concluídas.
+- `completed_edit`: Processa respostas de editions finalizadas anteriormente.
+- `delete_pending`: Trata estados de deleção em andamento ou recuperáveis.
+- `delete_request`: Converte requisições brute de deleção em `ExternalDeleteRequest`.
+- `edit_pending`: Recupera edições pendentes após falhas de execução.
+- `edit_request`: Interpreta e valida o payload de edição do agente.
+- `prepare_edit`: Prepara o arquivo alvo antes de aplicar a edição.
+- `tool_result`: Converte saída de ferramenta em resposta estruturada ao agente.
+- `user_tool_request`: Lê a requisição de ferramenta enviada pelo usuário.
+- `validate_user_tool_result`: Valida o resultado devolvido pela ferramenta do usuário.
+- `serde`: Deriva `Serialize`/`Deserialize` e configura regras de desserialização.

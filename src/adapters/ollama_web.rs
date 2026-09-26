@@ -1,4 +1,11 @@
-use std::{collections::BTreeMap, io, path::Path};
+mod api_key;
+mod default;
+mod dotenv;
+mod endpoint;
+mod new;
+mod nonempty;
+
+use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use serde_json::json;
@@ -13,97 +20,6 @@ pub struct OllamaWebAdapter {
     executable: String,
     base_url: Option<String>,
     api_key: Option<String>,
-}
-
-impl Default for OllamaWebAdapter {
-    fn default() -> Self {
-        Self {
-            executable: "curl".to_owned(),
-            base_url: None,
-            api_key: None,
-        }
-    }
-}
-
-impl OllamaWebAdapter {
-    pub fn new(
-        executable: impl Into<String>,
-        base_url: impl Into<String>,
-        api_key: Option<String>,
-    ) -> Self {
-        Self {
-            executable: executable.into(),
-            base_url: nonempty(base_url.into()),
-            api_key: api_key.filter(|key| !key.trim().is_empty()),
-        }
-    }
-
-    fn endpoint(&self, directory: &Path) -> Result<String, HarnessError> {
-        let base_url = match self
-            .base_url
-            .clone()
-            .or_else(|| std::env::var("OLLAMA_WEB_URL").ok().and_then(nonempty))
-        {
-            Some(base_url) => base_url,
-            None => self
-                .dotenv_value(directory, "OLLAMA_WEB_URL")?
-                .unwrap_or_else(|| DEFAULT_URL.to_owned()),
-        };
-        let base_url = base_url.trim_end_matches('/');
-        if base_url.is_empty() {
-            return Err(HarnessError::InvalidResponse {
-                adapter: self.id(),
-                message: "OLLAMA_WEB_URL cannot be empty".to_owned(),
-            });
-        }
-        if base_url.ends_with("/api/generate") {
-            Ok(base_url.to_owned())
-        } else if base_url.ends_with("/api") {
-            Ok(format!("{base_url}/generate"))
-        } else {
-            Ok(format!("{base_url}/api/generate"))
-        }
-    }
-
-    fn api_key(&self, directory: &Path) -> Result<Option<String>, HarnessError> {
-        if self.api_key.is_some() {
-            return Ok(self.api_key.clone());
-        }
-        if let Ok(api_key) = std::env::var("OLLAMA_API_KEY") {
-            return Ok(nonempty(api_key));
-        }
-        self.dotenv_value(directory, "OLLAMA_API_KEY")
-    }
-
-    fn dotenv_value(&self, directory: &Path, key: &str) -> Result<Option<String>, HarnessError> {
-        let dotenv = directory.join(".env");
-        let variables = match dotenvy::from_path_iter(&dotenv) {
-            Ok(variables) => variables,
-            Err(dotenvy::Error::Io(error)) if error.kind() == io::ErrorKind::NotFound => {
-                return Ok(None);
-            }
-            Err(error) => {
-                return Err(HarnessError::InvalidConfiguration {
-                    adapter: self.id(),
-                    message: format!("cannot read `{}`: {error}", dotenv.display()),
-                });
-            }
-        };
-        for variable in variables {
-            let (name, value) = variable.map_err(|error| HarnessError::InvalidConfiguration {
-                adapter: self.id(),
-                message: format!("cannot parse `{}`: {error}", dotenv.display()),
-            })?;
-            if name == key {
-                return Ok(nonempty(value));
-            }
-        }
-        Ok(None)
-    }
-}
-
-fn nonempty(value: String) -> Option<String> {
-    (!value.trim().is_empty()).then_some(value)
 }
 
 impl HarnessAdapter for OllamaWebAdapter {

@@ -1,23 +1,12 @@
+mod default;
+mod new;
+
 use crate::harness::{HarnessAdapter, HarnessError, Invocation, RunRequest};
 
 /// Translates provider-neutral requests into OpenCode CLI invocations.
 #[derive(Debug)]
 pub struct OpenCodeAdapter {
     executable: String,
-}
-
-impl Default for OpenCodeAdapter {
-    fn default() -> Self {
-        Self::new("opencode")
-    }
-}
-
-impl OpenCodeAdapter {
-    pub fn new(executable: impl Into<String>) -> Self {
-        Self {
-            executable: executable.into(),
-        }
-    }
 }
 
 impl HarnessAdapter for OpenCodeAdapter {

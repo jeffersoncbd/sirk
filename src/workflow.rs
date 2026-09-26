@@ -1,293 +1,35 @@
+mod condition;
+mod coordinate_error;
+mod coordinate_render;
+mod coordinate_validation;
+mod edit_request;
+mod edit_request_with;
+mod enumerate;
+mod force;
+mod from_file;
+mod input_render;
+mod input_text;
+mod is_tool_step;
+mod loop_items;
+mod loop_target;
+mod name;
+mod output_name;
+mod positive_coordinate;
+mod render_input;
+mod render_path;
+mod render_scoped;
+mod step_branch;
+mod step_input;
+mod validate;
+
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
-use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+pub use crate::interfaces::{EditCoordinate, Step, StepInput, Workflow};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct Workflow {
-    pub version: u8,
-    pub steps: Vec<Step>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct Step {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub agent: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tool: Option<String>,
-    #[serde(
-        default,
-        rename = "custom-tool",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub custom_tool: Option<String>,
-    #[serde(default)]
-    pub input: StepInput,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub path: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub force: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub skip: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub operation: Option<crate::tools::edit::Operation>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub line: Option<EditCoordinate>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub start: Option<EditCoordinate>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub end: Option<EditCoordinate>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    #[serde(
-        default,
-        rename = "version-output",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub version_output: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub enumerate: Option<bool>,
-    pub output: Option<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub iter: Vec<Step>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub is_true: Vec<Step>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub is_false: Vec<Step>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum EditCoordinate {
-    Number(usize),
-    Template(String),
-}
-
-impl EditCoordinate {
-    fn render(
-        &self,
-        name: &str,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<usize, String> {
-        let rendered = match self {
-            Self::Number(value) => return positive_coordinate(name, *value),
-            Self::Template(template) => render_scoped(template, outputs, locals)?,
-        };
-        let value = rendered
-            .trim()
-            .parse::<usize>()
-            .map_err(|_| coordinate_error(name))?;
-        positive_coordinate(name, value)
-    }
-
-    fn render_for_validation(
-        &self,
-        name: &str,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<usize, String> {
-        if let Self::Template(template) = self
-            && template.contains("{{")
-        {
-            render_scoped(template, outputs, locals)?;
-            return Ok(if name == "end" { usize::MAX } else { 1 });
-        }
-        self.render(name, outputs, locals)
-    }
-}
-
-fn coordinate_error(name: &str) -> String {
-    format!("EDIT {name} must render to a positive integer")
-}
-
-fn positive_coordinate(name: &str, value: usize) -> Result<usize, String> {
-    if value == 0 {
-        Err(coordinate_error(name))
-    } else {
-        Ok(value)
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum StepInput {
-    Text(String),
-    Array(Vec<String>),
-    Bool(bool),
-}
-
-impl Default for StepInput {
-    fn default() -> Self {
-        Self::Text(String::new())
-    }
-}
-
-impl StepInput {
-    fn render(
-        &self,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<String, String> {
-        match self {
-            Self::Bool(value) => Ok(value.to_string()),
-            Self::Text(text) => render_scoped(text, outputs, locals),
-            Self::Array(items) => items
-                .iter()
-                .map(|item| render_scoped(item, outputs, locals))
-                .collect::<Result<Vec<_>, _>>()
-                .and_then(|items| serde_json::to_string(&items).map_err(|error| error.to_string())),
-        }
-    }
-
-    fn text(&self) -> Option<&str> {
-        match self {
-            Self::Text(text) => Some(text),
-            Self::Array(_) | Self::Bool(_) => None,
-        }
-    }
-}
-
-pub fn loop_items(input: &str) -> Result<Vec<String>, String> {
-    serde_json::from_str(input)
-        .map_err(|error| format!("LOOP requires a JSON array of strings: {error}"))
-}
-
-pub fn condition(input: &str) -> Result<bool, String> {
-    match input.trim() {
-        "true" => Ok(true),
-        "false" => Ok(false),
-        _ => Err("IF input must be true or false".into()),
-    }
-}
-
-pub fn loop_target(output: &str) -> Option<&str> {
-    output
-        .trim()
-        .strip_prefix("{{")?
-        .strip_suffix("}}")?
-        .trim()
-        .strip_prefix("loop.")
-        .filter(|name| valid_output_name(name))
-}
-
-impl Step {
-    pub fn branch(&self, selected: bool) -> (&str, &[Step]) {
-        if selected {
-            ("true", &self.is_true)
-        } else {
-            ("false", &self.is_false)
-        }
-    }
-    pub fn name(&self) -> &str {
-        self.agent
-            .as_deref()
-            .or(self.tool.as_deref())
-            .or(self.custom_tool.as_deref())
-            .unwrap_or("invalid")
-    }
-
-    pub fn is_tool_step(&self) -> bool {
-        self.tool.is_some() || self.custom_tool.is_some()
-    }
-
-    pub fn render_input(
-        &self,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<String, String> {
-        self.input.render(outputs, locals)
-    }
-
-    pub fn render_path(
-        &self,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<String, String> {
-        let path = self.path.as_deref().ok_or("tool requires a path")?;
-        render_scoped(path, outputs, locals)
-    }
-
-    pub fn force(&self) -> bool {
-        self.force.unwrap_or(false)
-    }
-
-    pub fn enumerate(&self) -> bool {
-        self.enumerate.unwrap_or(false)
-    }
-
-    pub fn edit_request(
-        &self,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-    ) -> Result<crate::tools::edit::Request, String> {
-        self.edit_request_with(outputs, locals, false)
-    }
-
-    fn edit_request_with(
-        &self,
-        outputs: &BTreeMap<String, String>,
-        locals: Option<&BTreeMap<String, String>>,
-        validating: bool,
-    ) -> Result<crate::tools::edit::Request, String> {
-        let coordinate = |value: Option<&EditCoordinate>, name: &str| {
-            value
-                .map(|value| {
-                    if validating {
-                        value.render_for_validation(name, outputs, locals)
-                    } else {
-                        value.render(name, outputs, locals)
-                    }
-                })
-                .transpose()
-        };
-        Ok(crate::tools::edit::Request {
-            path: self.render_path(outputs, locals)?,
-            operation: self.operation.ok_or("EDIT requires operation")?,
-            line: coordinate(self.line.as_ref(), "line")?,
-            start: coordinate(self.start.as_ref(), "start")?,
-            end: coordinate(self.end.as_ref(), "end")?,
-            version: self
-                .version
-                .as_deref()
-                .map(|v| render_scoped(v, outputs, locals))
-                .transpose()?,
-            input: self.render_input(outputs, locals)?,
-        })
-    }
-}
-
-impl Workflow {
-    pub fn from_file(path: &Path) -> Result<Self, String> {
-        let source = fs::read_to_string(path)
-            .map_err(|error| format!("could not read workflow `{}`: {error}", path.display()))?;
-        let workflow: Self = serde_yaml::from_str(&source)
-            .map_err(|error| format!("invalid workflow `{}`: {error}", path.display()))?;
-        workflow.validate()?;
-        Ok(workflow)
-    }
-
-    pub fn validate(&self) -> Result<(), String> {
-        if self.version != 1 {
-            return Err(format!(
-                "unsupported workflow version `{}` (expected 1)",
-                self.version
-            ));
-        }
-        if self.steps.is_empty() {
-            return Err("a workflow requires at least one step".to_owned());
-        }
-        validate_steps(
-            &self.steps,
-            &mut BTreeMap::new(),
-            None,
-            &mut BTreeSet::new(),
-        )
-    }
-}
+pub use condition::condition;
+pub use loop_items::loop_items;
+pub use loop_target::loop_target;
+pub use render_scoped::render_scoped;
 
 fn validate_steps(
     steps: &[Step],
@@ -509,7 +251,7 @@ fn validate_steps(
                 values.insert(key.into(), String::new());
                 continue;
             }
-            if !valid_output_name(name) {
+            if !valid(name) {
                 return Err(format!(
                     "invalid output name `{name}`; use letters, digits, `_` or `-`"
                 ));
@@ -530,54 +272,9 @@ fn validate_steps(
     Ok(())
 }
 
-fn valid_output_name(name: &str) -> bool {
-    !name.is_empty()
-        && name
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
-}
+use output_name::valid;
 
-pub fn render_input(template: &str, outputs: &BTreeMap<String, String>) -> Result<String, String> {
-    render_scoped(template, outputs, None)
-}
-
-pub fn render_scoped(
-    template: &str,
-    outputs: &BTreeMap<String, String>,
-    locals: Option<&BTreeMap<String, String>>,
-) -> Result<String, String> {
-    let mut rendered = String::new();
-    let mut remaining = template;
-    while let Some(start) = remaining.find("{{") {
-        rendered.push_str(&remaining[..start]);
-        let placeholder = &remaining[start + 2..];
-        let end = placeholder
-            .find("}}")
-            .ok_or_else(|| "unclosed output reference; use `{{ outputs.name }}`".to_owned())?;
-        let expression = placeholder[..end].trim();
-        let (prefix, values) = if expression.starts_with("loop.") {
-            (
-                "loop.",
-                locals.ok_or("loop variables are only available inside iter")?,
-            )
-        } else {
-            ("outputs.", outputs)
-        };
-        let key = expression
-            .strip_prefix(prefix)
-            .filter(|key| valid_output_name(key))
-            .ok_or_else(|| {
-                format!("invalid reference `{{{{ {expression} }}}}`; use `{{{{ outputs.name }}}}`")
-            })?;
-        let output = values
-            .get(key)
-            .ok_or_else(|| format!("output `{key}` is not available yet"))?;
-        rendered.push_str(output);
-        remaining = &placeholder[end + 2..];
-    }
-    rendered.push_str(remaining);
-    Ok(rendered)
-}
+pub use render_input::render_input;
 
 #[cfg(test)]
 mod tests {

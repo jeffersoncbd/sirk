@@ -1,22 +1,11 @@
+mod default;
+mod new;
+
 use crate::harness::{HarnessAdapter, HarnessError, Invocation, RunRequest};
 
 #[derive(Debug)]
 pub struct CodexAdapter {
     executable: String,
-}
-
-impl Default for CodexAdapter {
-    fn default() -> Self {
-        Self::new("codex")
-    }
-}
-
-impl CodexAdapter {
-    pub fn new(executable: impl Into<String>) -> Self {
-        Self {
-            executable: executable.into(),
-        }
-    }
 }
 
 impl HarnessAdapter for CodexAdapter {

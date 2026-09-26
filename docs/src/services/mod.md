@@ -1,32 +1,8 @@
-### Resumo
+## Resumo
+Módulo raiz de `services`: declara `bash` e `quote` e reexporta a API pública dos serviços.
 
-Este arquivo define o módulo de serviços relacionados à execução de comandos Bash. Ele expõe tipos públicos para descrever invocações de processos e reexporta as implementações responsáveis pela execução e pelos resultados dos processos.
+## Funcionamento
+Apenas registra os submódulos e reexporta `Invocation`, `BashService` e `ProcessOutput`, evitando que o consumidor precise referenciar `services::bash::...`.
 
-### Funcionamento
-
-O módulo interno `bash` é declarado com `mod bash`, tornando sua implementação privada neste nível. A estrutura `Invocation` representa uma execução de programa de forma estruturada, separando:
-
-- Programa a executar.
-- Lista de argumentos.
-- Diretório de trabalho.
-- Variáveis de ambiente específicas do processo filho.
-
-As variáveis de ambiente ficam armazenadas em um `BTreeMap` e não devem ser incorporadas ao texto do comando shell, conforme indicado pelo comentário da estrutura.
-
-
-O método público `Invocation::with_prefix` adiciona um prefixo não vazio ao programa e aos argumentos da invocação, sem usar parsing de shell. O primeiro item do prefixo substitui `program`, os demais precedem o programa original, e as configurações de diretório e ambiente permanecem inalteradas.
-### Componentes principais
-
-- `BashService`: reexportado de `bash`; representa o serviço de execução de comandos Bash.
-- `ProcessOutput`: reexportado de `bash`; representa a saída produzida por um processo.
-- `Invocation`: struct pública que descreve um processo a ser executado.
-  - `program`: nome ou caminho do executável.
-  - `arguments`: argumentos passados ao executável.
-  - `working_directory`: diretório de trabalho usando `PathBuf`.
-  - `environment`: variáveis de ambiente adicionais usando `BTreeMap<String, String>`.
-
-A struct deriva `Debug`, `Clone`, `PartialEq` e `Eq`, permitindo depuração, cópia e comparação por igualdade.
-
-### integrações
-
-O arquivo expõe publicamente `BashService`, `ProcessOutput` e `Invocation`. A implementação detalhada do módulo `bash` permanece privada, embora seus dois tipos principais sejam disponibilizados por meio de `pub use`.
+## Importações
+- `crate::interfaces::Invocation`: Reexporta o contrato de invocação vindo das interfaces.

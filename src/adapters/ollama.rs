@@ -1,23 +1,12 @@
+mod default;
+mod new;
+
 use crate::harness::{HarnessAdapter, HarnessError, Invocation, RunRequest};
 
 /// Translates provider-neutral requests into Ollama CLI invocations.
 #[derive(Debug)]
 pub struct OllamaAdapter {
     executable: String,
-}
-
-impl Default for OllamaAdapter {
-    fn default() -> Self {
-        Self::new("ollama")
-    }
-}
-
-impl OllamaAdapter {
-    pub fn new(executable: impl Into<String>) -> Self {
-        Self {
-            executable: executable.into(),
-        }
-    }
 }
 
 impl HarnessAdapter for OllamaAdapter {

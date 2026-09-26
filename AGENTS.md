@@ -36,6 +36,12 @@ instructions.
 
 ## Implementation boundaries
 
+Every source file must contain at most one function or method definition. This
+rule is mandatory for all new or modified code, including tests and helper
+functions. When adding another function or method, place it in a separate file
+and expose it through the appropriate module; never add a second function or
+method to the same file.
+
 Keep orchestration out of `main.rs`, provider behavior out of workflow schemas,
 and external process execution in `BashService`. Build executable/argument lists
 through `Invocation`; never interpolate prompts or paths into shell code.

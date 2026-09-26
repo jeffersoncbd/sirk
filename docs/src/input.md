@@ -1,26 +1,13 @@
-### Resumo
+## Resumo
+Implementa a entrada de usuário via terminal, expondo `ask` (leitura de resposta em loop) e `await_confirmation` (confirmação via `/dev/tty`).
 
-Este arquivo define a fronteira síncrona de interação com o usuário pelo terminal. Ele abstrai perguntas e confirmações por meio da trait `UserInput` e fornece a implementação concreta `TerminalInput`.
+## Funcionamento
+`ask` imprime a pergunta no stdout e, em laço, exibe o prompt `> `, faz flush da saída e lê uma linha de `stdin`. Linhas vazias são rejeitadas com mensagemorientando uso de `/cancel`; esse comando encerra com `Err("input cancelled")`, assim como EOF, que retorna `Err("input closed")`. Respostas válidas são devolvidas sem quebras de linha finais. `await_confirmation` ignora o stdin (indisponível em hooks de git) e reabre o terminal real via `/dev/tty`, escrevendo o prompt diretamente no dispositivo e aplicando as mesmas regras de EOF, cancelamento e erro — falhas de I/O viram `Err(String)` descritivo.
 
-### Funcionamento
-
-`UserInput::ask` é a operação obrigatória para obter uma resposta textual. A trait também fornece `await_confirmation` com implementação padrão que chama `ask` e descarta a resposta.
-
-`TerminalInput::ask` imprime a pergunta, exibe o prompt `> `, força sua saída com `stdout().flush()` e lê uma linha da entrada padrão. Os caracteres `\r` e `\n` finais são removidos, mas os demais espaços são preservados. Respostas vazias ou compostas apenas por espaços são rejeitadas e solicitadas novamente. A entrada fechada, erros de leitura ou escrita e a resposta `/cancel` resultam em `Err(String)`.
-
-`TerminalInput::await_confirmation` abre `/dev/tty` para permitir interação mesmo quando a entrada padrão está fechada, como pode ocorrer em hooks do Git. Ele clona o descritor para leitura, escreve o prompt no terminal, força a saída e lê uma linha. Qualquer resposta diferente de `/cancel`, inclusive vazia, confirma a operação; falhas ao abrir, clonar, escrever ou ler o terminal resultam em erro.
-
-### Componentes principais
-
-- `UserInput`: trait pública que define `ask` e a implementação padrão de `await_confirmation`.
-- `TerminalInput`: struct pública sem campos, usada para interação direta com o terminal.
-- `TerminalInput::ask`: implementa perguntas interativas com validação de resposta não vazia.
-- `TerminalInput::await_confirmation`: implementa confirmações usando diretamente `/dev/tty`, sem exigir conteúdo não vazio.
-
-### integrações
-
-- `std::io::{self, BufRead, BufReader, Write}` fornece leitura de linhas, buffers, acesso à entrada padrão e escrita com `flush`.
-- `std::fs::OpenOptions` abre `/dev/tty` para confirmações independentes da entrada padrão.
-- A trait `UserInput` é a interface pública para mecanismos alternativos de interação.
-
-A interação é síncrona e bloqueante. O arquivo não persiste dados, executa lógica de negócio nem usa código `unsafe`; erros são propagados como `String` por meio de `Result`.
+## Importações
+- `std::fs::OpenOptions`: Abre `/dev/tty` para leitura/escrita no modo interativo.
+- `std::io`: Fornece `stdin`/`stdout` e o trait `Write` para flush e escrita do prompt.
+- `std::io::BufRead`: Habilita `read_line` para ler a resposta do usuário.
+- `std::io::BufReader`: Bufferiza o terminal clonado para leituras de linha eficientes.
+- `std::io::Write`: Necessário para `write!` e `flush` no descritor do terminal.
+- `crate::interfaces::UserInput`: Trait que define o contrato de `ask` e `await_confirmation`.

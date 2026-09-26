@@ -1,4 +1,11 @@
-use std::{fs, path::Path};
+mod call_prefix;
+mod delete_permission;
+mod edit_permission;
+mod id;
+mod load;
+mod model;
+mod tree_default;
+mod tree_permission;
 
 use serde::{Deserialize, Serialize};
 
@@ -7,11 +14,11 @@ pub struct Agent {
     pub id: String,
     pub adapter: String,
     pub instructions: String,
-    #[serde(default, deserialize_with = "deserialize_model")]
+    #[serde(default, deserialize_with = "model::deserialize")]
     pub model: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_call_prefix")]
+    #[serde(default, deserialize_with = "call_prefix::deserialize")]
     pub call_prefix: Vec<String>,
-    #[serde(default = "legacy_tree_tool_default", rename = "TREE_TOOL")]
+    #[serde(default = "tree_default::allow", rename = "TREE_TOOL")]
     pub tree_tool: bool,
     pub json: bool,
     pub ask: Option<String>,
@@ -27,14 +34,14 @@ pub struct Agent {
 #[serde(deny_unknown_fields)]
 struct Metadata {
     adapter: String,
-    #[serde(default, deserialize_with = "deserialize_model")]
+    #[serde(default, deserialize_with = "model::deserialize")]
     model: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_call_prefix")]
+    #[serde(default, deserialize_with = "call_prefix::deserialize")]
     call_prefix: Vec<String>,
     #[serde(
         default,
         rename = "TREE_TOOL",
-        deserialize_with = "deserialize_tree_permission"
+        deserialize_with = "tree_permission::deserialize"
     )]
     tree_tool: bool,
     #[serde(default)]
@@ -43,118 +50,26 @@ struct Metadata {
     #[serde(
         default,
         rename = "EDIT_TOOL",
-        deserialize_with = "deserialize_edit_tool"
+        deserialize_with = "edit_permission::deserialize"
     )]
     edit_tool: bool,
     #[serde(
         default,
         rename = "DELETE_TOOL",
-        deserialize_with = "deserialize_delete_permission"
+        deserialize_with = "delete_permission::deserialize"
     )]
     delete_tool: bool,
     #[serde(
         default,
         rename = "DELETE_WITHOUT_CONFIRM",
-        deserialize_with = "deserialize_delete_permission"
+        deserialize_with = "delete_permission::deserialize"
     )]
     delete_without_confirm: bool,
 }
 
-fn deserialize_edit_tool<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<bool, D::Error> {
-    let value = String::deserialize(deserializer)?;
-    if value == "allow" {
-        Ok(true)
-    } else {
-        Err(serde::de::Error::custom("`EDIT_TOOL` must be `allow`"))
-    }
-}
-
-fn deserialize_delete_permission<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<bool, D::Error> {
-    let value = String::deserialize(deserializer)?;
-    if value == "allow" {
-        Ok(true)
-    } else {
-        Err(serde::de::Error::custom(
-            "`DELETE_TOOL` and `DELETE_WITHOUT_CONFIRM` must be `allow`",
-        ))
-    }
-}
-
-fn deserialize_tree_permission<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<bool, D::Error> {
-    let value = String::deserialize(deserializer)?;
-    if value == "allow" {
-        Ok(true)
-    } else {
-        Err(serde::de::Error::custom("`TREE_TOOL` must be `allow`"))
-    }
-}
-
-// Agent snapshots created before TREE_TOOL existed implicitly allowed TREE.
-fn legacy_tree_tool_default() -> bool {
-    true
-}
-
-fn deserialize_model<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<String>, D::Error> {
-    Ok(Option::<String>::deserialize(deserializer)?.map(|model| model.trim().to_lowercase()))
-}
-
-fn deserialize_call_prefix<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Vec<String>, D::Error> {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum CallPrefix {
-        One(String),
-        Many(Vec<String>),
-    }
-
-    let prefix = Option::<CallPrefix>::deserialize(deserializer)?
-        .map(|prefix| match prefix {
-            CallPrefix::One(token) => vec![token],
-            CallPrefix::Many(tokens) => tokens,
-        })
-        .unwrap_or_default();
-    if prefix.iter().any(|token| token.is_empty()) {
-        return Err(serde::de::Error::custom(
-            "`call_prefix` cannot contain an empty argument",
-        ));
-    }
-    Ok(prefix)
-}
-
-pub fn valid_id(id: &str) -> bool {
-    !id.is_empty()
-        && id
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-'))
-}
+pub use id::valid_id;
 
 impl Agent {
-    pub fn load(directory: &Path, id: &str) -> Result<Self, String> {
-        if !valid_id(id) {
-            return Err(format!(
-                "invalid agent name `{id}`; use letters, digits, `_` or `-`"
-            ));
-        }
-        let path = directory.join(format!("{id}.md"));
-        let source = fs::read_to_string(&path).map_err(|error| {
-            format!(
-                "could not load agent `{id}` from `{}`: {error}",
-                path.display()
-            )
-        })?;
-        Self::parse(id, &source)
-            .map_err(|error| format!("invalid agent file `{}`: {error}", path.display()))
-    }
-
     pub(crate) fn parse(id: &str, source: &str) -> Result<Self, String> {
         let mut lines = source.lines();
         if lines.next() != Some("---") {
@@ -209,6 +124,7 @@ impl Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn reads_metadata_and_markdown_with_crlf() {

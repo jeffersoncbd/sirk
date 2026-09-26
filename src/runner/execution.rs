@@ -1,39 +1,23 @@
 //! Step execution and conversation driving.
 
+#[path = "execution/continue_with.rs"]
+mod continue_with;
+#[path = "execution/run_steps.rs"]
+mod run_steps;
+
+pub use continue_with::continue_with;
+
 use crate::{
     adapters,
     harness::RunRequest,
     history::{Block, History},
     input::UserInput,
     services::Invocation,
-    workflow::{Step, condition, loop_items, loop_target},
+    workflow::Step,
 };
 use std::collections::BTreeMap;
 
-use super::{
-    bootstrap::{question, validate_snapshot},
-    external::*,
-    history_validation::validate_blocks,
-};
-
-pub fn continue_with(
-    history: &mut History,
-    mut execute: impl FnMut(&Invocation) -> Result<String, String>,
-    input: &mut impl UserInput,
-) -> Result<BTreeMap<String, String>, String> {
-    validate_snapshot(&history.snapshot)?;
-    validate_blocks(history)?;
-    let mut outputs = BTreeMap::new();
-    let steps = history.snapshot.workflow.steps.clone();
-    Engine {
-        history,
-        execute: &mut execute,
-        input,
-        cursor: 0,
-    }
-    .run_steps(&steps, "", &mut outputs, &mut None)?;
-    Ok(outputs)
-}
+use super::{external::*, question::question};
 
 struct Engine<'a, E, I> {
     history: &'a mut History,
@@ -47,83 +31,6 @@ where
     E: FnMut(&Invocation) -> Result<String, String>,
     I: UserInput,
 {
-    fn run_steps(
-        &mut self,
-        steps: &[Step],
-        prefix: &str,
-        outputs: &mut BTreeMap<String, String>,
-        locals: &mut Option<BTreeMap<String, String>>,
-    ) -> Result<(), String> {
-        for (position, step) in steps.iter().enumerate() {
-            let id = format!("{prefix}{}", position + 1);
-            let index = self.cursor;
-            self.cursor += 1;
-            if index == self.history.steps.len() {
-                self.history.steps.push(Vec::new());
-                self.history
-                    .labels
-                    .push(format!("Step {id} — {}", step.name()));
-            }
-            if step.tool.as_deref() == Some("LOOP") {
-                if self.history.steps[index].is_empty() {
-                    let argument = step.render_input(outputs, locals.as_ref())?;
-                    loop_items(&argument)?;
-                    self.history.steps[index].push(Block::Input(argument));
-                    self.history.save()?;
-                }
-                let items = loop_items(self.history.steps[index][0].text())?;
-                for (iteration, item) in items.into_iter().enumerate() {
-                    let mut child_outputs = outputs.clone();
-                    let mut child_locals = Some(BTreeMap::from([("item".into(), item)]));
-                    self.run_steps(
-                        &step.iter,
-                        &format!("{id}.{}.", iteration + 1),
-                        &mut child_outputs,
-                        &mut child_locals,
-                    )?;
-                }
-                continue;
-            }
-            if step.tool.as_deref() == Some("IF") {
-                if self.history.steps[index].is_empty() {
-                    let argument = step.render_input(outputs, locals.as_ref())?;
-                    condition(&argument)?;
-                    self.history.steps[index].push(Block::Input(argument));
-                    self.history.save()?;
-                }
-                let selected = condition(self.history.steps[index][0].text())?;
-                let (branch, body) = step.branch(selected);
-                self.run_steps(body, &format!("{id}.{branch}."), outputs, locals)?;
-                continue;
-            }
-            let result = self.run_step(step, index, outputs, locals.as_ref())?;
-            let version_content = if step.tool.as_deref() == Some("READ") && step.enumerate() {
-                crate::tools::read::enumerated_content(&result)?
-            } else {
-                result.clone()
-            };
-            let version = crate::tools::edit::version(&version_content);
-            for (name, value) in step
-                .output
-                .iter()
-                .map(|name| (name, &result))
-                .chain(step.version_output.iter().map(|name| (name, &version)))
-            {
-                if let Some(key) = loop_target(name) {
-                    locals
-                        .as_mut()
-                        .ok_or("missing loop scope")?
-                        .insert(key.into(), value.clone());
-                } else if let Some(values) = locals.as_mut() {
-                    values.insert(name.clone(), value.clone());
-                } else {
-                    outputs.insert(name.clone(), value.clone());
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn run_step(
         &mut self,
         step: &Step,

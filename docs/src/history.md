@@ -1,62 +1,11 @@
-### Resumo
+## Resumo
+Define a estrutura `History`, que persiste e recupera o transcript editável de uma execução.
 
-Este arquivo implementa o armazenamento e a recuperação de históricos de execução da aplicação. Ele mantém um `Snapshot` da configuração, registra as etapas da execução em blocos de conversa e salva tudo em um transcript persistente no formato v2.
+## Funcionamento
+`History` agrupa um `Snapshot` (diretório, workflow e agentes), os `steps` gravados como listas de `Block` e seus `labels`, mantendo um `File` de lock para garantir acesso exclusivo. As operações delegates aos submódulos (`create`, `open`, `save`, `parse`, `finish`, `drop`, `lock`, `reserved`) manejam o formato em texto marcado por `TITLE`/`SEPARATOR` e o cabeçalho `v2`; erros de arquivo, formato ou lock são propagados via `Result`.
 
-### Funcionamento
-
-`History::create` cria o diretório `history`, gera um nome único para o arquivo, adquire um lock exclusivo e salva o histórico inicial.
-
-`History::open` abre um transcript existente, canonicaliza o caminho, adquire o lock, lê o conteúdo e reconstrói o snapshot, as etapas e seus rótulos.
-
-O formato do arquivo contém:
-
-- Um cabeçalho fixo identificando o formato v2.
-- Metadados serializados em YAML.
-- Etapas separadas por uma linha delimitadora.
-- Blocos identificados por marcadores como `==> INPUT`, `==> ASK` e `<== OUTPUT`.
-
-Durante a gravação, linhas que poderiam ser confundidas com marcadores ou cabeçalhos são prefixadas com `\`. Durante a leitura, esse escape é removido. A gravação usa um arquivo temporário, `sync_all` e renomeação para substituir o arquivo final.
-
-### Componentes principais
-
-- `Snapshot`: estado serializável da execução, contendo o diretório de trabalho, o `Workflow` e os `Agent`s configurados.
-- `Block`: enum que representa tipos de conteúdo do histórico:
-  - `Ask`: solicitação enviada ao agente.
-- `Block`: enum que representa tipos de conteúdo do histórico:
-  - `Ask`: solicitação enviada ao agente.
-  - `Input`: entrada fornecida pelo usuário ou sistema.
-  - `Output`: saída produzida.
-  - `Tree`: resultado de uma consulta de árvore de arquivos.
-  - `Read`: conteúdo de um arquivo lido.
-  - `Edit`: descrição ou resultado de uma edição realizada.
-  - `Delete`: descrição ou resultado de uma exclusão realizada.
-- `Block::text`: retorna o conteúdo textual do bloco.
-- `Block::marker`: retorna o marcador usado no formato persistido.- `History`: estado completo do histórico aberto, incluindo:  - caminho do transcript;
-  - snapshot;
-  - etapas e blocos;
-  - rótulos das etapas;
-  - arquivo usado para manter o lock.
-- `History::create`: cria um novo histórico.
-- `History::open`: carrega um histórico existente.
-- `History::parse`: interpreta o formato textual v2.
-- `History::save`: serializa e grava o histórico.
-- `History::lock`: obtém um lock exclusivo associado ao transcript.
-- `reserved`: identifica linhas que precisam ser escapadas.
-- `Drop for History`: libera explicitamente o lock quando o histórico é destruído.
-- `ParsedHistory`: alias para o resultado interno do parser.
-
-### integrações
-
-O arquivo usa:
-
-- `crate::agents::Agent` e `crate::workflow::Workflow`, que representam a configuração de agentes e do fluxo da aplicação.
-- `serde` e `serde_yaml` diretamente via os derives `Serialize`, `Deserialize` e a serialização/desserialização YAML.
-- APIs de `std` para arquivos, diretórios, locks, caminhos, timestamps e escrita persistente.
-- `std::process::id()` para incluir o identificador do processo no nome do arquivo.
-### Observações
-
-O parser aceita apenas históricos iniciados pelo cabeçalho v2 e rejeita formatos anteriores ou estruturas inválidas com `Result<String>`.
-
-Erros de leitura, escrita, serialização, parsing ou aquisição do lock são convertidos em mensagens textuais. O arquivo de lock impede que o mesmo histórico seja aberto simultaneamente por outra execução.
-
-O código de teste verifica a preservação de marcadores, escapes e espaços em branco durante o ciclo de gravação e leitura.
+## Importações
+- `crate::interfaces::{Block, Snapshot}`: tipos de conteúdo do transcript e do estado inicial da execução
+- `std::fs::File`: mantém o lock de escrita exclusivo sobre o arquivo de histórico
+- `std::path::PathBuf`: caminho do arquivo de transcript em disco
+- `serde_yaml`: desserialização do workflow do `Snapshot` (apenas em testes)

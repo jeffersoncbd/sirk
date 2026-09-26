@@ -1,10 +1,14 @@
 //! Standalone agent-file creation, not available to workflows or model requests.
+mod adapter;
+mod answer;
+mod create;
+
 use crate::{
     adapters,
     agents::{Agent, valid_id},
     harness::RunRequest,
     input::UserInput,
-    services::{BashService, Invocation},
+    services::Invocation,
 };
 use serde::Serialize;
 use std::{
@@ -13,20 +17,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn create(directory: &Path, input: &mut impl UserInput) -> Result<PathBuf, String> {
-    create_with(directory, input, |invocation| {
-        let result = BashService::default()
-            .execute_streaming(invocation)
-            .map_err(|e| format!("agent generation failed: {e}"))?;
-        if !result.status.success() {
-            return Err(format!(
-                "agent generation exited with {}; no agent was saved",
-                result.status
-            ));
-        }
-        Ok(result.stdout)
-    })
-}
+pub use create::create;
 
 pub fn create_with(
     directory: &Path,
@@ -34,16 +25,17 @@ pub fn create_with(
     mut generate: impl FnMut(&Invocation) -> Result<String, String>,
 ) -> Result<PathBuf, String> {
     let directory = directory.canonicalize().map_err(|e| e.to_string())?;
-    let description = nonempty(input, "Describe the agent you want to create:")?;
-    let adapter = choose_adapter(input, "Which adapter will the CREATED agent use?")?;
-    let model = nonempty(input, "Which model will the CREATED agent use?")?
+    let description = answer::nonempty(input, "Describe the agent you want to create:")?;
+    let adapter = adapter::choose(input, "Which adapter will the CREATED agent use?")?;
+    let model = answer::nonempty(input, "Which model will the CREATED agent use?")?
         .trim()
         .to_lowercase();
     let generator_adapter =
-        choose_adapter(input, "Which adapter should GENERATE the agent definition?")?;
-    let generator_model = nonempty(input, "Which model should GENERATE the agent definition?")?
-        .trim()
-        .to_lowercase();
+        adapter::choose(input, "Which adapter should GENERATE the agent definition?")?;
+    let generator_model =
+        answer::nonempty(input, "Which model should GENERATE the agent definition?")?
+            .trim()
+            .to_lowercase();
     let agents_directory = directory.join(".agents");
     let mut name_question =
         "Name the agent (letters, digits, underscores, and hyphens; no extension):".to_owned();
@@ -117,29 +109,6 @@ pub fn create_with(
         .and_then(|_| file.sync_all())
         .map_err(|e| format!("cannot write agent `{}`: {e}", path.display()))?;
     Ok(path)
-}
-
-fn choose_adapter(input: &mut impl UserInput, question: &str) -> Result<String, String> {
-    let mut question = format!("{question} Available: {}", adapters::AVAILABLE.join(", "));
-    loop {
-        let value = input.ask(&question)?.trim().to_lowercase();
-        if adapters::AVAILABLE.contains(&value.as_str()) {
-            return Ok(value);
-        }
-        question = format!(
-            "Unsupported adapter. Choose one of: {}",
-            adapters::AVAILABLE.join(", ")
-        );
-    }
-}
-
-fn nonempty(input: &mut impl UserInput, question: &str) -> Result<String, String> {
-    loop {
-        let value = input.ask(question)?;
-        if !value.trim().is_empty() {
-            return Ok(value);
-        }
-    }
 }
 
 #[cfg(test)]
