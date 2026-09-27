@@ -16,6 +16,8 @@ mod question;
 mod resume;
 mod run;
 mod run_interactive;
+mod run_interactive_configured;
+mod run_silent_with;
 mod run_with;
 mod validate_snapshot;
 
@@ -23,6 +25,7 @@ pub use execution::continue_with;
 pub use resume::resume;
 pub use run::run;
 pub use run_interactive::run_interactive_with;
+pub(crate) use run_silent_with::run_silent_with;
 pub use run_with::run_with;
 
 #[cfg(test)]

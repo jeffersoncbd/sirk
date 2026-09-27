@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 
-const harnessExample = {
+const sirkExample = {
     tools: {
         git: {
             status: (): string[] => [],
@@ -13,14 +13,14 @@ const harnessExample = {
     agent: async (_: string, __: string): Promise<string | string[]> => ''
 }
 
-export default async function main(harness: typeof harnessExample) {
+export default async function main(sirk: typeof sirkExample) {
     const docsExits = existsSync("docs")
     let files: string[] = []
     if (docsExits) {
-        files = harness.tools.git.status()
+        files = sirk.tools.git.status()
     } else {
         await mkdir("docs")
-        files = harness.tools.tree()
+        files = sirk.tools.tree()
     }
 
     for (const fileName of files) {
@@ -36,7 +36,7 @@ export default async function main(harness: typeof harnessExample) {
 
             try {
                 const docContent = await readFile(docName, 'utf-8')
-                explain = await harness.agent("code-explainer", `
+                explain = await sirk.agent("code-explainer", `
                         ## Nome do arquivo: ${fileName}
 
                         ## Conteúdo atual do documento:
@@ -49,7 +49,7 @@ export default async function main(harness: typeof harnessExample) {
             } catch(error) {
                 if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
 
-                    explain = await harness.agent("code-explainer", `
+                    explain = await sirk.agent("code-explainer", `
                             ## Nome do arquivo: ${fileName}
 
                             ## Conteúdo do arquivo:
@@ -62,7 +62,7 @@ export default async function main(harness: typeof harnessExample) {
                 }
             }
 
-            const resume = await harness.agent("explain-resume", explain)
+            const resume = await sirk.agent("explain-resume", explain)
             const treeExists = existsSync("docs/TREE.md")
             if (treeExists) {
                 const tree = await readFile("docs/TREE.md", "utf-8")
@@ -97,7 +97,7 @@ export default async function main(harness: typeof harnessExample) {
         }
     }
 
-    await harness.tools.awaitConfirm()
+    await sirk.tools.awaitConfirm()
 
-    harness.tools.git.add()
+    sirk.tools.git.add()
 }

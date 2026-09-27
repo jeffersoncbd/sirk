@@ -1,10 +1,13 @@
 //! Step execution and conversation driving.
 
+#[path = "execution/continue_configured_with.rs"]
+mod continue_configured_with;
 #[path = "execution/continue_with.rs"]
 mod continue_with;
 #[path = "execution/run_steps.rs"]
 mod run_steps;
 
+pub(super) use continue_configured_with::continue_configured_with;
 pub use continue_with::continue_with;
 
 use crate::{
@@ -24,6 +27,7 @@ struct Engine<'a, E, I> {
     execute: &'a mut E,
     input: &'a mut I,
     cursor: usize,
+    present: bool,
 }
 
 impl<E, I> Engine<'_, E, I>
@@ -66,7 +70,9 @@ where
             let diff = pending.commit(&history.snapshot.directory)?;
             history.steps[index].push(Block::Output(diff.clone()));
             history.save()?;
-            crate::tools::edit::display(&diff);
+            if self.present {
+                crate::tools::edit::display(&diff);
+            }
             return Ok(diff);
         }
         if step.tool.as_deref() == Some("AWAIT") {
@@ -141,7 +147,9 @@ where
                     let arguments = crate::tools::custom::arguments(argument)?;
                     crate::tools::custom::execute(tool, &arguments, &history.snapshot.directory)?
                 };
-                print!("{result}");
+                if self.present {
+                    print!("{result}");
+                }
                 history.steps[index].push(Block::Output(result));
                 history.save()?;
             }
@@ -180,7 +188,9 @@ where
                         &argument,
                         &history.snapshot.directory,
                     )?;
-                    print!("{result}");
+                    if self.present {
+                        print!("{result}");
+                    }
                     history.steps[index].push(tool_result(&tool, result));
                     history.save()?;
                 }
@@ -237,7 +247,9 @@ where
                         } else {
                             result
                         };
-                        print!("{result}");
+                        if self.present {
+                            print!("{result}");
+                        }
                         history.steps[index].push(tool_result(tool, result));
                         history.save()?;
                     } else if let Some(ask) = question(text) {
@@ -260,7 +272,9 @@ where
                     let diff = pending.commit(&history.snapshot.directory)?;
                     history.steps[index].push(Block::Edit(diff.clone()));
                     history.save()?;
-                    crate::tools::edit::display(&diff);
+                    if self.present {
+                        crate::tools::edit::display(&diff);
+                    }
                 }
                 Block::Input(_) if external_delete_pending(&history.steps[index]).is_some() => {
                     let request = external_delete_pending(&history.steps[index])

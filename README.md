@@ -9,9 +9,10 @@ support crop research and food supplies around the world. Their legacy lives on
 in the effort to feed billions of people worldwide.
 [Read the account at the Science History Institute](https://www.sciencehistory.org/stories/magazine/the-tragedy-of-the-worlds-first-seed-bank/).
 
-Run coding-agent workflows defined in YAML, with agent instructions in Markdown
-and an editable history for resumption. Supports the Codex, OpenCode, Ollama,
-Ollama Web, and OpenRouter adapters; Claude Code is not implemented.
+Run coding agents behind language-native workflows, with agent instructions in
+Markdown and an editable history. Legacy YAML workflows remain supported during
+the SDK migration. Supports the Codex, OpenCode, Ollama, Ollama Web, and
+OpenRouter adapters; Claude Code is not implemented.
 
 ## Setup
 
@@ -35,6 +36,24 @@ an explicit model slug such as `~openai/gpt-sol-latest`; configure the key in th
 execution directory's `.env` file or environment. `OPENROUTER_URL` may override
 its API endpoint.
 Bash is required; TREE also requires Git and a working tree.
+
+## Language SDK protocol
+
+Language SDKs start `sirk rpc` in the project directory and exchange one
+JSON-RPC 2.0 message per line over stdin/stdout. The public protocol currently
+exposes only `agent.run`; workflow control, filesystem access, Git, and user
+interaction belong to the host language. Agent permissions still control the
+CLI's internal READ, TREE, EDIT, and DELETE operations.
+
+The standalone [Rust SDK](sdk/rust/README.md) has no source or package dependency
+on the CLI:
+
+```rust
+use sirk_sdk::Sirk;
+
+let mut sirk = Sirk::start("./sirk", ".")?;
+let explanation = sirk.agent("code-explainer", "Explain this module")?;
+```
 
 Enable the repository's documentation pre-commit hook once per clone:
 

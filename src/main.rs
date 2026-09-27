@@ -4,6 +4,8 @@ mod create_agent;
 mod print_usage;
 #[path = "main/resume.rs"]
 mod resume;
+#[path = "main/rpc.rs"]
+mod rpc;
 #[path = "main/run.rs"]
 mod run;
 #[path = "main/run_workflow.rs"]

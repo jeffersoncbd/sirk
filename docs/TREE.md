@@ -1,5 +1,16 @@
 .env.example - Arquivo .env de exemplo que documenta as variáveis OLLAMA_WEB_URL, OLLAMA_API_KEY, OPENROUTER_URL e OPENROUTER_API_KEY obrigatórias.
 Cargo.toml - O manifesto configura o pacote Rust `new-harness` como biblioteca e CLI neutro de provedor, com dependências para serialização, ambiente, hashes e comparação textual.
+sdk/rust/Cargo.toml - Define os metadados e as dependências do pacote Rust `sirk-sdk` para o protocolo JSON-RPC S.I.R.K.
+sdk/rust/README.md - Oferece um SDK Rust para iniciar o S.I.R.K. e executar agentes por JSON-RPC.
+sdk/rust/src/agent.rs - Envia uma solicitação `agent.run` ao CLI e retorna o resultado em texto, tratando erros de transporte e protocolo.
+sdk/rust/src/drop.rs - Encerra a entrada e aguarda o término do processo filho ao destruir `Sirk`.
+sdk/rust/src/error.rs - Define os erros retornados pelo SDK ao interagir com o sistema, incluindo falhas de I/O, JSON, protocolo e RPC.
+sdk/rust/src/lib.rs - Define a raiz da biblioteca, organiza seus módulos internos e expõe publicamente os tipos `Error` e `Sirk`.
+sdk/rust/src/protocol.rs - Define os tipos serializáveis de solicitação e resposta JSON-RPC, incluindo parâmetros, resultados e erros opcionais.
+sdk/rust/src/sirk.rs - Armazena o processo filho e seus canais de entrada e saída, incluindo a saída padrão bufferizada.
+sdk/rust/src/start.rs - Inicia o CLI em modo RPC e configura uma instância de `Sirk` para se comunicar com o processo.
+sdk/rust/src/tests.rs - Declara e disponibiliza o módulo de testes `completes_agent_round_trip` pelo caminho correspondente.
+sdk/rust/src/tests/completes_agent_round_trip.rs - Valida a comunicação de ida e volta entre `Sirk` e um servidor simulado, confirmando a resposta do agente.
 src/adapters/codex.rs - Converte um RunRequest em uma Invocation de linha de comando para o harness `codex exec`, sempre em modo somente leitura e não interativo.
 src/adapters/codex/default.rs - Implementação padrão do `CodexAdapter`, que instancia o adaptador com o identificador "codex" via `CodexAdapter::new("codex")`.
 src/adapters/codex/new.rs - Cria um CodexAdapter configurado com o caminho de um executável, sem validações ou falhas.
@@ -60,25 +71,36 @@ src/interfaces/invocation.rs - Aplica um prefixo a uma Invocation, redefinindo o
 src/interfaces/mod.rs - Módulo raiz de interfaces que reexporta os tipos compartilhados entre as sub-rotinas internas.
 src/interfaces/workflow.rs - Estruturas serializáveis (serde) que definem um workflow, seus passos, entradas e coordenadas de edição.
 src/interfaces/workflow/default.rs - Implementa `Default` para `StepInput`, criando uma entrada de texto vazia como valor inicial.
-src/lib.rs - Arquivo raiz do crate que apenas declara e expõe publicamente os dez módulos da biblioteca.
-src/main.rs - Ponto de entrada do CLI que repassa argumentos da linha de comando ao módulo run e retorna o código de saída do processo.
+src/lib.rs - Expõe publicamente os dez módulos da biblioteca como ponto de entrada do crate.
+src/main.rs - Inicia o CLI, encaminha os argumentos para execução e converte o resultado em código de saída.
 src/main/create_agent.rs - Cria um agente no diretório atual usando entrada de terminal e exibe o caminho criado.
 src/main/print_usage.rs - Exibe na saída padrão o texto de uso retornado por `super::usage::usage()`.
 src/main/resume.rs - Retoma a execução do harness a partir de um caminho de estado, propagando erros e concluindo com sucesso.
-src/main/run.rs - Interpreta os argumentos de linha de comando e delega ao módulo correspondente: criar agente, executar workflow, retomar execução ou exibir ajuda.
+src/main/rpc.rs - Inicia o servidor RPC do S.I.R.K. delegando a execução a `serve()` e retornando seu resultado.
+src/main/run.rs - Interpreta os argumentos da linha de comando e encaminha cada subcomando à operação correspondente.
 src/main/run_workflow.rs - Carrega um workflow pelo nome, resolve o diretório atual e inicia sua execução, propagando erros.
 src/main/tests.rs - Valida a CLI, seu texto de uso e a resolução segura de nomes de fluxos em `flows/`.
 src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Confirma que a execução sem argumentos termina sem erro, sem verificar se um prompt foi iniciado.
 src/main/tests/rejects_an_invalid_command.rs - Confirma que `run` rejeita comandos inválidos com uma mensagem de erro apropriada.
 src/main/tests/rejects_flow_paths_and_extensions.rs - Confirma que `workflow_path` rejeita caminhos vazios, sem extensão, com travessia de diretório ou aninhados.
 src/main/tests/resolves_flow_names_inside_the_flows_directory.rs - Verifica se nomes de fluxo são resolvidos para os arquivos `.yml` esperados em `flows/`.
-src/main/tests/usage_lists_explicit_flow_commands.rs - Verifica se a saída de `usage()` descreve comandos de fluxo e omite comandos interativos.
-src/main/usage.rs - Retorna uma string estática com as instruções de uso do CLI para criar agentes e executar ou retomar fluxos.
+src/main/tests/usage_lists_explicit_flow_commands.rs - Verifica que usage() apresenta instruções para executar e resolver fluxos, sem descrever comandos interativos.
+src/main/usage.rs - Fornece o texto estático de ajuda do CLI `new-harness`, descrevendo criação de agentes e execução ou retomada de fluxos.
 src/main/workflow_path.rs - Valida o nome de um fluxo e constrói o caminho `flows/<nome>.yml`.
+src/rpc.rs - Organiza os módulos internos do transporte JSON-RPC e expõe serve como ponto de entrada externo.
+src/rpc/execute.rs - Executa uma invocação e retorna a saída padrão apenas se o processo terminar com sucesso.
+src/rpc/handle.rs - Valida requisições RPC para `agent.run` e converte a execução ou suas falhas em respostas apropriadas.
+src/rpc/run_agent.rs - Executa um agente em um fluxo silencioso de uma etapa e retorna a saída `result`.
+src/rpc/serve.rs - Processa requisições RPC em JSON pela entrada padrão e envia as respostas serializadas pela saída padrão.
+src/rpc/tests.rs - Reúne testes de RPC para requisições de agentes e rejeição de métodos desconhecidos.
+src/rpc/tests/handles_agent_requests.rs - Valida se `agent.run` devolve o resultado do agente sem erro e remove os arquivos temporários ao final.
+src/rpc/tests/rejects_unknown_methods.rs - Verifica que o handler RPC rejeita métodos desconhecidos com o erro “Method not found”.
+src/rpc/types.rs - Define os tipos e regras de serialização para requisições, respostas, parâmetros e erros JSON-RPC.
 src/runner/all_steps.rs - Coleta recursivamente todos os Step aninhados de uma lista, aplainando os ramos iter, is_true e is_false.
 src/runner/execute.rs - Executa um comando via BashService com streaming e retorna a saída padrão, ou erro se o processo falhar.
-src/runner/execution.rs - Avança um passo do workflow, executando tools e persistindo o histórico do agente.
-src/runner/execution/continue_with.rs - Retoma um workflow a partir do snapshot, validando-o e executando os passos, retornando os outputs por passo.
+src/runner/execution.rs - Executa passos do workflow, coordenando agentes e ferramentas e persistindo cada troca no histórico.
+src/runner/execution/continue_configured_with.rs - Valida o histórico do workflow e executa suas etapas, retornando as saídas ordenadas ou um erro.
+src/runner/execution/continue_with.rs - Valida o snapshot e reexecuta os passos do workflow, retornando seus outputs ou o primeiro erro.
 src/runner/execution/run_steps.rs - Engine que executa os passos do workflow, resolvendo loops e condicionais recursivamente e persistindo resultados no histórico.
 src/runner/external.rs - Agrega os submódulos de parsing das ferramentas externas EDIT/DELETE e define o ExternalDeleteRequest com mensagens de erro.
 src/runner/external/completed_delete.rs - Verifica se um bloco Delete de requisição externa já foi concluído no histórico.
@@ -97,13 +119,15 @@ src/runner/history_validation/ask_blocks.rs - Valida se o histórico de blocos f
 src/runner/history_validation/edit_blocks.rs - Valida entradas de histórico do tipo EDIT, confirmando se o Pending foi aplicado com o diff de saída esperado.
 src/runner/history_validation/step_blocks.rs - Valida a sequência de blocos de uma etapa da conversa, garantindo ordem e estado corretos.
 src/runner/history_validation/visit.rs - Valida os passos do workflow contra o histórico gravado, conferindo blocos e labels para verificar se o histórico cobre todos os passos.
-src/runner/mod.rs - Facade pública do runner, reexportando `run`, `run_with`, `run_interactive_with`, `resume` e `continue_with` como API estável de execução e retomada de workflows.
+src/runner/mod.rs - Expõe uma fachada estável para iniciar, retomar e continuar a execução de workflows.
 src/runner/question.rs - Extrai a pergunta de uma linha de comando iniciada por `ASK:`, retornando-a aparada ou `None` se o prefixo não existir.
 src/runner/resume.rs - Retoma uma execução pausada a partir do histórico persistido, executando os comandos restantes via TerminalInput.
 src/runner/run.rs - Executa um Workflow interativamente via TerminalInput e retorna as variáveis de saída.
-src/runner/run_interactive.rs - Prepara e executa o workflow interativo, retornando um mapa de resultados por passo.
-src/runner/run_with.rs - Executa um `Workflow` de forma não interativa, usando `NoInput` como provedor de entrada.
-src/runner/run_with/no_input.rs - Estrutura `NoInput` que implementa `UserInput` falhando imediatamente, bloqueando fluxos que exigem interação do usuário.
+src/runner/run_interactive.rs - Prepara e executa um workflow interativo, retornando os resultados organizados por passo.
+src/runner/run_interactive_configured.rs - Valida e prepara um workflow configurado para iniciar sua execução interativa e retornar resultados ou erro.
+src/runner/run_silent_with.rs - Executa um workflow sem interação do usuário e retorna os resultados organizados por etapa.
+src/runner/run_with.rs - Executa um workflow sem interação, encaminhando os parâmetros e propagando os resultados ou erros da execução.
+src/runner/run_with/no_input.rs - Implementa uma entrada que rejeita imediatamente qualquer solicitação de interação do usuário.
 src/runner/tests.rs - Módulo de fixtures de teste do runner: cria projetos temporários com git e helpers, removendo tudo ao final.
 src/runner/tests/control_flow.rs - Suíte de testes do runner que valida os passos LOOP, IF e WRITE e a validação do histórico.
 src/runner/tests/conversations.rs - Testes que validam o protocolo de conversas do runner: chamadas a agentes, perguntas, ferramentas e retomada de execuções.
