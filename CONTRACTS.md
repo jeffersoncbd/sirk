@@ -1,8 +1,8 @@
-# Development contracts
+# S.I.R.K. development contracts
 
 Compatibility requirements for changes to the corresponding subsystem. Read only
-the relevant sections alongside its module documentation from [TREE.md](TREE.md).
-Development workflow and checks are in [AGENTS.md](../AGENTS.md).
+the relevant sections alongside its module documentation from [TREE.md](docs/TREE.md).
+Development workflow and checks are in [AGENTS.md](AGENTS.md).
 
 - [Language, files, and permissions](#language-files-and-permissions)
 - [Tools and loops](#tools-and-loops)

@@ -1,5 +1,5 @@
 {
-  "name": "Agent Harness (Rust)",
+  "name": "S.I.R.K. (Rust)",
   "image": "mcr.microsoft.com/devcontainers/rust:1-bookworm",
   "remoteUser": "vscode",
   "customizations": {

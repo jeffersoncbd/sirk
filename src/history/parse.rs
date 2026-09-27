@@ -1,9 +1,12 @@
-use super::{Block, History, ParsedHistory, SEPARATOR, Snapshot, TITLE, finish::finish};
+use super::{
+    Block, History, LEGACY_TITLE, ParsedHistory, SEPARATOR, Snapshot, TITLE, finish::finish,
+};
 
 impl History {
     pub(super) fn parse(source: &str) -> Result<ParsedHistory, String> {
         let source = source
             .strip_prefix(TITLE)
+            .or_else(|| source.strip_prefix(LEGACY_TITLE))
             .ok_or("unsupported history format; only v2 transcripts can be resumed")?;
         let (metadata, body) = source
             .split_once("\n---\n")

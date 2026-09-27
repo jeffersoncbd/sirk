@@ -1,4 +1,13 @@
-# new-harness
+# S.I.R.K.
+
+**S.I.R.K.** honors Alexander Shchukin, Dmitri Ivanov, Liliya Rodina, and Georgi
+Kreier, researchers at the Vavilov Institute who died of starvation during the
+Siege of Leningrad while protecting its collection of crop seeds. They chose to
+preserve seeds that held promise for reducing hunger rather than consume them to
+survive. Their work helped safeguard agricultural diversity that continues to
+support crop research and food supplies around the world. Their legacy lives on
+in the effort to feed billions of people worldwide.
+[Read the account at the Science History Institute](https://www.sciencehistory.org/stories/magazine/the-tragedy-of-the-worlds-first-seed-bank/).
 
 Run coding-agent workflows defined in YAML, with agent instructions in Markdown
 and an editable history for resumption. Supports the Codex, OpenCode, Ollama,
@@ -6,18 +15,17 @@ Ollama Web, and OpenRouter adapters; Claude Code is not implemented.
 
 ## Setup
 
-Build in the supplied VS Code Dev Container:
+Build from the project root in the supplied VS Code Dev Container:
 
 ```bash
-cd /workspaces/new-harness
 cargo build
 ```
 
 On the host, from the project root:
 
 ```bash
-cp target/debug/new-harness ./new-harness
-./new-harness --help
+cp target/debug/sirk ./sirk
+./sirk --help
 ```
 
 Repeat the copy after rebuilding. The host must support the binary's architecture
@@ -34,7 +42,7 @@ Enable the repository's documentation pre-commit hook once per clone:
 git config core.hooksPath .githooks
 ```
 
-The hook runs `./new-harness run documentation` before every commit.
+The hook runs `./sirk run documentation` before every commit.
 It requires the root executable and an authenticated Codex installation, and a
 workflow failure cancels the commit. Generated documentation remains available
 in the working tree for a subsequent commit.
@@ -64,9 +72,9 @@ steps:
 Run from the project directory containing `.agents/` and `flows/`:
 
 ```bash
-./new-harness run workflow
-./new-harness resume history/run-<id>.log
-./new-harness --new-agent
+./sirk run workflow
+./sirk resume history/run-<id>.log
+./sirk --new-agent
 ```
 
 `--new-agent` (also `--newAgent`) generates an agent interactively without
@@ -74,7 +82,7 @@ replacing existing files. It asks separately for the created agent's and the
 generator's adapter/model. Optional agent metadata: `model` and an initial `ask`
 question. Omit `model` to use the harness default.
 
-Run `./new-harness --help` to show the available commands. Flow names resolve
+Run `./sirk --help` to show the available commands. Flow names resolve
 to `flows/<flow-name>.yml`.
 User answers are single-line; `/cancel` or EOF interrupts a workflow.
 Non-interactive commands exit with 0 on success and 2 on failure.

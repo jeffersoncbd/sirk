@@ -1,7 +1,6 @@
 ---
-adapter: opencode
-model: opencode/big-pickle
-call_prefix: [docker, exec, new-harness-opencode]
+adapter: codex
+model: gpt-6-luna
 ---
 
 # Papel

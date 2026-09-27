@@ -1,9 +1,9 @@
 use std::env;
 
 pub(super) fn create() -> Result<(), String> {
-    let path = new_harness::tools::new_agent::create(
+    let path = sirk::tools::new_agent::create(
         &env::current_dir().map_err(|error| error.to_string())?,
-        &mut new_harness::input::TerminalInput,
+        &mut sirk::input::TerminalInput,
     )?;
     println!("Agent created: {}", path.display());
     Ok(())

@@ -1,5 +1,5 @@
 .env.example - Arquivo .env de exemplo que documenta as variáveis OLLAMA_WEB_URL, OLLAMA_API_KEY, OPENROUTER_URL e OPENROUTER_API_KEY obrigatórias.
-Cargo.toml - CLI neutro de provedor que configura e deduplica prompts de harnesses de coding-agent.
+Cargo.toml - O manifesto configura o pacote Rust `new-harness` como biblioteca e CLI neutro de provedor, com dependências para serialização, ambiente, hashes e comparação textual.
 src/adapters/codex.rs - Converte um RunRequest em uma Invocation de linha de comando para o harness `codex exec`, sempre em modo somente leitura e não interativo.
 src/adapters/codex/default.rs - Implementação padrão do `CodexAdapter`, que instancia o adaptador com o identificador "codex" via `CodexAdapter::new("codex")`.
 src/adapters/codex/new.rs - Cria um CodexAdapter configurado com o caminho de um executável, sem validações ou falhas.
@@ -14,9 +14,14 @@ src/adapters/ollama_web/dotenv.rs - Lê uma chave específica do arquivo .env de
 src/adapters/ollama_web/endpoint.rs - Resolve a URL completa do endpoint de geração do Ollama Web a partir de configuração, variável de ambiente ou arquivo .env.
 src/adapters/ollama_web/new.rs - Constrói um OllamaWebAdapter normalizando executable, base URL não vazia e api_key opcional.
 src/adapters/ollama_web/nonempty.rs - Valida se uma String possui texto não em branco, retornando-a como Option.
-src/adapters/opencode.rs - Converte requisições neutras de provedor em invocações da CLI do OpenCode.
+src/adapters/opencode.rs - Adapta requisições neutras para comandos da CLI OpenCode, preservando opções e diretório de trabalho.
 src/adapters/opencode/default.rs - Implementa `Default` para `OpenCodeAdapter`, construindo-o via `Self::new("opencode")`.
+src/adapters/opencode/id.rs - A macro define o método que retorna o identificador estático `"opencode"` para o adaptador.
+src/adapters/opencode/invocation.rs - Monta a invocação do OpenCode para executar uma solicitação do harness com as opções configuradas e o prompt fornecido.
 src/adapters/opencode/new.rs - Constrói um `OpenCodeAdapter` convertendo o caminho do executável em `String` e armazenando-o no campo `executable`.
+src/adapters/opencode/tests.rs - Organiza os testes do adaptador OpenCode, reunindo módulos e importações sem lógica de execução própria.
+src/adapters/opencode/tests/does_not_enable_automatic_permission_approval.rs - Garante que a invocação do OpenCode não habilite a aprovação automática de permissões.
+src/adapters/opencode/tests/translates_generic_options_to_opencode_run.rs - Verifica se opções genéricas de execução são convertidas corretamente no comando `opencode run`, com argumentos, diretório e ambiente esperados.
 src/adapters/openrouter.rs - Adapta requisições do harness em chamadas curl à API de chat do OpenRouter, sem streaming.
 src/adapters/openrouter/api_key.rs - Resolves a chave de API do OpenRouter via campo interno, variável de ambiente ou arquivo .env.
 src/adapters/openrouter/default.rs - Define o impl Default do OpenRouterAdapter, com executable "curl" e base_url e api_key vazios.
@@ -35,13 +40,13 @@ src/agents/model.rs - Normaliza o campo `model` de struct para `Option<String>` 
 src/agents/tree_default.rs - Função que autoriza sempre o uso da ferramenta TREE, retornando `true` incondicionalmente.
 src/agents/tree_permission.rs - Deserializador customizado que converte a string TREE_TOOL "allow" em booleano true, falhando com erro descritivo caso contrário.
 src/harness.rs - Fachada que reexporta HarnessAdapter, HarnessError, Invocation e RunRequest de `crate::interfaces`.
-src/history.rs - Estrutura `History` que persiste e recupera o transcript editável de uma execução, com lock exclusivo de arquivo.
+src/history.rs - Define `History` para persistir e recuperar o transcript editável da execução, mantendo acesso exclusivo ao arquivo.
 src/history/create.rs - Cria e persiste uma instância de History com arquivo de log único e bloqueado no diretório do Snapshot.
 src/history/drop.rs - Libera o lock do History ao descartá-lo, ignorando falhas de unlock.
 src/history/finish.rs - Fecha o bloco em construção, converte-o em um Block tipado e o adiciona ao último passo.
 src/history/lock.rs - Abre o arquivo de lock do histórico e adquire bloqueio exclusivo, sinalizando erros via String.
 src/history/open.rs - Abre, bloqueia e carrega um arquivo de histórico, parseando seu conteúdo para retornar a struct History preenchida.
-src/history/parse.rs - Interpreta um transcript de histórico v2 e o converte em snapshot, passos e rótulos.
+src/history/parse.rs - Interpreta um histórico v2, desserializa o snapshot e organiza o conteúdo em etapas, blocos e rótulos.
 src/history/reserved.rs - Função `reserved` indica se uma linha do log é um marcador de seção reservada.
 src/history/save.rs - Serializa o histórico de uma workflow em YAML legível, com gravação atômica em arquivo temporário.
 src/input.rs - Fornece entrada de usuário via terminal, com `ask` lendo respostas do stdin e `await_confirmation` lendo de `/dev/tty`.
@@ -57,13 +62,18 @@ src/interfaces/workflow.rs - Estruturas serializáveis (serde) que definem um wo
 src/interfaces/workflow/default.rs - Implementa `Default` para `StepInput`, criando uma entrada de texto vazia como valor inicial.
 src/lib.rs - Arquivo raiz do crate que apenas declara e expõe publicamente os dez módulos da biblioteca.
 src/main.rs - Ponto de entrada do CLI que repassa argumentos da linha de comando ao módulo run e retorna o código de saída do processo.
-src/main/create_agent.rs - Cria um novo agente no diretório de trabalho atual, instanciando a entrada de terminal padrão.
+src/main/create_agent.rs - Cria um agente no diretório atual usando entrada de terminal e exibe o caminho criado.
 src/main/print_usage.rs - Exibe na saída padrão o texto de uso retornado por `super::usage::usage()`.
-src/main/resume.rs - Retoma um harness a partir de um caminho de estado via new_harness::runner::resume, propagando erros como String.
+src/main/resume.rs - Retoma a execução do harness a partir de um caminho de estado, propagando erros e concluindo com sucesso.
 src/main/run.rs - Interpreta os argumentos de linha de comando e delega ao módulo correspondente: criar agente, executar workflow, retomar execução ou exibir ajuda.
-src/main/run_workflow.rs - Carrega um workflow por nome, obtém seu caminho e executa-o no diretório de trabalho atual.
-src/main/tests.rs - Testes da CLI que validam rejeição de comandos inválidos, texto de uso, execução vazia e resolução de fluxos.
-src/main/usage.rs - Retorna o texto de ajuda/uso do CLI new-harness como string estática, sem argumentos ou efeitos colaterais.
+src/main/run_workflow.rs - Carrega um workflow pelo nome, resolve o diretório atual e inicia sua execução, propagando erros.
+src/main/tests.rs - Valida a CLI, seu texto de uso e a resolução segura de nomes de fluxos em `flows/`.
+src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Confirma que a execução sem argumentos termina sem erro, sem verificar se um prompt foi iniciado.
+src/main/tests/rejects_an_invalid_command.rs - Confirma que `run` rejeita comandos inválidos com uma mensagem de erro apropriada.
+src/main/tests/rejects_flow_paths_and_extensions.rs - Confirma que `workflow_path` rejeita caminhos vazios, sem extensão, com travessia de diretório ou aninhados.
+src/main/tests/resolves_flow_names_inside_the_flows_directory.rs - Verifica se nomes de fluxo são resolvidos para os arquivos `.yml` esperados em `flows/`.
+src/main/tests/usage_lists_explicit_flow_commands.rs - Verifica se a saída de `usage()` descreve comandos de fluxo e omite comandos interativos.
+src/main/usage.rs - Retorna uma string estática com as instruções de uso do CLI para criar agentes e executar ou retomar fluxos.
 src/main/workflow_path.rs - Valida o nome de um fluxo e constrói o caminho `flows/<nome>.yml`.
 src/runner/all_steps.rs - Coleta recursivamente todos os Step aninhados de uma lista, aplainando os ramos iter, is_true e is_false.
 src/runner/execute.rs - Executa um comando via BashService com streaming e retorna a saída padrão, ou erro se o processo falhar.
@@ -116,7 +126,7 @@ src/tools/custom/run.rs - Executa um script Bash em tools/ com nome e caminhos v
 src/tools/delete.rs - Remove com segurança um arquivo comum dentro do diretório de execução, bloqueando travessia, symlinks e caminhos fora da raiz.
 src/tools/edit.rs - Expõe operações de edição de arquivo (insert, delete, replace, prepend, append) com verificação de versão e geração de diff.
 src/tools/edit/apply_to.rs - Aplica uma operação de edição (Append/Prepend/Insert/Delete/Replace) sobre um texto com verificação de versão.
-src/tools/edit/commit.rs - Grava atomicamente a edição preparada em `Pending::commit`, detectando conflito se o arquivo mudar.
+src/tools/edit/commit.rs - Aplica a edição preparada de forma atômica, detectando alterações concorrentes e retornando o diff resultante.
 src/tools/edit/diff.rs - Gera um diff unificado entre o texto original e o resultado da aplicação de uma edição pendente.
 src/tools/edit/display.rs - Exibe o diff renderizado no stdout, usando cores apenas quando a saída é um terminal real.
 src/tools/edit/pending_validate.rs - Valida um registro de edição pendente, exigindo criação apenas para arquivos ausentes com Append/Prepend.

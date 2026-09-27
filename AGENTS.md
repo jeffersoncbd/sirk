@@ -1,4 +1,4 @@
-# Development instructions
+# S.I.R.K. development instructions
 
 ## Read only what the task needs
 
@@ -28,7 +28,7 @@ instructions.
 - Check `git status --short` and relevant diffs. Preserve user changes, especially
   workflows, `.agents/`, and ignore rules.
 - Read the workflow and agent definitions relevant to the task. The bundled
-  workflow is [documentation.yml](documentation.yml).
+  workflow is [documentation.yml](flows/documentation.yml).
 - Stay within the requested feature. Known limitations, the deprecated
   `serde_yaml 0.9` dependency, and the broken `build.sh` are not implicit tasks.
 - Write tool-owned code, comments, messages, tests, and logs in English.
@@ -63,11 +63,13 @@ Build and test Rust only inside the VS Code Dev Container; do not install Rust o
 the host. Discover the active container each session with `docker container ls`.
 Always use `-u vscode` to avoid root-owned artifacts. For code changes, run:
 
+Replace `<workspace-path>` with the actual project mount inside the container.
+
 ```bash
-docker exec -u vscode -w /workspaces/new-harness <container-id> cargo fmt --check
-docker exec -u vscode -w /workspaces/new-harness <container-id> cargo test
-docker exec -u vscode -w /workspaces/new-harness <container-id> cargo clippy --all-targets -- -D warnings
-docker exec -u vscode -w /workspaces/new-harness <container-id> cargo build
+docker exec -u vscode -w <workspace-path> <container-id> cargo fmt --check
+docker exec -u vscode -w <workspace-path> <container-id> cargo test
+docker exec -u vscode -w <workspace-path> <container-id> cargo clippy --all-targets -- -D warnings
+docker exec -u vscode -w <workspace-path> <container-id> cargo build
 ```
 
 Use `cargo fmt` in the same environment if needed. Documentation-only changes
@@ -82,7 +84,7 @@ only where the harness is installed and authenticated (currently Codex on the
 host). Previous integration runs do not validate later changes.
 
 After a successful build, refresh the root executable on the host with
-`cp target/debug/new-harness ./new-harness` when delivering code to run, or state
+`cp target/debug/sirk ./sirk` when delivering code to run, or state
 that it still needs refreshing. Host architecture and system libraries must be
 compatible.
 

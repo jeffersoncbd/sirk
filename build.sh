@@ -1,5 +1,5 @@
 #!/bin/bash
 
-rm new-harness
+rm sirk
 cargo build
-cp target/debug/new-harness ./
+cp target/debug/sirk ./

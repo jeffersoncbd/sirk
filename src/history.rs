@@ -10,7 +10,9 @@ mod save;
 
 pub use crate::interfaces::{Block, Snapshot};
 use std::{fs::File, path::PathBuf};
-const TITLE: &str = "NEW HARNESS — CONVERSATION HISTORY v2\n---\n";
+const TITLE: &str = "S.I.R.K. — CONVERSATION HISTORY v2\n---\n";
+// Existing v2 transcripts remain resumable after the project rename.
+const LEGACY_TITLE: &str = "NEW HARNESS — CONVERSATION HISTORY v2\n---\n";
 const SEPARATOR: &str = "============================================================";
 type ParsedHistory = (Snapshot, Vec<Vec<Block>>, Vec<String>);
 
@@ -50,9 +52,25 @@ mod tests {
             Block::Delete(String::new()),
         ]);
         history.save().unwrap();
-        let (_, steps, _) = History::parse(&fs::read_to_string(&history.path).unwrap()).unwrap();
+        let source = fs::read_to_string(&history.path).unwrap();
+        assert!(source.starts_with(TITLE));
+        let (_, steps, _) = History::parse(&source).unwrap();
         assert_eq!(history.steps, steps);
+        let legacy = source.replacen(TITLE, LEGACY_TITLE, 1);
+        let (snapshot, steps, labels) = History::parse(&legacy).unwrap();
+        assert_eq!(snapshot.directory, directory);
+        assert_eq!(history.steps, steps);
+        assert_eq!(labels, vec!["Step 1 — test"]);
+        assert!(History::parse(&source.replacen("v2", "v1", 1)).is_err());
+        assert!(History::parse(&legacy.replacen("v2", "v1", 1)).is_err());
         assert!(History::open(&history.path).is_err());
+        let path = history.path.clone();
+        drop(history);
+        fs::write(&path, legacy).unwrap();
+        let history = History::open(&path).unwrap();
+        assert_eq!(history.steps, steps);
+        history.save().unwrap();
+        assert!(fs::read_to_string(&path).unwrap().starts_with(TITLE));
         drop(history);
         fs::remove_dir_all(directory).unwrap();
     }

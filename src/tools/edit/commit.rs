@@ -29,7 +29,7 @@ impl Pending {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let (temporary, mut file) = loop {
             let name = format!(
-                ".new-harness-edit-{}-{}.tmp",
+                ".sirk-edit-{}-{}.tmp",
                 std::process::id(),
                 NEXT.fetch_add(1, Ordering::Relaxed)
             );

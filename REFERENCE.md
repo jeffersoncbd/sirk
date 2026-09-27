@@ -1,7 +1,7 @@
-# Workflow reference
+# S.I.R.K. workflow reference
 
 Detailed usage for agents, YAML tools, scopes, and recovery. Start with the
-[quick-start manual](../README.md); use the sections below as needed.
+[quick-start manual](README.md); use the sections below as needed.
 
 - [Agents](#agent-definitions) and [generation](#generate-an-agent-with-a-model)
 - [Workflows and outputs](#workflows-and-outputs)
@@ -50,7 +50,7 @@ maintain their own session files and logs.
 
 ## Generate an agent with a model
 
-Run `./new-harness --newAgent` (alias `--new-agent`). The wizard asks for:
+Run `./sirk --newAgent` (alias `--new-agent`). The wizard asks for:
 
 1. A description of the desired agent.
 2. The adapter and model the **created agent** will use.
@@ -141,7 +141,7 @@ Use `.treeignore` to hide files from TREE while keeping them tracked by Git:
 /.agents
 /.devcontainer
 Cargo.lock
-new-harness
+sirk
 ```
 
 These additional rules use Git ignore syntax, including nested files, directory
@@ -566,8 +566,11 @@ The loop's resolved array is saved once and local scopes are reconstructed from
 its saved child results when resuming.
 
 ```bash
-./new-harness resume history/run-<id>.log
+./sirk resume history/run-<id>.log
 ```
+
+New transcripts use the `S.I.R.K.` title. Existing v2 transcripts with the
+`NEW HARNESS` title remain resumable and receive the new title when saved.
 
 - A pending question waits for an answer.
 - A pending agent input invokes the model.

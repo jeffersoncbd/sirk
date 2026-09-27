@@ -1,11 +1,11 @@
 [package]
-name = "new-harness"
+name = "sirk"
 version = "0.1.0"
 edition = "2024"
-description = "A provider-neutral CLI for coding-agent harnesses"
+description = "S.I.R.K. — a provider-neutral CLI for coding-agent workflows"
 
 [lib]
-name = "new_harness"
+name = "sirk"
 path = "src/lib.rs"
 
 [dependencies]
@@ -17,5 +17,5 @@ sha2 = "0.10"
 similar = "2"
 
 [[bin]]
-name = "new-harness"
+name = "sirk"
 path = "src/main.rs"
