@@ -1,8 +1,8 @@
-## Resumo
-O arquivo não contém uma função de produção para documentar.
+## Summary
+Contains no production function to document.
 
-## Funcionamento
-Contém apenas um teste que verifica se a saída de `usage()` inclui comandos esperados e omite comandos obsoletos.
+## Behavior
+Contains only a test that checks whether `usage()` output includes expected commands and omits obsolete ones.
 
-## Importações
-- `super::*`: Importa `usage()` do módulo pai para o teste.
+## Imports
+- `super::*`: Imports `usage()` from the parent module for the test.

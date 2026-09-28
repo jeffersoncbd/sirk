@@ -1,11 +1,11 @@
-## Resumo
-Carrega e valida um agente a partir de um arquivo Markdown.
+## Summary
+Loads and validates an agent from a Markdown file.
 
-## Funcionamento
-Rejeita IDs inválidos, lê `{id}.md` no diretório informado e converte falhas de leitura ou análise em mensagens de erro. Retorna o agente analisado ou um `String` com o motivo da falha.
+## Behavior
+Rejects invalid IDs, reads `{id}.md` from the supplied directory, and converts read or parse failures into error messages. Returns the parsed agent or a `String` describing the failure.
 
-## Importações
-- `super::Agent`: Tipo de agente carregado.
-- `super::valid_id`: Valida o identificador do agente.
-- `std::fs`: Lê o conteúdo do arquivo.
-- `std::path::Path`: Representa o diretório de origem.
+## Imports
+- `super::Agent`: Loaded agent type.
+- `super::valid_id`: Validates the agent identifier.
+- `std::fs`: Reads file contents.
+- `std::path::Path`: Represents the source directory.

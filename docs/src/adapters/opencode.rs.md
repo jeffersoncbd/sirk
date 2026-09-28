@@ -1,11 +1,11 @@
-## Resumo
-Declara `OpenCodeAdapter`, que representa o adaptador para converter solicitações em chamadas da CLI OpenCode.
+## Summary
+Declares `OpenCodeAdapter`, which converts requests into OpenCode CLI calls.
 
-## Funcionamento
-A estrutura armazena o nome do executável em `executable`; este arquivo não contém a lógica de conversão.
+## Behavior
+The structure stores the executable name in `executable`; this file contains no conversion logic.
 
-## Importações
-- `default`: Declara um submódulo.
-- `id`: Declara um submódulo.
-- `invocation`: Declara um submódulo.
-- `new`: Declara um submódulo.
+## Imports
+- `default`: Declares a submodule.
+- `id`: Declares a submodule.
+- `invocation`: Declares a submodule.
+- `new`: Declares a submodule.

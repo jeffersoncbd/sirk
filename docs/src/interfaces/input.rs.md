@@ -1,8 +1,8 @@
-## Resumo
-Define a interface compartilhada para perguntas e confirmações ao usuário.
+## Summary
+Defines the shared interface for user questions and confirmations.
 
-## Funcionamento
-`ask` recebe uma pergunta e retorna a resposta ou um erro. `await_confirmation` envia o prompt por `ask`, descarta a resposta e retorna sucesso ou o erro recebido.
+## Behavior
+`ask` receives a question and returns the answer or an error. `await_confirmation` sends the prompt through `ask`, discards the answer, and returns success or the received error.
 
-## Importações
-- Nenhuma: o arquivo não importa dependências.
+## Imports
+- None: The file imports no dependencies.

@@ -1,8 +1,8 @@
-## Resumo
-Define os valores padrão do adaptador OpenRouter.
+## Summary
+Defines the OpenRouter adapter's default values.
 
-## Funcionamento
-Cria um adaptador usando `curl` como executável e deixa a URL base e a chave de API ausentes.
+## Behavior
+Creates an adapter using `curl` as the executable and leaves the base URL and API key unset.
 
-## Importações
-- `super::OpenRouterAdapter`: Tipo configurado pela implementação padrão.
+## Imports
+- `super::OpenRouterAdapter`: Type configured by the default implementation.

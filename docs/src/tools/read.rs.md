@@ -1,15 +1,15 @@
-## Resumo
-Organiza os módulos da ferramenta de leitura e expõe suas funções públicas.
+## Summary
+Organizes the read-tool modules and exposes its public functions.
 
-## Funcionamento
-Declara os módulos internos de apoio e reexporta `enumerate`, `enumerated_content` e `read` para uso externo.
+## Behavior
+Declares internal helper modules and re-exports `enumerate`, `enumerated_content`, and `read` for external use.
 
-## Importações
-- `component`: Módulo interno de componentes.
-- `component_match`: Correspondência de componentes.
-- `components`: Definições de componentes.
-- `enumerate`: Enumera arquivos.
-- `enumerated_content`: Obtém conteúdo enumerado.
-- `ignore`: Regras de exclusão.
-- `ignored`: Gerencia itens ignorados.
-- `run`: Implementa a leitura de arquivos.
+## Imports
+- `component`: Internal component module.
+- `component_match`: Component matching.
+- `components`: Component definitions.
+- `enumerate`: Numbers file lines.
+- `enumerated_content`: Extracts numbered contents.
+- `ignore`: Exclusion rules.
+- `ignored`: Handles ignored items.
+- `run`: Implements file reading.

@@ -1,8 +1,8 @@
-## Resumo
-Libera o bloqueio de `History` ao descartar o valor.
+## Summary
+Releases the `History` lock when the value is dropped.
 
-## Funcionamento
-Ao ser descartado, tenta desbloquear `_lock` e ignora qualquer erro.
+## Behavior
+On drop, attempts to unlock `_lock` and ignores any error.
 
-## Importações
-- `super::History`: Tipo cujo descarte libera o bloqueio.
+## Imports
+- `super::History`: Type whose drop implementation releases the lock.

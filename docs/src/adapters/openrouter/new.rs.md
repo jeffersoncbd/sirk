@@ -1,9 +1,9 @@
-## Resumo
-Cria um adaptador OpenRouter com executável, URL base e chave de API opcionais.
+## Summary
+Creates an OpenRouter adapter with an executable and optional base URL and API key.
 
-## Funcionamento
-Converte executável e URL base para `String`, aplica `nonempty` à URL e descarta a chave de API se estiver vazia ou contiver apenas espaços.
+## Behavior
+Converts the executable and base URL to `String`, applies `nonempty` to the URL, and discards the API key if it is empty or contains only whitespace.
 
-## Importações
-- `super::OpenRouterAdapter`: Tipo do adaptador criado.
-- `super::nonempty::nonempty`: Trata a URL base.
+## Imports
+- `super::OpenRouterAdapter`: Adapter type being created.
+- `super::nonempty::nonempty`: Handles the base URL.

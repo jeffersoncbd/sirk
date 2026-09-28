@@ -1,9 +1,9 @@
-## Resumo
-Centraliza os módulos e exportações dos adaptadores disponíveis.
+## Summary
+Centralizes the modules and exports for available adapters.
 
-## Funcionamento
-Declara os módulos internos, reexporta os adaptadores e `resolve`, e lista os nomes aceitos em `AVAILABLE`.
+## Behavior
+Declares internal modules, re-exports the adapters and `resolve`, and lists accepted names in `AVAILABLE`.
 
-## Importações
-- `codex`, `ollama`, `ollama_web`, `opencode`, `openrouter`: Módulos dos adaptadores.
-- `resolve`: Resolução de adaptadores.
+## Imports
+- `codex`, `ollama`, `ollama_web`, `opencode`, `openrouter`: Adapter modules.
+- `resolve`: Adapter resolution.

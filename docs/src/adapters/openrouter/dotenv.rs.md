@@ -1,11 +1,11 @@
-## Resumo
-Lê do arquivo `.env` de um diretório o valor não vazio de uma chave.
+## Summary
+Reads a nonempty key value from a directory's `.env` file.
 
-## Funcionamento
-Se `.env` não existir, retorna `Ok(None)`; outros erros de leitura ou análise viram `HarnessError::InvalidConfiguration`. Ao encontrar a chave, retorna seu valor se não estiver vazio; se não encontrar, retorna `Ok(None)`.
+## Behavior
+Returns `Ok(None)` if `.env` does not exist; other read or parse errors become `HarnessError::InvalidConfiguration`. When the key is found, returns its value if nonempty; if it is not found, returns `Ok(None)`.
 
-## Importações
-- `super`: Acesso ao adaptador e à função que filtra valores vazios.
-- `crate::harness`: Tipos usados para identificar erros de configuração.
-- `std`: Verificação de erro de arquivo ausente e caminho do diretório.
-- `dotenvy`: Leitura e análise das variáveis do arquivo `.env`.
+## Imports
+- `super`: Access to the adapter and function that filters empty values.
+- `crate::harness`: Types used to identify configuration errors.
+- `std`: Missing-file error checks and directory paths.
+- `dotenvy`: Reads and parses variables from `.env`.

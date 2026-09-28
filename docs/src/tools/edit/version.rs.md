@@ -1,8 +1,8 @@
-## Resumo
-Calcula o hash SHA-256 do conteúdo e o retorna em hexadecimal.
+## Summary
+Calculates the SHA-256 hash of the contents and returns it as hexadecimal.
 
-## Funcionamento
-Recebe uma string, calcula seu digest SHA-256 a partir dos bytes UTF-8 e formata o resultado como uma string hexadecimal minúscula.
+## Behavior
+Receives a string, calculates its SHA-256 digest from UTF-8 bytes, and formats the result as a lowercase hexadecimal string.
 
-## Importações
-- `sha2`: Fornece o algoritmo SHA-256 para calcular o hash.
+## Imports
+- `sha2`: Provides the SHA-256 algorithm for hashing.

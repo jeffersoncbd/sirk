@@ -1,8 +1,8 @@
-## Resumo
-Retorna o texto se ele contiver algum caractere que não seja espaço em branco.
+## Summary
+Returns the text if it contains a non-whitespace character.
 
-## Funcionamento
-Verifica o conteúdo após remover espaços em branco das extremidades. Se estiver vazio, retorna `None`; caso contrário, retorna o texto original em `Some`, preservando os espaços.
+## Behavior
+Checks the contents after trimming surrounding whitespace. If empty, returns `None`; otherwise, returns the original text in `Some`, preserving whitespace.
 
-## Importações
-- Nenhuma: a função não usa importações.
+## Imports
+- None: The function has no imports.

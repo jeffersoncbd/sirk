@@ -1,8 +1,8 @@
-## Resumo
-Exibe a mensagem de uso do programa.
+## Summary
+Displays the program usage message.
 
-## Funcionamento
-Obtém o texto de uso de `super::usage::usage()` e o imprime na saída padrão.
+## Behavior
+Gets the usage text from `super::usage::usage()` and prints it to standard output.
 
-## Importações
-- `super::usage`: Fornece o texto de uso.
+## Imports
+- `super::usage`: Provides the usage text.

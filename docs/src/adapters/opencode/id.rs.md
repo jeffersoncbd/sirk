@@ -1,8 +1,8 @@
-## Resumo
-A macro define o método que identifica o adaptador como `opencode`.
+## Summary
+The macro defines the method that identifies the adapter as `opencode`.
 
-## Funcionamento
-Ao ser expandida, retorna a string estática `"opencode"`.
+## Behavior
+When expanded, it returns the static string `"opencode"`.
 
-## Importações
-- Nenhuma: a macro não usa dependências externas.
+## Imports
+- None: The macro uses no external dependencies.

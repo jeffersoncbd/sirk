@@ -1,9 +1,9 @@
-## Resumo
-Escolhe e retorna um adaptador disponível informado pelo usuário.
+## Summary
+Prompts for and returns an available adapter selected by the user.
 
-## Funcionamento
-Apresenta as opções disponíveis e solicita uma resposta. Remove espaços e converte a entrada para minúsculas; se corresponder a um adaptador disponível, retorna `Ok` com seu nome. Caso contrário, solicita novamente com uma mensagem de erro. Propaga falhas de `input.ask` como `Err`.
+## Behavior
+Displays the available options and requests a response. Trims whitespace and lowercases the input; if it matches an available adapter, returns `Ok` with its name. Otherwise, prompts again with an error message. Propagates `input.ask` failures as `Err`.
 
-## Importações
-- `crate::adapters`: Fornece a lista de adaptadores disponíveis.
-- `crate::input::UserInput`: Permite solicitar a escolha ao usuário.
+## Imports
+- `crate::adapters`: Provides the list of available adapters.
+- `crate::input::UserInput`: Allows requesting the user's choice.

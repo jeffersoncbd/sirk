@@ -1,8 +1,8 @@
-## Resumo
-Converte `call_prefix` em uma lista de argumentos, aceitando um valor único ou vários.
+## Summary
+Converts `call_prefix` into an argument list, accepting one or multiple values.
 
-## Funcionamento
-Aceita uma string ou uma lista de strings; valor ausente ou nulo resulta em lista vazia. Rejeita argumentos vazios com erro de desserialização.
+## Behavior
+Accepts a string or list of strings; a missing or null value produces an empty list. Rejects empty arguments with a deserialization error.
 
-## Importações
-- `serde`: fornece a desserialização e a criação de erros personalizados.
+## Imports
+- `serde`: Provides deserialization and custom error creation.

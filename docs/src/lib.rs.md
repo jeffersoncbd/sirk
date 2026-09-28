@@ -1,8 +1,8 @@
-## Resumo
-Declara os módulos disponíveis no crate.
+## Summary
+Declares the modules available in the crate.
 
-## Funcionamento
-Expõe publicamente os módulos listados e mantém `agent_service` e `git_service` privados.
+## Behavior
+Publicly exposes the listed modules while keeping `agent_service` and `git_service` private.
 
-## Importações
-- módulos: Declara os módulos do crate.
+## Imports
+- Modules: Declares the crate modules.

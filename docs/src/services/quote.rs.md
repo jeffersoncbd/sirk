@@ -1,8 +1,8 @@
-## Resumo
-Gera uma versão de `value` protegida para uso em shell.
+## Summary
+Produces a shell-safe version of `value`.
 
-## Funcionamento
-Se `value` começar com `$` seguido de um nome válido presente em `environment`, mantém a variável entre aspas duplas. Caso contrário, envolve o valor em aspas simples e escapa apóstrofos. Sempre retorna uma `String`.
+## Behavior
+If `value` starts with `$` followed by a valid name present in `environment`, it keeps the variable in double quotes. Otherwise, it wraps the value in single quotes and escapes apostrophes. It always returns a `String`.
 
-## Importações
-- `std::collections::BTreeMap`: Consulta variáveis disponíveis no ambiente.
+## Imports
+- `std::collections::BTreeMap`: Looks up variables available in the environment.

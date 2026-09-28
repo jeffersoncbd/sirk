@@ -1,11 +1,11 @@
-## Resumo
-Este módulo reúne e reexporta tipos compartilhados entre módulos da aplicação.
+## Summary
+Collects and re-exports types shared across application modules.
 
-## Funcionamento
-Declara os módulos internos `harness`, `history`, `input` e `invocation`, e disponibiliza publicamente seus tipos selecionados para uso comum.
+## Behavior
+Declares the internal `harness`, `history`, `input`, and `invocation` modules and publicly exposes selected types for shared use.
 
-## Importações
-- `harness`: Adaptador, erro e solicitação de execução.
-- `history`: Blocos e snapshots do histórico.
-- `input`: Entrada do usuário.
-- `invocation`: Representação de uma invocação.
+## Imports
+- `harness`: Adapter, error, and execution request.
+- `history`: History blocks and snapshots.
+- `input`: User input.
+- `invocation`: Invocation representation.

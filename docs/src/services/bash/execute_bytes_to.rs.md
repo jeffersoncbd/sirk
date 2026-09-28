@@ -1,11 +1,11 @@
-## Resumo
-Executa uma invocação do Bash e captura sua saída binária.
+## Summary
+Executes a Bash invocation and captures its binary output.
 
-## Funcionamento
-Inicia o processo no diretório e ambiente da invocação, sem entrada padrão e com erros direcionados ao processo pai. Lê a saída em blocos, copia cada bloco para `output` e a acumula; se a leitura ou escrita falhar, encerra e aguarda o processo antes de retornar o erro. Ao terminar, retorna o status e os bytes capturados.
+## Behavior
+Starts the process in the invocation's directory and environment, with no standard input and errors inherited by the parent. It reads output in chunks, copies each chunk to `output`, and accumulates it. If reading or writing fails, it terminates and waits for the process before returning the error. On completion, it returns the status and captured bytes.
 
-## Importações
-- `super::{BashService, BinaryProcessOutput}`: serviço e tipo do resultado.
-- `crate::services::Invocation`: parâmetros da execução.
-- `std::io::{self, Read, Write}`: leitura, escrita e erros de E/S.
-- `std::process::{Command, Stdio}`: criação e configuração do processo.
+## Imports
+- `super::{BashService, BinaryProcessOutput}`: Service and result type.
+- `crate::services::Invocation`: Execution parameters.
+- `std::io::{self, Read, Write}`: Reading, writing, and I/O errors.
+- `std::process::{Command, Stdio}`: Process creation and configuration.

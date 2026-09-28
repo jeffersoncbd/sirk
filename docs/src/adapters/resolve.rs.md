@@ -1,9 +1,9 @@
-## Resumo
-Resolve o nome de um harness para sua implementação de adaptador.
+## Summary
+Resolves a harness name to its adapter implementation.
 
-## Funcionamento
-Compara `name` com os identificadores conhecidos e retorna o adaptador correspondente dentro de `Some`. Para nomes não reconhecidos, retorna `None`.
+## Behavior
+Compares `name` with known identifiers and returns the corresponding adapter in `Some`. Returns `None` for unrecognized names.
 
-## Importações
-- `crate::harness::HarnessAdapter`: Tipo da interface retornada.
-- `super`: Adaptadores concretos disponíveis para resolução.
+## Imports
+- `crate::harness::HarnessAdapter`: Type of the returned interface.
+- `super`: Concrete adapters available for resolution.

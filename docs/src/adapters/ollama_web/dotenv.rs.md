@@ -1,14 +1,14 @@
-## Resumo
-Lê do arquivo `.env` de um diretório o valor não vazio de uma chave.
+## Summary
+Reads a nonempty key value from a directory's `.env` file.
 
-## Funcionamento
-Se o arquivo não existir ou a chave não for encontrada, retorna `Ok(None)`. Erros de leitura ou análise são convertidos em `HarnessError::InvalidConfiguration`; ao encontrar a chave, retorna seu valor se não estiver vazio.
+## Behavior
+Returns `Ok(None)` if the file does not exist or the key is missing. Read or parse errors are converted to `HarnessError::InvalidConfiguration`; when the key is found, returns its value if nonempty.
 
-## Importações
-- `OllamaWebAdapter`: fornece o identificador do adaptador.
-- `nonempty`: converte valores vazios em `None`.
-- `HarnessAdapter`: permite obter o identificador do adaptador.
-- `HarnessError`: representa erros de configuração.
-- `io`: identifica erros de arquivo inexistente.
-- `Path`: representa o diretório consultado.
-- `dotenvy`: lê e analisa o arquivo `.env`.
+## Imports
+- `OllamaWebAdapter`: Provides the adapter identifier.
+- `nonempty`: Converts empty values to `None`.
+- `HarnessAdapter`: Allows retrieving the adapter identifier.
+- `HarnessError`: Represents configuration errors.
+- `io`: Identifies missing-file errors.
+- `Path`: Represents the queried directory.
+- `dotenvy`: Reads and parses the `.env` file.

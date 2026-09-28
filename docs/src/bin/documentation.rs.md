@@ -1,9 +1,9 @@
-## Resumo
-Conecta ao S.I.R.K. e executa o fluxo de documentação.
+## Summary
+Connects to S.I.R.K. and runs the documentation flow.
 
-## Funcionamento
-Estabelece a conexão; se falhar, propaga o erro. Em seguida, executa `documentation::run` com a conexão e retorna seu resultado.
+## Behavior
+Establishes the connection and propagates any failure, then runs `documentation::run` with the connection and returns its result.
 
-## Importações
-- `sirk_sdk::Sirk`: Cria a conexão com o S.I.R.K.
-- `documentation`: Fornece o fluxo de documentação.
+## Imports
+- `sirk_sdk::Sirk`: Creates the S.I.R.K. connection.
+- `documentation`: Provides the documentation flow.

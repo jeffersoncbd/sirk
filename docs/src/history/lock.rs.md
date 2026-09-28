@@ -1,10 +1,10 @@
-## Resumo
-Adquire um bloqueio exclusivo para o arquivo de histórico.
+## Summary
+Acquires an exclusive lock for the history file.
 
-## Funcionamento
-Cria ou abre o arquivo `.log.lock` correspondente, sem truncá-lo, e solicita um bloqueio. Retorna o arquivo bloqueado ou uma mensagem de erro caso a abertura ou o bloqueio falhe.
+## Behavior
+Creates or opens the corresponding `.log.lock` file without truncating it and requests a lock. Returns the locked file or an error message if opening or locking fails.
 
-## Importações
-- `super::History`: Tipo ao qual o método é associado.
-- `std::fs`: Abre ou cria o arquivo de bloqueio.
-- `std::path::Path`: Recebe o caminho do histórico.
+## Imports
+- `super::History`: Type that owns the method.
+- `std::fs`: Opens or creates the lock file.
+- `std::path::Path`: Receives the history path.

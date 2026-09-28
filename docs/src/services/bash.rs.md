@@ -1,8 +1,8 @@
-## Resumo
-Define o serviço compartilhado que executa processos por meio do Bash.
+## Summary
+Defines the shared service that executes processes through Bash.
 
-## Funcionamento
-`BashService` guarda o executável do Bash e organiza a implementação em submódulos. As saídas representam o status do processo e seus dados capturados como texto ou bytes.
+## Behavior
+`BashService` stores the Bash executable and organizes the implementation into submodules. Output types represent process status and captured data as text or bytes.
 
-## Importações
-- `std::process::ExitStatus`: tipo usado para representar o status de saída.
+## Imports
+- `std::process::ExitStatus`: Represents an exit status.

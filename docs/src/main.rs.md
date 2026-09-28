@@ -1,10 +1,10 @@
-## Resumo
-Executa o comando recebido e define o código de saída do programa.
+## Summary
+Executes the received command and sets the program's exit code.
 
-## Funcionamento
-Passa os argumentos, exceto o nome do executável, para `run::run`. Se a execução for bem-sucedida, retorna `ExitCode::SUCCESS`; caso contrário, exibe o erro em stderr e retorna o código 2.
+## Behavior
+Passes all arguments except the executable name to `run::run`. On success, it returns `ExitCode::SUCCESS`; otherwise, it prints the error to stderr and returns code 2.
 
-## Importações
-- `std::env`: Obtém os argumentos da linha de comando.
-- `std::process::ExitCode`: Representa o código de saída do processo.
-- `run`: Executa o comando com os argumentos recebidos.
+## Imports
+- `std::env`: Retrieves command-line arguments.
+- `std::process::ExitCode`: Represents the process exit code.
+- `run`: Executes the command with the received arguments.

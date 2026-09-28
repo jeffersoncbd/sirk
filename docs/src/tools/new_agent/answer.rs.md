@@ -1,8 +1,8 @@
-## Resumo
-Solicita uma resposta até receber um valor não vazio.
+## Summary
+Requests an answer until a nonempty value is received.
 
-## Funcionamento
-Faz a pergunta repetidamente e retorna a resposta original quando ela contém algo além de espaços em branco. Se `input.ask` falhar, propaga o erro.
+## Behavior
+Repeats the question and returns the original answer when it contains more than whitespace. If `input.ask` fails, propagates the error.
 
-## Importações
-- `crate::input::UserInput`: Interface usada para solicitar respostas.
+## Imports
+- `crate::input::UserInput`: Interface used to request answers.

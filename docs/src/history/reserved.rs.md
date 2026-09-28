@@ -1,8 +1,8 @@
-## Resumo
-Verifica se uma linha usa um marcador reservado do histórico.
+## Summary
+Checks whether a line uses a reserved history marker.
 
-## Funcionamento
-Retorna `true` para marcadores fixos, o separador, linhas iniciadas por `Step ` ou barra invertida; caso contrário, retorna `false`. Não produz efeitos colaterais.
+## Behavior
+Returns `true` for fixed markers, the separator, lines beginning with `Step `, or a backslash; otherwise, returns `false`. It has no side effects.
 
-## Importações
-- `super::SEPARATOR`: separador reservado do histórico.
+## Imports
+- `super::SEPARATOR`: Reserved history separator.

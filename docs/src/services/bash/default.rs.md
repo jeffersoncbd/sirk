@@ -1,8 +1,8 @@
-## Resumo
-Define o valor padrão de `BashService` usando o executável `bash`.
+## Summary
+Defines the default `BashService` using the `bash` executable.
 
-## Funcionamento
-`default()` cria e retorna um serviço configurado para executar `bash`.
+## Behavior
+`default()` creates and returns a service configured to execute `bash`.
 
-## Importações
-- `super::BashService`: Tipo de serviço inicializado.
+## Imports
+- `super::BashService`: Service type being initialized.

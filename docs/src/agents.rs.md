@@ -1,15 +1,15 @@
-## Resumo
-`Agent::parse` valida e converte uma definição textual em um agente.
+## Summary
+`Agent::parse` validates and converts a textual definition into an agent.
 
-## Funcionamento
-Exige metadados YAML entre delimitadores `---`, valida campos como adaptador e permissões e rejeita instruções vazias. Em caso de erro, retorna uma mensagem; se tudo for válido, retorna `Agent` com os metadados e as instruções Markdown normalizadas.
+## Behavior
+Requires YAML metadata between `---` delimiters, validates fields such as adapter and permissions, and rejects empty instructions. On error it returns a message; otherwise, it returns an `Agent` with normalized metadata and Markdown instructions.
 
-## Importações
-- `serde`: serialização e desserialização dos metadados.
-- `serde_yaml`: conversão dos metadados YAML.
-- `model`: desserialização do modelo.
-- `call_prefix`: desserialização do prefixo de chamada.
-- `tree_default`: valor padrão da permissão de árvore.
-- `tree_permission`: desserialização da permissão de árvore.
-- `edit_permission`: desserialização da permissão de edição.
-- `delete_permission`: desserialização das permissões de exclusão.
+## Imports
+- `serde`: Metadata serialization and deserialization.
+- `serde_yaml`: YAML metadata conversion.
+- `model`: Model deserialization.
+- `call_prefix`: Call-prefix deserialization.
+- `tree_default`: Default tree permission.
+- `tree_permission`: Tree-permission deserialization.
+- `edit_permission`: Edit-permission deserialization.
+- `delete_permission`: Delete-permission deserialization.

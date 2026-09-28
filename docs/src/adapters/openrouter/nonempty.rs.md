@@ -1,8 +1,8 @@
-## Resumo
-Retorna o valor se não estiver vazio ou composto apenas por espaços.
+## Summary
+Returns the value if it is not empty or whitespace-only.
 
-## Funcionamento
-Remove espaços apenas para validar; se houver conteúdo, retorna a `String` original. Caso contrário, retorna `None`.
+## Behavior
+Trims whitespace only for validation; if contents remain, returns the original `String`. Otherwise, returns `None`.
 
-## Importações
-- Nenhuma.
+## Imports
+- None.

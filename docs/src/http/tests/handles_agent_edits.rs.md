@@ -1,11 +1,11 @@
-## Resumo
-O arquivo contém apenas um teste que verifica a edição de um arquivo por um agente via HTTP.
+## Summary
+Contains a single test that verifies an agent can edit a file over HTTP.
 
-## Funcionamento
-O teste cria um diretório temporário, configura um adaptador simulado e chama `handle` com uma requisição para executar o agente. Em seguida, verifica a resposta e o conteúdo editado, removendo o diretório ao final.
+## Behavior
+The test creates a temporary directory, configures a fake adapter, and calls `handle` with a request to run the agent. It then checks the response and edited contents and removes the directory.
 
-## Importações
-- `handle`: Executa a requisição HTTP simulada.
-- `std::fs`: Cria, lê, altera e remove arquivos de teste.
-- `PermissionsExt`: Define o adaptador como executável.
-- `SystemTime` e `UNIX_EPOCH`: Geram um nome único para o diretório temporário.
+## Imports
+- `handle`: Executes the simulated HTTP request.
+- `std::fs`: Creates, reads, modifies, and removes test files.
+- `PermissionsExt`: Marks the adapter as executable.
+- `SystemTime` and `UNIX_EPOCH`: Generate a unique temporary directory name.

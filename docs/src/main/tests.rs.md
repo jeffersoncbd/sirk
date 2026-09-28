@@ -1,9 +1,9 @@
-## Resumo
-Este arquivo reúne módulos de teste relacionados à execução e ao uso da aplicação.
+## Summary
+Collects test modules related to application execution and usage.
 
-## Funcionamento
-Não define uma função principal; declara quatro módulos de teste e importa `run` e `usage`.
+## Behavior
+Defines no main function; declares four test modules and imports `run` and `usage`.
 
-## Importações
-- `super::run::run`: Função de execução disponível aos testes.
-- `super::usage::usage`: Função de uso disponível aos testes.
+## Imports
+- `super::run::run`: Execution function available to tests.
+- `super::usage::usage`: Usage function available to tests.

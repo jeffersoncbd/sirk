@@ -1,9 +1,9 @@
-## Resumo
-Gera um diff unificado entre o conteúdo original e o conteúdo editado.
+## Summary
+Generates a unified diff between the original and edited contents.
 
-## Funcionamento
-Retorna erro se a edição ainda não estiver preparada ou se a aplicação falhar. Caso contrário, cria um diff com três linhas de contexto; usa `/dev/null` como origem para arquivos inexistentes e escapa caracteres de controle no caminho.
+## Behavior
+Returns an error if the edit has not been prepared or if applying it fails. Otherwise, creates a diff with three context lines, uses `/dev/null` as the source for nonexistent files, and escapes control characters in the path.
 
-## Importações
-- `super::Pending`: Tipo cuja edição está pendente.
-- `similar`: Gera o diff unificado.
+## Imports
+- `super::Pending`: Type whose edit is pending.
+- `similar`: Generates the unified diff.

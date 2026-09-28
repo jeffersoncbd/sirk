@@ -1,8 +1,8 @@
-## Resumo
-Interpreta pedidos isolados de leitura ou consulta da árvore de arquivos.
+## Summary
+Parses standalone requests to read a file or inspect the file tree.
 
-## Funcionamento
-Remove espaços externos, reconhece `TREE` ou `READ:` e retorna o tipo do pedido com seu caminho. Retorna `None` para outros textos ou caminhos com quebras de linha.
+## Behavior
+Trims surrounding whitespace, recognizes `TREE` or `READ:`, and returns the request type with its path. Returns `None` for other text or paths containing line breaks.
 
-## Importações
-- Nenhuma: usa apenas métodos e tipos padrão do Rust.
+## Imports
+- None: Uses only standard Rust methods and types.

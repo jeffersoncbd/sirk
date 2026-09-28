@@ -1,10 +1,10 @@
-## Resumo
-Lê respostas e confirmações do usuário pelo terminal.
+## Summary
+Reads user responses and confirmations from the terminal.
 
-## Funcionamento
-`ask` exibe a pergunta e repete a leitura até receber uma resposta não vazia; `/cancel`, entrada fechada ou falhas de I/O retornam erro. `await_confirmation` lê diretamente do terminal interativo (`/dev/tty`), aceita qualquer linha como confirmação e retorna erro em caso de cancelamento, entrada fechada ou falha.
+## Behavior
+`ask` displays the question and repeats until it receives a nonempty answer; `/cancel`, closed input, or I/O failures return an error. `await_confirmation` reads directly from the interactive terminal (`/dev/tty`), accepts any line as confirmation, and returns an error on cancellation, closed input, or failure.
 
-## Importações
-- `std::fs::OpenOptions`: Abre o terminal interativo para confirmação.
-- `std::io`: Lê e escreve no terminal e trata operações de I/O.
-- `crate::interfaces::UserInput`: Define a interface implementada.
+## Imports
+- `std::fs::OpenOptions`: Opens the interactive terminal for confirmation.
+- `std::io`: Reads and writes terminal data and handles I/O operations.
+- `crate::interfaces::UserInput`: Defines the implemented interface.

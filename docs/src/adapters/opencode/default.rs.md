@@ -1,8 +1,8 @@
-## Resumo
-Define o valor padrão de `OpenCodeAdapter` usando o comando `opencode`.
+## Summary
+Defines the default `OpenCodeAdapter` using the `opencode` command.
 
-## Funcionamento
-Ao criar o valor padrão, chama `OpenCodeAdapter::new` com `"opencode"` e retorna a instância resultante.
+## Behavior
+When creating the default value, calls `OpenCodeAdapter::new` with `"opencode"` and returns the resulting instance.
 
-## Importações
-- `super::OpenCodeAdapter`: Tipo de adaptador configurado.
+## Imports
+- `super::OpenCodeAdapter`: Configured adapter type.

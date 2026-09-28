@@ -1,8 +1,8 @@
-## Resumo
-Cria a configuração padrão de `CodexAdapter` usando o comando `codex`.
+## Summary
+Creates the default `CodexAdapter` configuration using the `codex` command.
 
-## Funcionamento
-Ao solicitar o valor padrão, chama `CodexAdapter::new` com `"codex"` e retorna a instância criada.
+## Behavior
+When the default value is requested, calls `CodexAdapter::new` with `"codex"` and returns the created instance.
 
-## Importações
-- `super::CodexAdapter`: Tipo configurado com o comando padrão.
+## Imports
+- `super::CodexAdapter`: Type configured with the default command.

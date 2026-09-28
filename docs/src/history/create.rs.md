@@ -1,10 +1,10 @@
-## Resumo
-Cria e salva um novo histórico associado ao snapshot.
+## Summary
+Creates and saves a new history associated with the snapshot.
 
-## Funcionamento
-Cria a pasta `history`, gera um nome de arquivo com o horário e o PID do processo, adquire um bloqueio, inicializa o histórico vazio e o salva. Erros de criação, obtenção do horário, bloqueio ou salvamento são convertidos em `String`.
+## Behavior
+Creates the `history` directory, generates a file name from the time and process PID, acquires a lock, initializes an empty history, and saves it. Creation, time, locking, or save errors are converted to `String`.
 
-## Importações
-- `super`: Tipos `History` e `Snapshot`
-- `std::fs`: Criação da pasta de histórico
-- `std::time`: Geração do horário do arquivo
+## Imports
+- `super`: `History` and `Snapshot` types.
+- `std::fs`: History-directory creation.
+- `std::time`: File timestamp generation.

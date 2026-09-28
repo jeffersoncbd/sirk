@@ -1,8 +1,8 @@
-## Resumo
-Verifica que a invocação do adaptador OpenCode não ativa aprovação automática de permissões.
+## Summary
+Verifies that an OpenCode adapter invocation does not enable automatic permission approval.
 
-## Funcionamento
-Cria uma solicitação de execução, obtém a invocação do adaptador e confirma que seus argumentos não incluem `--auto`; a criação da invocação propaga erros com `unwrap`.
+## Behavior
+Creates a run request, obtains the adapter invocation, and checks that its arguments do not include `--auto`; invocation creation errors are propagated with `unwrap`.
 
-## Importações
-- `super::*`: Acessa os tipos e o adaptador do módulo pai.
+## Imports
+- `super::*`: Accesses the parent module's types and adapter.

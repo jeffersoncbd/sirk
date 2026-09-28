@@ -1,9 +1,9 @@
-## Resumo
-Remove um arquivo regular localizado dentro do diretório de execução.
+## Summary
+Removes a regular file located inside the execution directory.
 
-## Funcionamento
-Rejeita caminhos vazios, externos ao diretório ou que atravessem links simbólicos e componentes que não sejam diretórios. Confirma que o destino é um arquivo regular, remove-o e sincroniza o diretório pai; falhas são retornadas como `Err` com uma mensagem descritiva.
+## Behavior
+Rejects empty paths, paths outside the directory, paths traversing symbolic links, and components that are not directories. Confirms the target is a regular file, removes it, and synchronizes the parent directory; failures are returned as `Err` with a descriptive message.
 
-## Importações
-- `std::fs::{self, File}`: inspeciona, remove e sincroniza arquivos e diretórios.
-- `std::path::{Component, Path}`: valida e resolve os componentes do caminho.
+## Imports
+- `std::fs::{self, File}`: Inspects, removes, and synchronizes files and directories.
+- `std::path::{Component, Path}`: Validates and resolves path components.

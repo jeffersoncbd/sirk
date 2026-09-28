@@ -1,8 +1,8 @@
-## Resumo
-Desserializa um modelo opcional, removendo espaços e convertendo-o para minúsculas.
+## Summary
+Deserializes an optional model, trimming whitespace and converting it to lowercase.
 
-## Funcionamento
-Converte a entrada em `Option<String>` e propaga erros de desserialização; se houver uma string, normaliza-a com `trim` e `to_lowercase`.
+## Behavior
+Converts the input to `Option<String>` and propagates deserialization errors; when a string is present, normalizes it with `trim` and `to_lowercase`.
 
-## Importações
-- `serde::Deserialize`: Habilita a desserialização de strings.
+## Imports
+- `serde::Deserialize`: Enables string deserialization.

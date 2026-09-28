@@ -1,8 +1,8 @@
-## Resumo
-Converte o valor serializado `"allow"` em `true`.
+## Summary
+Converts the serialized value `"allow"` to `true`.
 
-## Funcionamento
-Desserializa uma string e retorna `Ok(true)` somente se ela for `"allow"`; qualquer outro valor gera um erro descritivo.
+## Behavior
+Deserializes a string and returns `Ok(true)` only when it is `"allow"`; any other value produces a descriptive error.
 
-## Importações
-- `serde`: desserialização da string e criação do erro customizado
+## Imports
+- `serde`: String deserialization and custom error creation.

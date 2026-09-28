@@ -1,9 +1,9 @@
-## Resumo
-Resolve e valida o caminho de destino de uma edição dentro do diretório de execução.
+## Summary
+Resolves and validates an edit target path within the execution directory.
 
-## Funcionamento
-Canonicaliza o diretório raiz e verifica o caminho solicitado. Aceita arquivos regulares existentes, rejeita links simbólicos e caminhos fora da raiz. Se o arquivo não existir e `allow_missing` for verdadeiro, exige que o diretório pai exista e esteja dentro da raiz. Retorna o caminho resolvido ou uma mensagem de erro.
+## Behavior
+Canonicalizes the root directory and checks the requested path. Accepts existing regular files and rejects symbolic links and paths outside the root. If the file does not exist and `allow_missing` is true, requires the parent directory to exist and remain inside the root. Returns the resolved path or an error message.
 
-## Importações
-- `std::fs`: consulta metadados do caminho.
-- `std::path`: manipula e canonicaliza caminhos.
+## Imports
+- `std::fs`: Queries path metadata.
+- `std::path`: Manipulates and canonicalizes paths.

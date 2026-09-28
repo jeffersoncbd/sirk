@@ -1,8 +1,8 @@
-## Resumo
-Define os valores padrão do adaptador Ollama Web.
+## Summary
+Defines the default values for the Ollama Web adapter.
 
-## Funcionamento
-Cria o adaptador usando `curl` como executável e deixa a URL base e a chave de API ausentes.
+## Behavior
+Creates the adapter using `curl` as the executable and leaves the base URL and API key unset.
 
-## Importações
-- `super::OllamaWebAdapter`: Tipo configurado pela implementação.
+## Imports
+- `super::OllamaWebAdapter`: Type configured by the implementation.

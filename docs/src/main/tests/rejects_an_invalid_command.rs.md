@@ -1,8 +1,8 @@
-## Resumo
-Verifica se um comando inválido é rejeitado.
+## Summary
+Verifies that an invalid command is rejected.
 
-## Funcionamento
-Executa `run` com o comando `"invalid"`, espera um erro e confirma que a mensagem contém `"invalid command"`.
+## Behavior
+Runs `run` with the command `"invalid"`, expects an error, and checks that the message contains `"invalid command"`.
 
-## Importações
-- `super::*`: Importa o conteúdo do módulo pai usado pelo teste.
+## Imports
+- `super::*`: Imports parent-module items used by the test.

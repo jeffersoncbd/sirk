@@ -1,13 +1,13 @@
-## Resumo
-Monta o endpoint de chat do OpenRouter a partir da configuração disponível.
+## Summary
+Builds the OpenRouter chat endpoint from the available configuration.
 
-## Funcionamento
-Usa a URL configurada no adaptador, na variável de ambiente ou no arquivo `.env`; se nenhuma existir, usa o valor padrão. Remove barras finais, retorna erro se a URL ficar vazia e acrescenta o caminho necessário conforme o formato da URL.
+## Behavior
+Uses the URL configured on the adapter, in the environment variable, or in `.env`; if none exists, it uses the default. Removes trailing slashes, returns an error if the URL is empty, and appends the required path according to the URL format.
 
-## Importações
-- `DEFAULT_URL`: URL padrão do OpenRouter.
-- `OpenRouterAdapter`: Adaptador cujo endpoint é configurado.
-- `nonempty`: Ignora valores vazios da variável de ambiente.
-- `HarnessAdapter`: Fornece o identificador do adaptador.
-- `HarnessError`: Representa erros de configuração.
-- `Path`: Indica o diretório para buscar o arquivo `.env`.
+## Imports
+- `DEFAULT_URL`: Default OpenRouter URL.
+- `OpenRouterAdapter`: Adapter whose endpoint is configured.
+- `nonempty`: Ignores empty environment-variable values.
+- `HarnessAdapter`: Provides the adapter identifier.
+- `HarnessError`: Represents configuration errors.
+- `Path`: Indicates the directory in which to find `.env`.

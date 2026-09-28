@@ -1,10 +1,10 @@
-## Resumo
-Obtém a chave da API do Ollama, buscando-a nas fontes disponíveis.
+## Summary
+Retrieves the Ollama API key from the available sources.
 
-## Funcionamento
-Prioriza a chave já configurada no adaptador; em seguida, consulta `OLLAMA_API_KEY` no ambiente e, por fim, no arquivo dotenv do diretório. Valores vazios são tratados como ausentes. Erros da leitura do dotenv são propagados.
+## Behavior
+Prioritizes a key already configured on the adapter, then checks `OLLAMA_API_KEY` in the environment, and finally checks the directory's dotenv file. Empty values are treated as absent. Dotenv read errors are propagated.
 
-## Importações
-- `super`: Adaptador e validador de valores não vazios.
-- `crate::harness::HarnessError`: Tipo de erro retornado.
-- `std::path::Path`: Representa o diretório consultado.
+## Imports
+- `super`: Adapter and nonempty-value validator.
+- `crate::harness::HarnessError`: Returned error type.
+- `std::path::Path`: Represents the queried directory.

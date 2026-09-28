@@ -1,9 +1,9 @@
-## Resumo
-Verifica se um caminho corresponde ao padrão de ignorados informado.
+## Summary
+Checks whether a path matches the supplied ignore pattern.
 
-## Funcionamento
-Remove barras iniciais do padrão e separa padrão e caminho em componentes. Para padrões de um único componente, verifica se algum componente do caminho corresponde; para padrões com vários componentes, delega a comparação e indica se o padrão termina com `/`.
+## Behavior
+Removes leading slashes from the pattern and splits the pattern and path into components. For a single-component pattern, checks whether any path component matches; for patterns with multiple components, delegates comparison and indicates whether the pattern ends with `/`.
 
-## Importações
-- `super::component`: compara um padrão com um componente do caminho.
-- `super::components`: compara sequências de componentes.
+## Imports
+- `super::component`: Compares a pattern with a path component.
+- `super::components`: Compares component sequences.

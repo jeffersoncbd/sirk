@@ -1,10 +1,10 @@
-## Resumo
-Inicia um servidor HTTP que processa requisições em threads separadas.
+## Summary
+Starts an HTTP server that processes requests in separate threads.
 
-## Funcionamento
-Abre o servidor no endereço informado e retorna o erro como `String` se a inicialização falhar. Para cada requisição, lê o corpo e chama `handle`; se a leitura falhar, prepara uma resposta 400. Envia a resposta como JSON e registra falhas de envio no `stderr`.
+## Behavior
+Binds the server to the supplied address and returns initialization errors as `String`. For each request, reads the body and calls `handle`; a read failure produces a 400 response. Sends the response as JSON and logs send failures to `stderr`.
 
-## Importações
-- `super::handle`: Processa método, caminho e corpo da requisição.
-- `super::types`: Fornece a estrutura da resposta HTTP.
-- `tiny_http`: Cria o servidor e monta e envia respostas HTTP.
+## Imports
+- `super::handle`: Processes the request method, path, and body.
+- `super::types`: Provides the HTTP response structure.
+- `tiny_http`: Creates the server and builds and sends HTTP responses.

@@ -1,11 +1,11 @@
-## Resumo
-Despacha os argumentos para o comando correspondente ou exibe a ajuda.
+## Summary
+Dispatches arguments to the corresponding command or displays help.
 
-## Funcionamento
-Sem argumentos ou com `help`, `--help` ou `-h`, exibe a ajuda e retorna sucesso. Reconhece `--newAgent` e `--new-agent` para criar um agente, e `http` com endereço opcional. Para qualquer outra combinação, retorna um erro com a mensagem de uso.
+## Behavior
+With no arguments or with `help`, `--help`, or `-h`, displays help and returns success. Recognizes `--newAgent` and `--new-agent` for agent creation and `http` with an optional address. Any other combination returns an error containing the usage message.
 
-## Importações
-- `create_agent`: Cria um agente.
-- `http`: Executa o comando HTTP.
-- `print_usage`: Exibe a ajuda.
-- `usage`: Fornece a mensagem de uso.
+## Imports
+- `create_agent`: Creates an agent.
+- `http`: Runs the HTTP command.
+- `print_usage`: Displays help.
+- `usage`: Provides the usage message.

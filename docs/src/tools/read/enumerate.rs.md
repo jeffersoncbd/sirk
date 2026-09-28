@@ -1,8 +1,8 @@
-## Resumo
-`enumerate` prefixa cada linha do conteúdo com um número estável, começando em 1.
+## Summary
+`enumerate` prefixes each content line with a stable number starting at 1.
 
-## Funcionamento
-Inicia a saída com o cabeçalho `Line | Content` e percorre as linhas preservando seus terminadores originais. Prefixa cada uma com seu número e retorna o texto resultante.
+## Behavior
+Starts output with the `Line | Content` header and iterates over lines while preserving their original terminators. Prefixes each line with its number and returns the resulting text.
 
-## Importações
-- `std` (prelúdio): fornece `String` e operações sobre texto.
+## Imports
+- `std` (prelude): Provides `String` and text operations.

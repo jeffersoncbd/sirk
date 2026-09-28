@@ -1,8 +1,8 @@
-## Resumo
-Retorna o texto armazenado em um bloco do histórico.
+## Summary
+Returns the text stored in a history block.
 
-## Funcionamento
-Identifica a variante de `Block` e retorna uma referência ao texto associado, sem modificar o bloco.
+## Behavior
+Identifies the `Block` variant and returns a reference to its associated text without modifying the block.
 
-## Importações
-- `super::Block`: Tipo de bloco do histórico.
+## Imports
+- `super::Block`: History block type.

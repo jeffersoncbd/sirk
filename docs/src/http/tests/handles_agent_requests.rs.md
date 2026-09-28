@@ -1,12 +1,12 @@
-## Resumo
-Este arquivo contém apenas um teste que verifica a execução de um agente via HTTP.
+## Summary
+Contains a single test that verifies an agent can run over HTTP.
 
-## Funcionamento
-O teste cria um agente temporário com um adaptador executável, envia uma requisição `POST` para `/v1/agent/run` e confirma o status e o resultado da resposta.
+## Behavior
+The test creates a temporary agent with an executable adapter, sends a `POST` request to `/v1/agent/run`, and checks the response status and result.
 
-## Importações
-- `handle`: processa a requisição HTTP no teste.
-- `serde_json`: cria e interpreta os dados JSON.
-- `std::fs`: cria e remove arquivos e diretórios temporários.
-- `PermissionsExt`: torna o adaptador executável.
-- `SystemTime`, `UNIX_EPOCH`: geram um nome temporário único.
+## Imports
+- `handle`: Processes the HTTP request in the test.
+- `serde_json`: Creates and parses JSON data.
+- `std::fs`: Creates and removes temporary files and directories.
+- `PermissionsExt`: Makes the adapter executable.
+- `SystemTime`, `UNIX_EPOCH`: Generate a unique temporary name.

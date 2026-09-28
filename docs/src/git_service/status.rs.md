@@ -1,12 +1,12 @@
-## Resumo
-Lista os caminhos alterados no Git dentro do diretório solicitado, excluindo arquivos ignorados.
+## Summary
+Lists Git-changed paths within the requested directory, excluding ignored files.
 
-## Funcionamento
-Localiza o projeto e executa `git status` e `git ls-files` para obter alterações e caminhos ignorados. Valida os registros, trata renomes e cópias, converte caminhos UTF-8 e remove o prefixo do diretório solicitado. Mantém arquivos excluídos ou ainda visíveis no sistema de arquivos; retorna erro se os comandos falharem ou a saída for inválida. Ordena e deduplica os caminhos antes de retorná-los.
+## Behavior
+Locates the project and runs `git status` and `git ls-files` to obtain changes and ignored paths. Validates records, handles renames and copies, converts UTF-8 paths, and removes the requested-directory prefix. Keeps deleted files or files still visible in the filesystem; returns an error if commands fail or output is invalid. Sorts and deduplicates paths before returning them.
 
-## Importações
-- `super::project::project`: Localiza o projeto Git e seu prefixo.
-- `super::run::run`: Executa comandos Git e retorna a saída.
-- `std::collections::BTreeSet`: Armazena caminhos excluídos.
-- `std::fs`: Verifica a existência e o tipo dos caminhos.
-- `std::path::Path`: Representa o diretório de entrada.
+## Imports
+- `super::project::project`: Locates the Git project and its prefix.
+- `super::run::run`: Runs Git commands and returns output.
+- `std::collections::BTreeSet`: Stores deleted paths.
+- `std::fs`: Checks path existence and type.
+- `std::path::Path`: Represents the input directory.

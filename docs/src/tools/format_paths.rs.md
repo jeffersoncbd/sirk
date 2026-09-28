@@ -1,9 +1,9 @@
-## Resumo
-Converte caminhos de arquivos em uma string JSON formatada.
+## Summary
+Formats file paths as a pretty-printed JSON array.
 
-## Funcionamento
-Converte cada caminho para UTF-8 ou retorna erro indicando qual ferramenta não pode representá-lo; em seguida, serializa a lista como JSON legível, adiciona uma quebra de linha e informa falhas de serialização.
+## Behavior
+Converts each path to UTF-8, returning an error naming the tool if a path cannot be represented. Serializes the paths with a trailing newline, reporting serialization errors with the tool name.
 
-## Importações
-- `std::path::PathBuf`: Tipo dos caminhos recebidos.
-- `serde_json`: Serializa os caminhos como JSON.
+## Imports
+- `std::path::PathBuf`: Type of the input paths.
+- `serde_json`: Serializes paths as JSON.

@@ -1,8 +1,8 @@
-## Resumo
-Retorna o marcador textual correspondente ao tipo de bloco do histórico.
+## Summary
+Returns the text marker corresponding to a history block type.
 
-## Funcionamento
-Associa cada variante de `Block` a uma string fixa e a retorna como referência `&str`, sem efeitos colaterais.
+## Behavior
+Maps each `Block` variant to a fixed string and returns it as an `&str` reference without side effects.
 
-## Importações
-- `super::Block`: Tipo de bloco usado para definir o método `marker`.
+## Imports
+- `super::Block`: Block type used to define the `marker` method.

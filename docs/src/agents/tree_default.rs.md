@@ -1,8 +1,8 @@
-## Resumo
-Retorna `true` para permitir a ferramenta TREE.
+## Summary
+Returns `true` as the default TREE tool permission for legacy agent snapshots.
 
-## Funcionamento
-Sempre retorna `true`, sem validações ou efeitos colaterais.
+## Behavior
+Always returns `true`, preserving the implicit TREE permission used by snapshots created before `TREE_TOOL` existed. It performs no validation and has no side effects.
 
-## Importações
-- Nenhuma.
+## Imports
+- None.

@@ -1,8 +1,8 @@
-## Resumo
-Converte o valor textual `allow` em `true`.
+## Summary
+Converts the text value `allow` to `true`.
 
-## Funcionamento
-Desserializa uma string e retorna `Ok(true)` se ela for `allow`; caso contrário, retorna um erro indicando o valor esperado.
+## Behavior
+Deserializes a string and returns `Ok(true)` when it is `allow`; otherwise, it returns an error indicating the expected value.
 
-## Importações
-- `serde::Deserialize`: Desserializa o valor como string.
+## Imports
+- `serde::Deserialize`: Deserializes the value as a string.

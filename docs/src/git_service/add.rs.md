@@ -1,10 +1,10 @@
-## Resumo
-Adiciona ao Git todas as alterações do projeto no diretório informado.
+## Summary
+Adds all project changes in the supplied directory to Git.
 
-## Funcionamento
-Localiza o projeto a partir de `directory`; se essa etapa falhar, retorna o erro. Em seguida executa `git add --all -- .` no diretório do projeto e retorna `Ok(())` se o comando for bem-sucedido.
+## Behavior
+Locates the project from `directory` and returns an error if that fails. It then runs `git add --all -- .` in the project directory and returns `Ok(())` when the command succeeds.
 
-## Importações
-- `super::project::project`: Localiza o projeto associado ao diretório.
-- `super::run::run`: Executa o comando Git e propaga erros.
-- `std::path::Path`: Representa o diretório recebido.
+## Imports
+- `super::project::project`: Locates the project associated with the directory.
+- `super::run::run`: Runs the Git command and propagates errors.
+- `std::path::Path`: Represents the supplied directory.

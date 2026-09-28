@@ -1,8 +1,8 @@
-## Resumo
-Aplica uma operação de edição ao conteúdo, retornando o texto atualizado ou um erro.
+## Summary
+Applies an edit operation to contents and returns the updated text or an error.
 
-## Funcionamento
-Valida a solicitação e verifica se a versão informada corresponde ao conteúdo atual. Calcula os limites da edição conforme a operação; rejeita inserções ou intervalos além do fim do arquivo. Por fim, combina o conteúdo anterior, a entrada e o trecho preservado.
+## Behavior
+Validates the request and checks that the supplied version matches the current contents. Calculates edit boundaries for the operation and rejects insertions or ranges beyond the end of the file. Finally, combines the previous contents, input, and preserved portion.
 
-## Importações
-- `super::{Operation, Request, version}`: Tipos da edição e cálculo de versão.
+## Imports
+- `super::{Operation, Request, version}`: Edit types and version calculation.

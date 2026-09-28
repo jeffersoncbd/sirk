@@ -1,11 +1,11 @@
-## Resumo
-Executa a ferramenta solicitada no diretório indicado e retorna seu resultado.
+## Summary
+Runs the requested tool in the specified directory and returns its result.
 
-## Funcionamento
-Para `TREE`, lista os arquivos do diretório e formata os caminhos; para `READ`, lê o conteúdo solicitado. Erros dessas operações são propagados como `String`; nomes desconhecidos retornam erro.
+## Behavior
+For `TREE`, lists directory files and formats their paths; for `READ`, reads the requested contents. Errors from these operations are propagated as `String`; unknown names return an error.
 
-## Importações
-- `std::path::Path`: Representa o diretório de execução.
-- `format_paths`: Formata a lista de caminhos.
-- `read`: Lê o conteúdo solicitado.
-- `Tree`: Lista arquivos do diretório.
+## Imports
+- `std::path::Path`: Represents the execution directory.
+- `format_paths`: Formats the path list.
+- `read`: Reads the requested contents.
+- `Tree`: Lists directory files.

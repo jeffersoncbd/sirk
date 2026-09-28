@@ -22,7 +22,7 @@ mod tests {
             "quotes\"and\\slashes",
             "line\nbreak",
             "tab\tand\u{1}",
-            "ação.rs",
+            "résumé.rs",
         ];
         let files: Vec<_> = paths.iter().map(std::path::PathBuf::from).collect();
         let output = format_paths("TREE", &files).unwrap();

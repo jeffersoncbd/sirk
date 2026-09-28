@@ -1,10 +1,10 @@
-## Resumo
-Gera uma linha de comando para executar uma `Invocation`.
+## Summary
+Builds a command line for executing an `Invocation`.
 
-## Funcionamento
-Adiciona `exec --`, cita o programa e cada argumento conforme o ambiente da invocação e une tudo com espaços. Retorna a linha como `String`.
+## Behavior
+Adds `exec --`, quotes the program and each argument according to the invocation environment, and joins everything with spaces. Returns the line as a `String`.
 
-## Importações
-- `BashService`: Tipo que recebe o método.
-- `Invocation`: Fornece programa, argumentos e ambiente.
-- `shell_quote`: Cita o programa e os argumentos.
+## Imports
+- `BashService`: Type that owns the method.
+- `Invocation`: Provides the program, arguments, and environment.
+- `shell_quote`: Quotes the program and arguments.

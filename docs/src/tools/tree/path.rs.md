@@ -1,12 +1,12 @@
-## Resumo
-Converte bytes em um caminho `PathBuf`, respeitando as capacidades da plataforma.
+## Summary
+Converts bytes to a `PathBuf`, respecting platform capabilities.
 
-## Funcionamento
-No Unix, preserva os bytes do caminho diretamente. Em outras plataformas, exige UTF-8 e retorna uma mensagem de erro se a conversão falhar.
+## Behavior
+On Unix, preserves path bytes directly. On other platforms, requires UTF-8 and returns an error message if conversion fails.
 
-## Importações
-- `std::path::PathBuf`: Representa o caminho convertido.
-- `std::os::unix::ffi::OsStrExt`: Converte bytes em `OsStr` no Unix.
-- `std::str`: Valida UTF-8 em plataformas não Unix.
-- `std::ffi::OsStr`: Cria `OsStr` a partir dos bytes no Unix.
-- `format!`: Monta a mensagem de erro.
+## Imports
+- `std::path::PathBuf`: Represents the converted path.
+- `std::os::unix::ffi::OsStrExt`: Converts bytes to `OsStr` on Unix.
+- `std::str`: Validates UTF-8 on non-Unix platforms.
+- `std::ffi::OsStr`: Creates `OsStr` from bytes on Unix.
+- `format!`: Builds the error message.

@@ -1,9 +1,9 @@
-## Resumo
-Formata erros de `HarnessError` como mensagens legíveis.
+## Summary
+Formats `HarnessError` values as readable messages.
 
-## Funcionamento
-Escolhe uma mensagem conforme a variante do erro, incluindo o adaptador e os detalhes disponíveis, e a escreve no formatador.
+## Behavior
+Selects a message for the error variant, includes the adapter and available details, and writes it to the formatter.
 
-## Importações
-- `super::HarnessError`: Tipo de erro formatado.
-- `std::fmt`: Fornece a implementação de formatação.
+## Imports
+- `super::HarnessError`: Error type being formatted.
+- `std::fmt`: Provides the formatting implementation.

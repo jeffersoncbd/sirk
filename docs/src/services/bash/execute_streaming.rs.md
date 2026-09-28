@@ -1,10 +1,10 @@
-## Resumo
-Executa uma invocação e transmite sua saída para a saída padrão.
+## Summary
+Executes an invocation and streams its output to standard output.
 
-## Funcionamento
-Chama `execute_to` com a invocação recebida e a saída padrão bloqueada, retornando o resultado ou o erro de E/S.
+## Behavior
+Calls `execute_to` with the received invocation and locked standard output, returning the result or I/O error.
 
-## Importações
-- `super`: Tipos `BashService` e `ProcessOutput`.
-- `crate::services::Invocation`: Dados da invocação.
-- `std::io`: Saída padrão e resultado de E/S.
+## Imports
+- `super`: `BashService` and `ProcessOutput` types.
+- `crate::services::Invocation`: Invocation data.
+- `std::io`: Standard output and I/O results.

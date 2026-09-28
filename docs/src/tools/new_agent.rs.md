@@ -1,16 +1,17 @@
-## Resumo
-Cria um arquivo de definição de agente a partir das respostas do usuário e do conteúdo gerado por um adaptador.
+## Summary
+`create_with` generates, validates, and saves an agent definition from user responses.
 
-## Funcionamento
-Resolve e valida o diretório, coleta descrição, adaptadores, modelos e nome do agente, repetindo a pergunta se o nome for inválido ou já existir. Gera a definição, valida seu formato e os metadados solicitados; em caso de erro, retorna `Err` sem salvar. Se válida, cria `.agents` quando necessário e grava o arquivo sem sobrescrever outro existente, retornando seu caminho.
+## Behavior
+Canonicalizes the project directory, gathers the agent description and runtime and generator settings, and repeats the name prompt until it gets a valid, unused name. It builds an adapter invocation and passes it to the supplied generator; errors or invalid generated metadata return `Err` without saving. On success, it creates `.agents`, writes the definition without overwriting an existing file, and returns its path.
 
-## Importações
-- `adapters`: resolve o adaptador gerador.
-- `Agent`, `valid_id`: valida a definição e o nome do agente.
-- `RunRequest`: prepara a solicitação de geração.
-- `UserInput`: coleta respostas do usuário.
-- `Invocation`: representa a chamada ao adaptador.
-- `Serialize`: serializa os metadados YAML.
-- `std::fs`, `OpenOptions`: cria diretórios e arquivos sem sobrescrita.
-- `std::io::Write`: grava e sincroniza o conteúdo.
-- `Path`, `PathBuf`: manipula diretórios e retorna o caminho criado.
+## Imports
+- `adapters`: Resolves the generator adapter.
+- `Agent`, `valid_id`: Parse and validate the generated agent.
+- `RunRequest`: Builds the generator request.
+- `UserInput`: Collects user responses.
+- `Invocation`: Represents the adapter invocation.
+- `Serialize`: Serializes runtime metadata.
+- `std::fs`, `OpenOptions`: Create directories and files safely.
+- `std::io::Write`: Writes and syncs the definition.
+- `Path`, `PathBuf`: Handle directories and return the path.
+- `serde_yaml`: Serializes agent metadata.

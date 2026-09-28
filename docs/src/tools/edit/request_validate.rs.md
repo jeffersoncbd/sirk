@@ -1,8 +1,8 @@
-## Resumo
-Valida se uma solicitação de edição tem caminho, coordenadas, conteúdo e versão compatíveis com a operação.
+## Summary
+Checks that an edit request has a path, coordinates, contents, and version compatible with its operation.
 
-## Funcionamento
-Retorna `Err` com uma mensagem específica ao encontrar caminho vazio, coordenadas inválidas, conteúdo em uma exclusão ou versão ausente ou inválida quando exigida. As linhas começam em 1; versões devem conter 64 caracteres hexadecimais. Se todas as verificações passarem, retorna `Ok(())`.
+## Behavior
+Returns `Err` with a specific message for an empty path, invalid coordinates, contents supplied for a deletion, or a missing or invalid required version. Lines start at 1; versions must contain 64 hexadecimal characters. Returns `Ok(())` if all checks pass.
 
-## Importações
-- `super::{Operation, Request}`: Tipos da operação e da solicitação validada.
+## Imports
+- `super::{Operation, Request}`: Operation and validated-request types.

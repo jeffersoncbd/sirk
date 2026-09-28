@@ -1,10 +1,10 @@
-## Resumo
-Define os tipos de dados usados para representar registros do histórico.
+## Summary
+Defines the data types used to represent history records.
 
-## Funcionamento
-`Snapshot` reúne o diretório e o agente, permitindo serialização e rejeitando campos desconhecidos. `Block` enumera os tipos de conteúdo registrados, cada um associado a uma string.
+## Behavior
+`Snapshot` holds the directory and agent, supports serialization, and rejects unknown fields. `Block` enumerates recorded content types, each associated with a string.
 
-## Importações
-- `crate::agents::Agent`: Tipo de agente armazenado no snapshot.
-- `serde`: Deriva serialização e desserialização para `Snapshot`.
-- `std::path::PathBuf`: Representa o diretório do snapshot.
+## Imports
+- `crate::agents::Agent`: Agent type stored in the snapshot.
+- `serde`: Derives serialization and deserialization for `Snapshot`.
+- `std::path::PathBuf`: Represents the snapshot directory.

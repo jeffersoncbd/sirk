@@ -1,10 +1,10 @@
-## Resumo
-Monta o endpoint de geração do Ollama Web a partir da URL configurada.
+## Summary
+Builds the Ollama Web generation endpoint from the configured URL.
 
-## Funcionamento
-Prioriza a URL do adaptador, depois a variável de ambiente e, por fim, o valor do arquivo dotenv ou o padrão. Remove barras finais, retorna erro se a URL ficar vazia e acrescenta o caminho necessário, exceto quando já termina em `/api/generate`.
+## Behavior
+Prioritizes the adapter URL, then the environment variable, and finally the dotenv value or default. Removes trailing slashes, returns an error if the URL is empty, and appends the required path unless it already ends in `/api/generate`.
 
-## Importações
-- `super`: Tipos, URL padrão e validação de valor não vazio.
-- `crate::harness`: Trait do adaptador e tipo de erro.
-- `std::path::Path`: Caminho usado para consultar o arquivo dotenv.
+## Imports
+- `super`: Types, default URL, and nonempty-value validation.
+- `crate::harness`: Adapter trait and error type.
+- `std::path::Path`: Path used to query the dotenv file.

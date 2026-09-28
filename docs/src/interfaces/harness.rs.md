@@ -1,9 +1,9 @@
-## Resumo
-Define os tipos e a interface para executar agentes de programação por diferentes adaptadores.
+## Summary
+Defines the types and interface for running coding agents through different adapters.
 
-## Funcionamento
-`HarnessAdapter` fornece um identificador e converte uma solicitação em uma invocação, retornando erros para opções ou configurações inválidas; por padrão, `response` repassa a saída padrão sem alterações. `RunRequest` reúne os dados da execução, e `HarnessError` representa falhas na integração.
+## Behavior
+`HarnessAdapter` provides an identifier and converts a request into an invocation, returning errors for invalid options or configurations. By default, `response` passes stdout through unchanged. `RunRequest` holds execution data, and `HarnessError` represents integration failures.
 
-## Importações
-- `crate::interfaces::Invocation`: Representa a chamada ao agente.
-- `std::path::PathBuf`: Armazena o diretório de trabalho.
+## Imports
+- `crate::interfaces::Invocation`: Represents the agent call.
+- `std::path::PathBuf`: Stores the working directory.

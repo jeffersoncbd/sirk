@@ -1,8 +1,8 @@
-## Resumo
-Define o valor padrão de `OllamaAdapter`.
+## Summary
+Defines the default value for `OllamaAdapter`.
 
-## Funcionamento
-Cria e retorna um adaptador configurado com o nome `"ollama"`.
+## Behavior
+Creates and returns an adapter configured with the name `"ollama"`.
 
-## Importações
-- `super::OllamaAdapter`: Tipo implementado.
+## Imports
+- `super::OllamaAdapter`: Type being implemented.

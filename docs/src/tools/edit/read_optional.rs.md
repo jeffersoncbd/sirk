@@ -1,9 +1,9 @@
-## Resumo
-Lê um arquivo UTF-8 se ele existir.
+## Summary
+Reads a UTF-8 file if it exists.
 
-## Funcionamento
-Retorna o conteúdo em `Some`, `None` se o arquivo não existir ou um erro descritivo se a leitura falhar.
+## Behavior
+Returns the contents in `Some`, `None` if the file does not exist, or a descriptive error if reading fails.
 
-## Importações
-- `std::fs`: Lê o arquivo.
-- `std::path::Path`: Representa o caminho do arquivo.
+## Imports
+- `std::fs`: Reads the file.
+- `std::path::Path`: Represents the file path.

@@ -1,10 +1,10 @@
-## Resumo
-Executa uma invocação, captura stdout e o envia a um destino.
+## Summary
+Executes an invocation, captures stdout, and sends it to a destination.
 
-## Funcionamento
-Delegа a execução e propaga erros; converte stdout para UTF-8, retornando erro se inválido, e preserva o status.
+## Behavior
+Delegates execution and propagates errors, converts stdout to UTF-8 and returns an error if invalid, and preserves the status.
 
-## Importações
-- `super`: tipos `BashService` e `ProcessOutput`.
-- `Invocation`: dados da execução.
-- `std::io`: erros e escrita do stdout.
+## Imports
+- `super`: `BashService` and `ProcessOutput` types.
+- `Invocation`: Execution data.
+- `std::io`: Errors and stdout writing.

@@ -1,9 +1,9 @@
-## Resumo
-Exibe uma diferença renderizada, usando cores quando o terminal permite.
+## Summary
+Displays a rendered diff, using colors when the terminal supports them.
 
-## Funcionamento
-Verifica se a saída padrão é um terminal e se `NO_COLOR` está ausente; usa essa condição para renderizar a diferença e imprime o resultado na saída padrão.
+## Behavior
+Checks whether standard output is a terminal and `NO_COLOR` is absent, uses that condition to render the diff, and prints the result to standard output.
 
-## Importações
-- `std::io::IsTerminal`: Verifica se a saída padrão é um terminal.
-- `super::render::render`: Renderiza a diferença com ou sem cores.
+## Imports
+- `std::io::IsTerminal`: Checks whether standard output is a terminal.
+- `super::render::render`: Renders the diff with or without colors.

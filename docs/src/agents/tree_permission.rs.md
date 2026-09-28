@@ -1,8 +1,8 @@
-## Resumo
-Converte o valor `allow` em `true` durante a desserialização.
+## Summary
+Converts the value `allow` to `true` during deserialization.
 
-## Funcionamento
-Desserializa a entrada como texto e retorna `Ok(true)` somente se ela for igual a `allow`; qualquer outro valor resulta em erro informando que `TREE_TOOL` deve ser `allow`.
+## Behavior
+Deserializes the input as text and returns `Ok(true)` only when it equals `allow`; any other value produces an error stating that `TREE_TOOL` must be `allow`.
 
-## Importações
-- `serde`: desserializa a entrada e cria o erro personalizado.
+## Imports
+- `serde`: Deserializes the input and creates the custom error.

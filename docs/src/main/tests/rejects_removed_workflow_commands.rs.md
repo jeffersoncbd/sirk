@@ -1,8 +1,8 @@
-## Resumo
-Verifica que `run` rejeita comandos inválidos ou removidos.
+## Summary
+Verifies that `run` rejects invalid or removed commands.
 
-## Funcionamento
-Executa `run` com os argumentos `run documentation`, `resume history/run-old.log` e `rpc`; em cada caso, espera um erro contendo “invalid command”.
+## Behavior
+Runs `run` with the arguments `run documentation`, `resume history/run-old.log`, and `rpc`; each case is expected to return an error containing `invalid command`.
 
-## Importações
-- `super::*`: Importa `run` do módulo pai.
+## Imports
+- `super::*`: Imports `run` from the parent module.

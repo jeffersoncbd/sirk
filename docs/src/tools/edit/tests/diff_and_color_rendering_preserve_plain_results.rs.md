@@ -1,9 +1,9 @@
-## Resumo
-O arquivo contém um teste que verifica a geração e a renderização de diferenças de texto.
+## Summary
+Contains a test that verifies generation and rendering of text diffs.
 
-## Funcionamento
-O teste confirma que a diferença mostra as linhas removida e adicionada, que a renderização sem cores preserva o resultado e que a colorida destaca essas linhas. Também verifica a remoção de sequências de escape e a indicação de ausência de quebra de linha final.
+## Behavior
+The test checks that the diff shows removed and added lines, uncolored rendering preserves the result, and colored rendering highlights those lines. It also verifies escape-sequence removal and the marker for a missing final newline.
 
-## Importações
-- `super::*`: Importa os itens do módulo pai usados pelo teste.
-- `crate::tools::edit::render::render`: Renderiza diferenças com ou sem cores.
+## Imports
+- `super::*`: Imports parent-module items used by the test.
+- `crate::tools::edit::render::render`: Renders diffs with or without colors.

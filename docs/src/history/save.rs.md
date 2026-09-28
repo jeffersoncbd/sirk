@@ -1,12 +1,12 @@
-## Resumo
-Salva o histórico em disco, serializando seus metadados e blocos.
+## Summary
+Saves history to disk by serializing its metadata and blocks.
 
-## Funcionamento
-Serializa o snapshot em YAML e monta o conteúdo do arquivo, escapando linhas reservadas nos blocos. Grava em um arquivo temporário, sincroniza os dados, renomeia-o para o destino e sincroniza o diretório. Erros de serialização ou de operações de arquivo são convertidos em `String` e retornados.
+## Behavior
+Serializes the snapshot as YAML and builds the file contents, escaping reserved lines in blocks. Writes a temporary file, synchronizes the data, renames it to the destination, and synchronizes the directory. Serialization and file-operation errors are converted to `String` and returned.
 
-## Importações
-- `super`: Acessa tipos e constantes do histórico.
-- `reserved`: Identifica linhas que precisam ser escapadas.
-- `std::fs`: Cria, renomeia e sincroniza arquivos.
-- `std::io::Write`: Grava os dados no arquivo temporário.
-- `serde_yaml`: Serializa o snapshot em YAML.
+## Imports
+- `super`: Accesses history types and constants.
+- `reserved`: Identifies lines requiring escaping.
+- `std::fs`: Creates, renames, and synchronizes files.
+- `std::io::Write`: Writes data to the temporary file.
+- `serde_yaml`: Serializes the snapshot as YAML.

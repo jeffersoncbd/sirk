@@ -1,8 +1,8 @@
-## Resumo
-Recupera o conteúdo original a partir de linhas numeradas de uma saída de `enumerate`.
+## Summary
+Recovers original contents from numbered lines produced by `enumerate`.
 
-## Funcionamento
-Exige o cabeçalho `Line | Content` e numeração sequencial iniciada em 1; em seguida, remove os números e concatena o conteúdo das linhas. Retorna `Err` se o cabeçalho, o separador ou a numeração forem inválidos.
+## Behavior
+Requires the `Line | Content` header and sequential numbering starting at 1; then removes the numbers and concatenates the line contents. Returns `Err` if the header, separator, or numbering is invalid.
 
-## Importações
-- Nenhuma: a função usa apenas recursos da biblioteca padrão.
+## Imports
+- None: The function uses only standard-library features.

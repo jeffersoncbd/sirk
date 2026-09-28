@@ -1,141 +1,142 @@
-.env.example - Documenta as variáveis de ambiente para configurar URLs e chaves de API dos serviços Ollama e OpenRouter.
-Cargo.toml - Define o pacote `sirk`, seus pontos de entrada e as dependências usadas pela biblioteca e pelo executável.
-src/adapters/codex.rs - Configura a execução de solicitações pelo comando `codex exec`, montando seus argumentos e prompt.
-src/adapters/codex/default.rs - Define a configuração padrão do CodexAdapter para usar o comando `codex`.
-src/adapters/codex/new.rs - Cria uma instância de `CodexAdapter` armazenando o executável informado como texto.
-src/adapters/mod.rs - Centraliza os adaptadores disponíveis, reexporta sua resolução e lista os nomes aceitos.
-src/adapters/ollama.rs - Converte solicitações compatíveis em invocações de `ollama run` com modelo, prompt e diretório de trabalho.
-src/adapters/ollama/default.rs - Cria e retorna uma instância padrão de `OllamaAdapter` identificada pelo nome “ollama”.
-src/adapters/ollama/new.rs - Inicializa um OllamaAdapter armazenando o executável informado como texto.
-src/adapters/ollama_web.rs - Adapta solicitações para chamadas não streaming à API web do Ollama e extrai a resposta recebida.
-src/adapters/ollama_web/api_key.rs - Obtém a chave da API do Ollama, priorizando a configuração do adaptador, o ambiente e o arquivo dotenv.
-src/adapters/ollama_web/default.rs - Define os valores padrão do adaptador Ollama Web, usando `curl` e sem URL base ou chave de API.
-src/adapters/ollama_web/dotenv.rs - Obtém do arquivo `.env` de um diretório o valor não vazio de uma chave, retornando ausência quando não encontrada.
-src/adapters/ollama_web/endpoint.rs - Monta a URL do endpoint de geração do Ollama Web com base nas configurações disponíveis.
-src/adapters/ollama_web/new.rs - Cria um `OllamaWebAdapter` com os valores informados e normaliza a URL e a chave de API opcionais.
-src/adapters/ollama_web/nonempty.rs - Retorna o texto original em `Some` quando contém algum caractere não branco; caso contrário, retorna `None`.
-src/adapters/opencode.rs - Declara o adaptador OpenCode, responsável por representar solicitações como chamadas à CLI OpenCode.
-src/adapters/opencode/default.rs - Cria o adaptador OpenCode padrão configurado para usar o comando `opencode`.
-src/adapters/opencode/id.rs - Define, por meio de macro, o método que identifica o adaptador pelo nome estático “opencode”.
-src/adapters/opencode/invocation.rs - Monta a invocação do OpenCode para executar uma solicitação do harness com suas opções, prompt e diretório de trabalho.
-src/adapters/opencode/new.rs - Cria e retorna um OpenCodeAdapter com o executável informado armazenado como texto.
-src/adapters/opencode/tests.rs - Declara e organiza os módulos de teste do adaptador OpenCode com símbolos e tipos de suporte.
-src/adapters/opencode/tests/does_not_enable_automatic_permission_approval.rs - Verifica que o adaptador OpenCode não ativa a aprovação automática de permissões.
-src/adapters/opencode/tests/translates_generic_options_to_opencode_run.rs - Verifica se opções genéricas são convertidas corretamente em uma invocação esperada do OpenCode.
-src/adapters/openrouter.rs - Converte solicitações do harness em chamadas não-streaming à API da OpenRouter e extrai o conteúdo da resposta.
-src/adapters/openrouter/api_key.rs - Obtém a chave da API do OpenRouter pela configuração disponível ou retorna erro se nenhuma for encontrada.
-src/adapters/openrouter/default.rs - Define o adaptador OpenRouter com `curl` e sem URL base ou chave de API configuradas.
-src/adapters/openrouter/dotenv.rs - Lê do arquivo `.env` de um diretório o valor não vazio de uma chave, se ela estiver definida.
-src/adapters/openrouter/endpoint.rs - Configura o endpoint de chat do OpenRouter com a URL disponível, aplicando o caminho e o padrão necessários.
-src/adapters/openrouter/new.rs - Cria um adaptador OpenRouter com executável, URL base e chave de API opcionais, descartando valores vazios.
-src/adapters/openrouter/nonempty.rs - Retorna a string original se houver conteúdo além de espaços; caso contrário, retorna `None`.
-src/adapters/resolve.rs - Localiza o adaptador de harness pelo nome e retorna `None` quando não houver correspondência.
-src/agent_service.rs - Disponibiliza internamente `run::run` como ponto de entrada para a execução de agentes.
-src/agent_service/conversation.rs - Conduz a conversa com o agente, processando respostas e ferramentas até obter uma resposta final.
-src/agent_service/delete_request.rs - Processa pedidos de exclusão de arquivo, verificando a autorização para execução forçada e evitando repetições.
-src/agent_service/edit_request.rs - Prepara e aplica uma edição solicitada, registrando-a no histórico e evitando repetir alterações já concluídas.
-src/agent_service/execute.rs - Executa uma invocação e retorna a saída padrão apenas em caso de sucesso, convertendo falhas em mensagens.
-src/agent_service/prompt.rs - Monta o prompt do agente com instruções, ferramentas permitidas e histórico filtrado da conversa.
-src/agent_service/run.rs - Executa uma conversa com o agente carregado para o diretório indicado, após validar seu adaptador e criar o histórico.
-src/agents.rs - Valida os metadados e as instruções de uma definição textual e a converte em um agente.
-src/agents/call_prefix.rs - Desserializa `call_prefix` como lista de argumentos, aceitando string ou lista e tratando ausência como lista vazia.
-src/agents/delete_permission.rs - Desserializa `"allow"` como `true` e rejeita qualquer outro valor com um erro descritivo.
-src/agents/edit_permission.rs - Converte a string `allow` em `true` e rejeita qualquer outro valor com um erro.
-src/agents/id.rs - Valida se um identificador não vazio contém apenas letras ASCII, dígitos, sublinhados ou hífens.
-src/agents/load.rs - Carrega e valida um agente a partir de um arquivo Markdown, retornando-o ou informando o motivo da falha.
-src/agents/model.rs - Desserializa um modelo opcional e normaliza seu valor, removendo espaços externos e convertendo-o para minúsculas.
-src/agents/tree_default.rs - Permite o uso da ferramenta TREE retornando sempre `true`, sem validações ou efeitos colaterais.
-src/agents/tree_permission.rs - Desserializa `allow` como `true` e rejeita qualquer outro valor com erro indicando o valor esperado.
-src/bin/documentation.rs - Conecta-se ao S.I.R.K. e executa o fluxo de documentação, retornando seu resultado.
-src/git_service.rs - Centraliza e expõe as operações de adição ao Git e consulta do status do repositório.
-src/git_service/add.rs - Adiciona ao Git todas as alterações do projeto associado ao diretório informado e retorna erros caso a localização ou o comando falhe.
-src/git_service/project.rs - Resolve um diretório Git e retorna a raiz do projeto e seu prefixo relativo, convertendo falhas em mensagens de erro.
-src/git_service/run.rs - Executa comandos Git no diretório indicado e retorna a saída padrão em bytes, contextualizando falhas de execução ou de status.
-src/git_service/status.rs - Lista, em ordem e sem duplicatas, os caminhos alterados no Git dentro do diretório solicitado, excluindo arquivos ignorados.
-src/harness.rs - Reexporta os tipos das interfaces que definem os contratos de integração do harness.
-src/history.rs - Define o histórico de conversas editável, reunindo seu caminho, snapshot, blocos e arquivo de lock.
-src/history/create.rs - Cria e salva um histórico vazio associado ao snapshot, em arquivo identificado pelo horário e PID do processo.
-src/history/drop.rs - Libera o bloqueio de `History` ao descartar o valor, ignorando erros ao desbloquear.
-src/history/lock.rs - Adquire um bloqueio exclusivo no arquivo de bloqueio associado ao histórico.
-src/history/reserved.rs - Identifica linhas que contêm marcadores reservados do histórico, sem produzir efeitos colaterais.
-src/history/save.rs - Persiste o snapshot do histórico em disco, serializando metadados e blocos em YAML.
-src/http.rs - Expõe a função `serve` do transporte HTTP e organiza seus módulos internos de suporte.
-src/http/handle.rs - Encaminha verificações de saúde e solicitações HTTP para operações de agentes e Git, retornando os resultados adequados.
-src/http/serve.rs - Inicia um servidor HTTP que processa requisições em threads separadas e retorna respostas JSON.
-src/http/tests.rs - Agrupa e organiza os módulos que testam o comportamento HTTP.
-src/http/tests/enforces_agent_delete_permissions.rs - Verifica que arquivos só são excluídos quando as permissões explícitas do agente estão liberadas.
-src/http/tests/handles_agent_edits.rs - Testa se uma requisição HTTP executa um agente capaz de editar um arquivo e retornar a resposta esperada.
-src/http/tests/handles_agent_requests.rs - Verifica via requisição HTTP se a execução de um agente retorna o status e o resultado esperados.
-src/http/tests/handles_git_add_requests.rs - O teste confirma que a rota `/v1/git/add` adiciona ao stage do Git um arquivo no diretório informado.
-src/http/tests/handles_git_status_requests.rs - Verifica se a rota de status do Git retorna apenas os arquivos visíveis, excluindo os ignorados por `.treeignore`.
-src/http/tests/preserves_literal_template_input.rs - Verifica se `{{ outputs.plan }}` é preservado literalmente na entrada do agente enviada pela rota HTTP.
-src/http/tests/rejects_invalid_requests.rs - Verifica as respostas HTTP de sucesso e erro para rotas, métodos e corpos inválidos.
-src/http/types.rs - Define estruturas para solicitações de agente e diretório, além de respostas HTTP com status e corpo.
-src/input.rs - Implementa a leitura de respostas e confirmações do usuário pelo terminal interativo.
-src/interfaces/harness.rs - Define a interface e os tipos comuns para integrar adaptadores que executam agentes de programação.
-src/interfaces/harness/display.rs - Formata variantes de `HarnessError` como mensagens legíveis, incluindo o adaptador e os detalhes disponíveis.
-src/interfaces/history.rs - Define os tipos `Snapshot` e `Block` para representar e serializar registros do histórico.
-src/interfaces/history/marker.rs - Retorna o marcador textual fixo correspondente ao tipo de bloco do histórico.
-src/interfaces/history/text.rs - Retorna uma referência ao texto associado ao bloco do histórico, sem modificá-lo.
-src/interfaces/input.rs - Define a interface comum para perguntar ao usuário e aguardar confirmações, retornando respostas ou erros.
-src/interfaces/invocation.rs - Adiciona um comando prefixo à invocação, preservando o programa original e suas configurações de execução.
-src/interfaces/mod.rs - Centraliza e reexporta tipos comuns de harness, histórico, entrada do usuário e invocação.
-src/lib.rs - Declara os módulos do crate, expondo-os publicamente, exceto `agent_service` e `git_service`, que permanecem privados.
-src/main.rs - Encaminha os argumentos do comando para execução e define o código de saída conforme o resultado.
-src/main/create_agent.rs - Cria um agente no diretório atual com entrada pelo terminal e exibe o caminho criado.
-src/main/http.rs - Inicia o servidor HTTP no endereço informado ou no padrão, retornando eventuais erros.
-src/main/print_usage.rs - Exibe na saída padrão o texto de uso fornecido pelo módulo `usage`.
-src/main/run.rs - Despacha os argumentos para criar um agente, executar o comando HTTP ou exibir a ajuda.
-src/main/tests.rs - Reúne testes de execução e uso da aplicação, com acesso às funções `run` e `usage`.
-src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Verifica que `run`, chamada sem argumentos, termina sem erro; não descreve um fluxo de produção.
-src/main/tests/rejects_an_invalid_command.rs - Confirma que o comando inválido `"invalid"` é rejeitado com uma mensagem de erro correspondente.
-src/main/tests/rejects_removed_workflow_commands.rs - Verifica se o comando `run` rejeita comandos inválidos ou removidos com uma mensagem de erro esperada.
-src/main/tests/usage_lists_service_commands.rs - O arquivo contém um teste que verifica se `usage()` inclui os comandos esperados e omite os obsoletos.
-src/main/usage.rs - Exibe a ajuda de uso do S.I.R.K., com comandos disponíveis, endereço padrão e orientações para criar agentes e cancelar perguntas.
-src/services/bash.rs - Define o serviço compartilhado para executar processos via Bash e representar seus status e saídas capturadas.
-src/services/bash/default.rs - Configura o BashService padrão para executar comandos usando o executável `bash`.
-src/services/bash/execute_bytes_to.rs - Executa uma invocação do Bash e retorna seu status junto aos bytes capturados da saída.
-src/services/bash/execute_streaming.rs - Executa a invocação recebida, encaminha sua saída à saída padrão e retorna o resultado ou erro de E/S.
-src/services/bash/execute_to.rs - Executa uma invocação, envia o stdout em UTF-8 ao destino, preserva o status e propaga erros.
-src/services/bash/new.rs - Constrói um BashService e armazena no campo `executable` o valor informado convertido em String.
-src/services/bash/render.rs - Converte uma `Invocation` em uma linha de comando citando o programa e os argumentos conforme o ambiente.
-src/services/mod.rs - Reúne e reexporta os módulos e tipos usados para construir e executar comandos.
-src/services/quote.rs - Converte `value` em texto protegido para uso em shell, preservando referências a variáveis válidas do ambiente.
-src/tools/delete.rs - Remove com segurança um arquivo regular dentro do diretório de execução, validando o caminho e sincronizando o diretório pai.
-src/tools/edit.rs - Define os tipos que representam operações de edição, seus parâmetros e o estado anterior dos arquivos.
-src/tools/edit/apply_to.rs - Aplica uma edição validada ao conteúdo e retorna o texto atualizado ou um erro.
-src/tools/edit/commit.rs - Aplica uma edição pendente ao arquivo de destino, protege contra alterações concorrentes e retorna o diff.
-src/tools/edit/diff.rs - Gera um diff unificado entre o conteúdo original e o editado para apresentar as alterações preparadas.
-src/tools/edit/display.rs - Renderiza e imprime uma diferença, usando cores quando a saída padrão é terminal e `NO_COLOR` não está definido.
-src/tools/edit/pending_validate.rs - Valida a consistência de um registro `Pending` com a requisição, o estado anterior do arquivo e a operação.
-src/tools/edit/prepare.rs - Prepara a edição do arquivo, validando a operação e registrando o conteúdo anterior ou sua ausência.
-src/tools/edit/read_optional.rs - Lê um arquivo UTF-8 e retorna seu conteúdo, indica sua ausência ou descreve falhas de leitura.
-src/tools/edit/render.rs - Renderiza diffs, destacando adições e remoções com cores e escapando caracteres de controle do conteúdo.
-src/tools/edit/request_validate.rs - Valida se os campos de uma solicitação de edição são compatíveis com a operação.
-src/tools/edit/sync_parent.rs - Sincroniza em disco o diretório pai do caminho informado e converte falhas em mensagens de texto.
-src/tools/edit/target.rs - Resolve e valida o caminho de destino de uma edição, garantindo que permaneça dentro do diretório de execução.
-src/tools/edit/tests.rs - Cria uma requisição de edição com a operação, a entrada e a versão calculada a partir do conteúdo anterior.
-src/tools/edit/tests/append_and_prepend_are_exact_and_versions_are_checked.rs - Valida as operações de anexar e antepor texto, inclusive vazio, e a detecção de conflitos de versão.
-src/tools/edit/tests/diff_and_color_rendering_preserve_plain_results.rs - Testa a geração e renderização de diferenças de texto, incluindo cores, escapes e ausência de quebra final.
-src/tools/edit/tests/line_edits_preserve_bytes_and_handle_eof.rs - Testa se inserções, exclusões e substituições por linha preservam os bytes e rejeitam linhas fora do intervalo.
-src/tools/edit/version.rs - Calcula o SHA-256 dos bytes UTF-8 de uma string e retorna o digest em hexadecimal minúsculo.
-src/tools/execute_with_input.rs - Executa TREE ou READ no diretório indicado, formatando listagens ou retornando o conteúdo solicitado.
-src/tools/format_paths.rs - Serializa caminhos de arquivos em JSON legível e informa falhas de conversão ou serialização.
-src/tools/mod.rs - Organiza as ferramentas disponíveis aos agentes e reexporta as operações de execução e solicitação.
-src/tools/new_agent.rs - Cria e salva uma definição de agente validada a partir das respostas do usuário e do adaptador.
-src/tools/new_agent/adapter.rs - Solicita ao usuário um adaptador disponível e retorna a escolha válida, repetindo a pergunta se a entrada não corresponder.
-src/tools/new_agent/answer.rs - Solicita respostas repetidamente até receber um valor não vazio e propaga erros ocorridos durante a interação.
-src/tools/new_agent/create.rs - Gera um agente no diretório informado e retorna o caminho onde foi salvo.
-src/tools/read.rs - Organiza os módulos internos da ferramenta de leitura e disponibiliza suas principais funções para uso externo.
-src/tools/read/component.rs - Compara um padrão e um valor como sequências de caracteres e retorna se correspondem.
-src/tools/read/component_match.rs - Compara sequências de caracteres com suporte a curingas `*` e `?`, indicando se correspondem.
-src/tools/read/components.rs - Compara componentes de um padrão e de um caminho, aceitando `**` e correspondência por prefixo.
-src/tools/read/enumerate.rs - Prefixa cada linha do conteúdo com numeração iniciada em 1, preservando seus terminadores originais.
-src/tools/read/enumerated_content.rs - Reconstrói o conteúdo original de uma saída numerada, removendo os números e concatenando as linhas válidas.
-src/tools/read/ignore.rs - Determina se um caminho corresponde ao padrão de ignorados, comparando seus componentes conforme a estrutura do padrão.
-src/tools/read/ignored.rs - Verifica se um caminho corresponde às regras de exclusão definidas em `.readignore`.
-src/tools/read/run.rs - Lê arquivos UTF-8 dentro do diretório de execução, bloqueando caminhos inválidos ou ignorados.
-src/tools/request.rs - Interpreta pedidos de leitura da árvore de arquivos, identificando o tipo e o caminho solicitado.
-src/tools/tree.rs - Representa a raiz de uma árvore de arquivos e seus caminhos relativos, ordenados e sem duplicatas.
-src/tools/tree/list.rs - Lista em uma árvore os arquivos existentes e não ignorados de um diretório de trabalho Git.
-src/tools/tree/path.rs - Converte bytes em `PathBuf`, preservando-os no Unix e exigindo UTF-8 nas demais plataformas.
+
+.env.example - Documents environment variables for configuring Ollama and OpenRouter service URLs and API keys.
+Cargo.toml - Defines the `sirk` package, its entry points, and dependencies used by the library and executable.
+src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
+src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
+src/adapters/codex/new.rs - Creates a `CodexAdapter` that stores the supplied executable as text.
+src/adapters/mod.rs - Centralizes available adapters, re-exports adapter resolution, and lists accepted names.
+src/adapters/ollama.rs - Converts supported requests into `ollama run` invocations with a model, prompt, and working directory.
+src/adapters/ollama/default.rs - Creates and returns a default `OllamaAdapter` identified by the name `ollama`.
+src/adapters/ollama/new.rs - Initializes an OllamaAdapter by storing the supplied executable as text.
+src/adapters/ollama_web.rs - Adapts requests into non-streaming calls to the Ollama web API and extracts the response.
+src/adapters/ollama_web/api_key.rs - Gets the Ollama API key, prioritizing adapter configuration, the environment, and the dotenv file.
+src/adapters/ollama_web/default.rs - Defines default Ollama Web adapter values using `curl` with no base URL or API key.
+src/adapters/ollama_web/dotenv.rs - Gets a nonempty key value from a directory's `.env` file, returning no value when absent.
+src/adapters/ollama_web/endpoint.rs - Builds the Ollama Web generation endpoint from the available configuration.
+src/adapters/ollama_web/new.rs - Creates an `OllamaWebAdapter` with supplied values and normalizes optional URL and API key fields.
+src/adapters/ollama_web/nonempty.rs - Returns the original text in `Some` if it contains a non-whitespace character; otherwise, returns `None`.
+src/adapters/opencode.rs - Declares `OpenCodeAdapter`, which represents requests as OpenCode CLI calls.
+src/adapters/opencode/default.rs - Creates the default OpenCode adapter configured to use the `opencode` command.
+src/adapters/opencode/id.rs - Defines, through a macro, the method that identifies the adapter by the static name `opencode`.
+src/adapters/opencode/invocation.rs - Builds an OpenCode invocation for a harness request with its options, prompt, and working directory.
+src/adapters/opencode/new.rs - Creates an OpenCodeAdapter that stores the supplied executable as text.
+src/adapters/opencode/tests.rs - Declares and organizes OpenCode adapter test modules with supporting symbols and types.
+src/adapters/opencode/tests/does_not_enable_automatic_permission_approval.rs - Verifies that the OpenCode adapter does not enable automatic permission approval.
+src/adapters/opencode/tests/translates_generic_options_to_opencode_run.rs - Verifies that generic options convert to the expected OpenCode invocation.
+src/adapters/openrouter.rs - Converts harness requests into non-streaming OpenRouter API calls and extracts response content.
+src/adapters/openrouter/api_key.rs - Gets the OpenRouter API key from available configuration or returns an error if none is found.
+src/adapters/openrouter/default.rs - Defines the OpenRouter adapter using `curl` with no base URL or API key configured.
+src/adapters/openrouter/dotenv.rs - Reads a nonempty key value from a directory's `.env` file when present.
+src/adapters/openrouter/endpoint.rs - Configures the OpenRouter chat endpoint from the available URL, applying the required path and default.
+src/adapters/openrouter/new.rs - Creates an OpenRouter adapter with an executable and optional base URL and API key, discarding empty values.
+src/adapters/openrouter/nonempty.rs - Returns the original string if it contains non-whitespace content; otherwise, returns `None`.
+src/adapters/resolve.rs - Finds a harness adapter by name and returns `None` when no match exists.
+src/agent_service.rs - Exposes `run::run` internally as the entry point for agent execution.
+src/agent_service/conversation.rs - Runs the agent conversation, processing responses and tools until a final response is received.
+src/agent_service/delete_request.rs - Processes file-deletion requests, checks authorization for forced execution, and prevents repeats.
+src/agent_service/edit_request.rs - Prepares and applies an edit request, records it in history, and prevents repeating completed edits.
+src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
+src/agent_service/prompt.rs - Builds the agent prompt from tool instructions, permissions, and filtered conversation history.
+src/agent_service/run.rs - Runs a conversation with an agent loaded for a directory after validating its adapter and creating history.
+src/agents.rs - Validates metadata and instructions in a text definition and converts it into an agent.
+src/agents/call_prefix.rs - Deserializes `call_prefix` as an argument list, accepting a string or list and treating absence as an empty list.
+src/agents/delete_permission.rs - Deserializes `"allow"` as `true` and rejects other values with a descriptive error.
+src/agents/edit_permission.rs - Converts the string `allow` to `true` and rejects other values with an error.
+src/agents/id.rs - Validates that a nonempty identifier contains only ASCII letters, digits, underscores, or hyphens.
+src/agents/load.rs - Loads and validates an agent from a Markdown file, returning it or explaining the failure.
+src/agents/model.rs - Deserializes an optional model and normalizes it by trimming whitespace and converting it to lowercase.
+src/agents/tree_default.rs - Always returns `true` to allow the TREE tool, without validation or side effects.
+src/agents/tree_permission.rs - Deserializes `allow` as `true` and rejects other values with an error stating the expected value.
+src/bin/documentation.rs - Connects to S.I.R.K. and runs the documentation flow, returning its result.
+src/git_service.rs - Centralizes and exposes Git add and repository status operations.
+src/git_service/add.rs - Adds all changes in the project associated with the supplied directory to Git and returns errors on failure.
+src/git_service/project.rs - Resolves a Git directory and returns its root and relative prefix, converting failures into error messages.
+src/git_service/run.rs - Runs Git commands in a directory and returns stdout bytes, contextualizing execution and status failures.
+src/git_service/status.rs - Lists changed Git paths under the requested directory in order without duplicates, excluding ignored files.
+src/harness.rs - Re-exports interface types that define the harness integration contracts.
+src/history.rs - Defines mutable conversation history, including its path, snapshot, blocks, and lock file.
+src/history/create.rs - Creates and saves empty history for a snapshot in a file named with the time and process PID.
+src/history/drop.rs - Releases the `History` lock when the value is dropped, ignoring unlock errors.
+src/history/lock.rs - Acquires an exclusive lock on the history lock file.
+src/history/reserved.rs - Identifies lines containing reserved history markers without side effects.
+src/history/save.rs - Persists the history snapshot to disk by serializing metadata and blocks as YAML.
+src/http.rs - Exposes the HTTP transport's `serve` function and organizes internal support modules.
+src/http/handle.rs - Routes health checks and HTTP requests to agent and Git operations, returning appropriate results.
+src/http/serve.rs - Starts an HTTP server that processes requests in separate threads and returns JSON responses.
+src/http/tests.rs - Groups modules that test HTTP behavior.
+src/http/tests/enforces_agent_delete_permissions.rs - Verifies that files are deleted only when the agent's explicit permissions are enabled.
+src/http/tests/handles_agent_edits.rs - Tests an HTTP request that runs an agent able to edit a file and return the expected response.
+src/http/tests/handles_agent_requests.rs - Verifies through an HTTP request that agent execution returns the expected status and result.
+src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the supplied directory.
+src/http/tests/handles_git_status_requests.rs - Verifies that Git status returns visible files while excluding `.treeignore` matches.
+src/http/tests/preserves_literal_template_input.rs - Verifies that `{{ outputs.plan }}` is preserved literally in agent input sent through HTTP.
+src/http/tests/rejects_invalid_requests.rs - Verifies HTTP success and error responses for invalid routes, methods, and bodies.
+src/http/types.rs - Defines agent and directory request structures and HTTP responses with a status and body.
+src/input.rs - Reads user responses and confirmations from the interactive terminal.
+src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.
+src/interfaces/harness/display.rs - Formats `HarnessError` variants as readable messages, including the adapter and available details.
+src/interfaces/history.rs - Defines `Snapshot` and `Block` for representing and serializing history records.
+src/interfaces/history/marker.rs - Returns the fixed text marker corresponding to a history block type.
+src/interfaces/history/text.rs - Returns a reference to the text associated with a history block without modifying it.
+src/interfaces/input.rs - Defines the shared interface for asking the user questions and awaiting confirmations.
+src/interfaces/invocation.rs - Prepends a command to an invocation while preserving the original program and execution settings.
+src/interfaces/mod.rs - Centralizes and re-exports shared harness, history, user input, and invocation types.
+src/lib.rs - Declares crate modules, exposing them publicly except for private `agent_service` and `git_service` modules.
+src/main.rs - Passes command arguments for execution and sets the process exit code based on the result.
+src/main/create_agent.rs - Creates an agent in the current directory using terminal input and displays the created path.
+src/main/http.rs - Starts the HTTP server at the supplied address or the default and returns any errors.
+src/main/print_usage.rs - Prints the usage text supplied by the `usage` module.
+src/main/run.rs - Dispatches arguments to agent creation, the HTTP command, or help output.
+src/main/tests.rs - Groups application execution and usage tests with access to `run` and `usage`.
+src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Verifies that calling `run` without arguments succeeds; it does not describe a production flow.
+src/main/tests/rejects_an_invalid_command.rs - Confirms that the invalid command `"invalid"` is rejected with a matching error message.
+src/main/tests/rejects_removed_workflow_commands.rs - Verifies that `run` rejects invalid or removed commands with the expected error message.
+src/main/tests/usage_lists_service_commands.rs - Tests that `usage()` includes expected commands and omits obsolete ones.
+src/main/usage.rs - Displays S.I.R.K. usage help, available commands, the default address, agent creation, and input cancellation.
+src/services/bash.rs - Defines the shared service for executing processes through Bash and representing captured status and output.
+src/services/bash/default.rs - Configures the default BashService to run commands using the `bash` executable.
+src/services/bash/execute_bytes_to.rs - Runs a Bash invocation and returns its status with captured output bytes.
+src/services/bash/execute_streaming.rs - Runs an invocation, streams its output to stdout, and returns the result or an I/O error.
+src/services/bash/execute_to.rs - Runs an invocation, sends UTF-8 stdout to a destination, preserves its status, and propagates errors.
+src/services/bash/new.rs - Constructs a BashService and stores the supplied value as a String in `executable`.
+src/services/bash/render.rs - Converts an `Invocation` into a command line, quoting the program and arguments for the environment.
+src/services/mod.rs - Collects and re-exports modules and types used to build and run commands.
+src/services/quote.rs - Converts `value` into shell-safe text while preserving references to valid environment variables.
+src/tools/delete.rs - Safely removes a regular file inside the execution directory, validating the path and synchronizing its parent.
+src/tools/edit.rs - Defines types representing file edit operations, their parameters, and previous file state.
+src/tools/edit/apply_to.rs - Applies a validated edit and returns updated contents or an error.
+src/tools/edit/commit.rs - Applies a pending edit to its target file, protects against concurrent changes, and returns a diff.
+src/tools/edit/diff.rs - Generates a unified diff between original and edited contents to present prepared changes.
+src/tools/edit/display.rs - Renders and prints a diff, using colors when stdout is a terminal and `NO_COLOR` is unset.
+src/tools/edit/pending_validate.rs - Validates a `Pending` record against its request, previous file state, and operation.
+src/tools/edit/prepare.rs - Prepares a file edit by validating the operation and recording previous contents or their absence.
+src/tools/edit/read_optional.rs - Reads a UTF-8 file and returns its contents, absence, or a read error.
+src/tools/edit/render.rs - Renders diffs, highlighting additions and removals with colors and escaping content control characters.
+src/tools/edit/request_validate.rs - Validates that edit request fields are compatible with the requested operation.
+src/tools/edit/sync_parent.rs - Synchronizes the parent directory of a path to disk and converts failures into messages.
+src/tools/edit/target.rs - Resolves and validates an edit target path, ensuring it stays within the execution directory.
+src/tools/edit/tests.rs - Creates an edit request with its operation, input, and version calculated from previous contents.
+src/tools/edit/tests/append_and_prepend_are_exact_and_versions_are_checked.rs - Validates append and prepend operations, including empty input, and detects version conflicts.
+src/tools/edit/tests/diff_and_color_rendering_preserve_plain_results.rs - Tests diff generation and rendering, including colors, escapes, and missing final newlines.
+src/tools/edit/tests/line_edits_preserve_bytes_and_handle_eof.rs - The file’s documented behavior was not provided, so I can’t summarize its purpose.
+src/tools/edit/version.rs - Calculates the SHA-256 hash of a string's UTF-8 bytes and returns a lowercase hexadecimal digest.
+src/tools/execute_with_input.rs - Runs TREE or READ in the supplied directory, formatting listings or returning requested contents.
+src/tools/format_paths.rs - Formats file paths as a pretty-printed JSON array, reporting conversion and serialization errors with the tool name.
+src/tools/mod.rs - Organizes agent tools and re-exports execution and request operations.
+src/tools/new_agent.rs - `create_with` gathers and validates agent settings, generates the definition, and safely saves it under `.agents`.
+src/tools/new_agent/adapter.rs - Prompts for an available adapter and repeats the question if the input does not match.
+src/tools/new_agent/answer.rs - Repeats prompts until receiving a nonempty value and propagates interaction errors.
+src/tools/new_agent/create.rs - Generates an agent in the supplied directory and returns the saved path.
+src/tools/read.rs - Organizes the read tool's internal modules and exposes its main functions for external use.
+src/tools/read/component.rs - Compares a pattern and a value as character sequences and returns whether they match.
+src/tools/read/component_match.rs - Compares character sequences with `*` and `?` wildcards and reports whether they match.
+src/tools/read/components.rs - Compares pattern and path components, supporting `**` and prefix matching.
+src/tools/read/enumerate.rs - Prefixes each content line with numbering starting at 1 while preserving its original terminators.
+src/tools/read/enumerated_content.rs - Reconstructs original contents from numbered output by removing numbers and joining valid lines.
+src/tools/read/ignore.rs - Determines whether a path matches an ignore pattern by comparing its components.
+src/tools/read/ignored.rs - Checks whether a path matches exclusion rules defined in `.readignore`.
+src/tools/read/run.rs - Reads UTF-8 files inside the execution directory while blocking invalid or ignored paths.
+src/tools/request.rs - Parses file tree and read requests, identifying the request type and requested path.
+src/tools/tree.rs - Represents a file tree root and its sorted, deduplicated relative paths.
+src/tools/tree/list.rs - Lists existing, non-ignored files under a Git working directory.
+src/tools/tree/path.rs - Converts bytes to a `PathBuf`, preserving them on Unix and requiring UTF-8 on other platforms.

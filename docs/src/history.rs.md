@@ -1,10 +1,10 @@
-## Resumo
-Define o estado editável do histórico de conversas e sua estrutura de armazenamento.
+## Summary
+Defines mutable conversation-history state and its storage structure.
 
-## Funcionamento
-Declara módulos auxiliares, reexporta `Block` e `Snapshot` e define `History`, que reúne o caminho, o snapshot, os blocos e um arquivo de lock.
+## Behavior
+Declares helper modules, re-exports `Block` and `Snapshot`, and defines `History`, which holds the path, snapshot, blocks, and a lock file.
 
-## Importações
-- `crate::interfaces`: Fornece `Block` e `Snapshot`.
-- `std::fs::File`: Mantém o arquivo de lock.
-- `std::path::PathBuf`: Armazena o caminho do histórico.
+## Imports
+- `crate::interfaces`: Provides `Block` and `Snapshot`.
+- `std::fs::File`: Holds the lock file.
+- `std::path::PathBuf`: Stores the history path.

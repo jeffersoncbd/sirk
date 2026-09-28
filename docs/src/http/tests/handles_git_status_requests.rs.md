@@ -1,12 +1,12 @@
-## Resumo
-O arquivo testa se a rota de status do Git retorna os arquivos visíveis do diretório.
+## Summary
+Tests whether the Git status route returns visible files from the directory.
 
-## Funcionamento
-O teste cria um repositório temporário, adiciona arquivos visíveis e um arquivo ignorado por `.treeignore`, e envia uma requisição `POST` para `/v1/git/status`. Verifica que a resposta tem status 200 e contém apenas `.treeignore` e `visible.rs`, então remove o diretório temporário.
+## Behavior
+The test creates a temporary repository, adds visible files and a file ignored by `.treeignore`, and sends a `POST` request to `/v1/git/status`. It checks that the response has status 200 and contains only `.treeignore` and `visible.rs`, then removes the temporary directory.
 
-## Importações
-- `handle`: executa a requisição HTTP simulada.
-- `BashService`, `Invocation`: inicializam o repositório Git.
-- `fs`, `io`: criam arquivos e descartam a saída do comando.
-- `SystemTime`, `UNIX_EPOCH`: tornam único o nome do diretório temporário.
-- `#[test]`: marca a função como teste.
+## Imports
+- `handle`: Executes the simulated HTTP request.
+- `BashService`, `Invocation`: Initialize the Git repository.
+- `fs`, `io`: Create files and discard command output.
+- `SystemTime`, `UNIX_EPOCH`: Make the temporary directory name unique.
+- `#[test]`: Marks the function as a test.

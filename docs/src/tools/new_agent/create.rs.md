@@ -1,10 +1,10 @@
-## Resumo
-Gera um agente no diretório informado e retorna o caminho salvo.
+## Summary
+Generates an agent in the specified directory and returns the saved path.
 
-## Funcionamento
-Deleg​a a geração a `create_with`, executando a invocação pelo `BashService`. Converte falhas de execução em erro e rejeita saídas com status malsucedido; se tudo der certo, retorna a saída padrão.
+## Behavior
+Delegates generation to `create_with`, executing the invocation through `BashService`. Converts execution failures into errors and rejects output with an unsuccessful status; on success, returns stdout.
 
-## Importações
-- `UserInput`: fornece a entrada usada na geração.
-- `BashService`: executa a invocação e captura a saída.
-- `Path`, `PathBuf`: representam o diretório e o caminho retornado.
+## Imports
+- `UserInput`: Provides input used during generation.
+- `BashService`: Executes the invocation and captures output.
+- `Path`, `PathBuf`: Represent the directory and returned path.

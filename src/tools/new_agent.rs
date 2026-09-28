@@ -69,7 +69,7 @@ pub fn create_with(
          Return ONLY the file content, without surrounding code fences or commentary.\n\
          Start with this exact YAML front matter:\n---\n{metadata}---\n\
          Then write detailed, actionable agent instructions: role, objective, workflow, constraints, and expected response format as appropriate to the request.\n\
-         Write the instructions in the language used by the user. Do not simply copy their description.\n\
+         Write all instructions in English, regardless of the language used in the description. Do not simply copy the description.\n\
          Do not change the requested adapter or model, add unsupported metadata, or write any files yourself.\n\
          The Markdown body must be nonempty. The agent name is {name}.\n\nUser description:\n{description}"
     );
@@ -148,9 +148,9 @@ mod tests {
         }
     }
     #[test]
-    fn creates_loadable_agent_and_preserves_prompt_language() {
+    fn creates_loadable_agent_with_english_instructions() {
         let project = Project::new();
-        let prompt = "Você deve planejar.\n\nNão escreva código.";
+        let prompt = "Plan the requested feature.\n\nDo not write code.";
         let path = create_with(
             &project.0,
             &mut answers(&[
@@ -169,13 +169,14 @@ mod tests {
                 let sent = invocation.arguments.last().unwrap();
                 assert!(sent.contains(prompt));
                 assert!(sent.contains("model: gpt-6-sol"));
-                Ok("---\nadapter: codex\nmodel: GPT-6-Sol\n---\nVocê é um planejador.\n1. Analise os requisitos.\n2. Produza um plano detalhado.".into())
+                assert!(sent.contains("Write all instructions in English"));
+                Ok("---\nadapter: codex\nmodel: GPT-6-Sol\n---\nYou are a planner.\n1. Analyze the requirements.\n2. Produce a detailed plan.".into())
             },
         )
         .unwrap();
         assert_eq!(path, project.0.join(".agents/planner.md"));
         let agent = crate::agents::Agent::load(&project.0.join(".agents"), "planner").unwrap();
-        assert!(agent.instructions.contains("Produza um plano detalhado"));
+        assert!(agent.instructions.contains("Produce a detailed plan"));
         assert_ne!(agent.instructions, prompt);
         assert_eq!(agent.adapter, "codex");
         assert_eq!(agent.model.as_deref(), Some("gpt-6-sol"));

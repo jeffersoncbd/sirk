@@ -1,8 +1,8 @@
-## Resumo
-Renderiza um diff, destacando alterações e escapando caracteres de controle.
+## Summary
+Renders a diff, highlighting changes and escaping control characters.
 
-## Funcionamento
-Após a primeira linha de cabeçalho `@@`, colore linhas adicionadas e removidas quando `color` está ativo. Escapa caracteres de controle vindos do conteúdo, preserva quebras de linha e retorna o texto renderizado.
+## Behavior
+After the first `@@` header line, colors added and removed lines when `color` is enabled. Escapes control characters from the contents, preserves line breaks, and returns the rendered text.
 
-## Importações
-- Nenhuma: usa apenas tipos da biblioteca padrão.
+## Imports
+- None: Uses only standard-library types.

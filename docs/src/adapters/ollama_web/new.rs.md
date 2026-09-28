@@ -1,9 +1,9 @@
-## Resumo
-Cria um `OllamaWebAdapter` com os valores fornecidos e normaliza os campos opcionais.
+## Summary
+Creates an `OllamaWebAdapter` with the supplied values and normalizes optional fields.
 
-## Funcionamento
-Converte `executable` e `base_url` em `String`, aplica `nonempty` à URL e descarta a chave de API se estiver vazia ou contiver apenas espaços. Retorna a instância configurada.
+## Behavior
+Converts `executable` and `base_url` to `String`, applies `nonempty` to the URL, and discards the API key if it is empty or contains only whitespace. Returns the configured instance.
 
-## Importações
-- `super::OllamaWebAdapter`: Tipo de adaptador instanciado.
-- `nonempty::nonempty`: Converte a URL em valor opcional.
+## Imports
+- `super::OllamaWebAdapter`: Adapter type being instantiated.
+- `nonempty::nonempty`: Converts the URL to an optional value.

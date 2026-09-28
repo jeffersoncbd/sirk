@@ -1,8 +1,8 @@
-## Resumo
-Cria um adaptador OpenCode com o executável informado.
+## Summary
+Creates an OpenCode adapter with the supplied executable.
 
-## Funcionamento
-Converte `executable` em `String`, armazena-o no adaptador e retorna a instância.
+## Behavior
+Converts `executable` to `String`, stores it in the adapter, and returns the instance.
 
-## Importações
-- `super::OpenCodeAdapter`: Tipo do adaptador que será criado.
+## Imports
+- `super::OpenCodeAdapter`: Adapter type being created.

@@ -1,8 +1,8 @@
-## Resumo
-O arquivo não contém uma função principal de produção; contém apenas um teste.
+## Summary
+Contains no production entry point; it contains only a test.
 
-## Funcionamento
-O teste chama `run` sem argumentos e espera que a chamada termine sem erro. Como testes devem ser ignorados, não há fluxo de produção a documentar.
+## Behavior
+The test calls `run` with no arguments and expects it to finish without an error. There is no production flow to document in this test-only file.
 
-## Importações
-- `super::*`: Importa itens do módulo pai usados pelo teste.
+## Imports
+- `super::*`: Imports parent-module items used by the test.

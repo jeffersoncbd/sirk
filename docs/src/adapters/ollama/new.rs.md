@@ -1,8 +1,8 @@
-## Resumo
-Cria um `OllamaAdapter` com o executável informado.
+## Summary
+Creates an `OllamaAdapter` with the supplied executable.
 
-## Funcionamento
-Converte `executable` em `String` e o armazena na nova instância.
+## Behavior
+Converts `executable` to `String` and stores it in the new instance.
 
-## Importações
-- `super::OllamaAdapter`: Tipo inicializado pela função.
+## Imports
+- `super::OllamaAdapter`: Type initialized by the function.

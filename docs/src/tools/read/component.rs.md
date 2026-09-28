@@ -1,8 +1,8 @@
-## Resumo
-Compara um padrão e um valor por componentes.
+## Summary
+Compares a pattern and a value component by component.
 
-## Funcionamento
-Converte ambos em caracteres e delega a comparação; retorna `bool`.
+## Behavior
+Converts both to characters and delegates the comparison; returns `bool`.
 
-## Importações
-- `super::component_match`: compara as sequências de caracteres.
+## Imports
+- `super::component_match`: Compares the character sequences.

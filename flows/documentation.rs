@@ -22,12 +22,12 @@ pub fn run(sirk: &Sirk) -> Result<(), Box<dyn std::error::Error>> {
             let input = if doc_exists {
                 let doc_content = fs::read_to_string(doc_name.clone())?;
                 r#"
-                    ## Nome do arquivo: ${fileName}
+                    ## File name: ${fileName}
 
-                    ## Conteúdo atual do documento:
+                    ## Current document contents:
                     ${docContent}
 
-                    ## Conteúdo do arquivo:
+                    ## File contents:
                     ${fileContent}
                 "#
                 .replace("${fileName}", file_name)
@@ -35,9 +35,9 @@ pub fn run(sirk: &Sirk) -> Result<(), Box<dyn std::error::Error>> {
                 .replace("${fileContent}", &file_content)
             } else {
                 r#"
-                    ## Nome do arquivo: ${fileName}
+                    ## File name: ${fileName}
 
-                    ## Conteúdo do arquivo:
+                    ## File contents:
                     ${fileContent}
                 "#
                 .replace("${fileName}", file_name)

@@ -1,8 +1,8 @@
-## Resumo
-Define os tipos de dados usados para solicitar e registrar edições de arquivos.
+## Summary
+Defines data types for requesting and recording file edits.
 
-## Funcionamento
-`Operation` enumera as operações disponíveis; `Request` reúne o caminho, a operação, os parâmetros e o conteúdo da edição. `Pending` armazena a solicitação e o estado anterior do arquivo, incluindo se ele não existia.
+## Behavior
+`Operation` enumerates the available operations; `Request` holds the path, operation, parameters, and edit content. `Pending` stores the request and the file's previous state, including whether the file did not exist.
 
-## Importações
-- `serde`: Serializa e desserializa os tipos definidos.
+## Imports
+- `serde`: Serializes and deserializes the defined types.

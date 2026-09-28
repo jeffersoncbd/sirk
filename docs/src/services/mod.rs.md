@@ -1,10 +1,10 @@
-## Resumo
-Expõe serviços e tipos relacionados à execução de comandos.
+## Summary
+Exposes services and types related to command execution.
 
-## Funcionamento
-Declara os módulos `bash` e `quote` e reexporta `Invocation`, `BashService` e `ProcessOutput` para uso por outros módulos.
+## Behavior
+Declares the `bash` and `quote` modules and re-exports `Invocation`, `BashService`, and `ProcessOutput` for use by other modules.
 
-## Importações
-- `bash`: Serviço de execução e saída de processos.
-- `quote`: Módulo de tratamento de argumentos.
-- `crate::interfaces::Invocation`: Tipo reexportado para construir chamadas.
+## Imports
+- `bash`: Process execution and output service.
+- `quote`: Argument-handling module.
+- `crate::interfaces::Invocation`: Re-exported type for building calls.

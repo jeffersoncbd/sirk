@@ -1,9 +1,9 @@
-## Resumo
-Processa uma solicitação de exclusão de arquivo, respeitando a permissão para execução forçada e evitando repetições.
+## Summary
+Processes a file-deletion request, enforcing permission for forced execution and preventing repeats.
 
-## Funcionamento
-Interpreta o payload como JSON e rejeita campos desconhecidos. Se `force` não estiver autorizado, retorna uma mensagem de falha; se a mesma solicitação já foi concluída, informa que não houve alterações. Caso contrário, registra e salva a solicitação no histórico. Sem `force`, retorna erro por falta de entrada do usuário; com `force`, tenta excluir o arquivo e retorna sucesso vazio ou uma mensagem de falha.
+## Behavior
+Parses the payload as JSON and rejects unknown fields. If `force` is not authorized, returns a failure message; if the same request was already completed, reports that no changes were applied. Otherwise, records and saves the request in history. Without `force`, returns an error because user input is unavailable; with `force`, attempts to delete the file and returns empty success or a failure message.
 
-## Importações
-- `crate::history::{Block, History}`: Acessa e atualiza o histórico.
-- `serde::Deserialize`: Permite interpretar a solicitação JSON.
+## Imports
+- `crate::history::{Block, History}`: Accesses and updates the history.
+- `serde::Deserialize`: Allows parsing the JSON request.

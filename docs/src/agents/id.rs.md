@@ -1,8 +1,8 @@
-## Resumo
-Verifica se o identificador contém apenas caracteres permitidos.
+## Summary
+Checks whether an identifier contains only permitted characters.
 
-## Funcionamento
-Retorna `true` para texto não vazio composto por letras ASCII, dígitos, `_` ou `-`; caso contrário, retorna `false`.
+## Behavior
+Returns `true` for nonempty text made of ASCII letters, digits, `_`, or `-`; otherwise, returns `false`.
 
-## Importações
-- Nenhuma.
+## Imports
+- None.

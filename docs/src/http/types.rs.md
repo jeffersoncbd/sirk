@@ -1,9 +1,9 @@
-## Resumo
-Define os tipos para solicitações de agente e diretório e para respostas HTTP.
+## Summary
+Defines types for agent and directory requests and HTTP responses.
 
-## Funcionamento
-`AgentRequest` reúne diretório, agente e entrada; `DirectoryRequest` contém o diretório. Ambos rejeitam campos desconhecidos durante a desserialização. `HttpResponse` armazena o código de status e o corpo.
+## Behavior
+`AgentRequest` holds a directory, agent, and input; `DirectoryRequest` contains the directory. Both reject unknown fields during deserialization. `HttpResponse` stores the status code and body.
 
-## Importações
-- `serde`: desserializa solicitações e rejeita campos desconhecidos.
-- `std::path::PathBuf`: representa diretórios nas solicitações.
+## Imports
+- `serde`: Deserializes requests and rejects unknown fields.
+- `std::path::PathBuf`: Represents directories in requests.

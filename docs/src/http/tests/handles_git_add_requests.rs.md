@@ -1,12 +1,12 @@
-## Resumo
-O teste verifica se uma requisição HTTP adiciona ao stage do Git um arquivo no diretório informado.
+## Summary
+Tests whether an HTTP request stages a file in the supplied directory.
 
-## Funcionamento
-Cria um repositório temporário, grava `generated.md` e envia uma requisição `POST` para `/v1/git/add`. Confirma que a resposta tem status HTTP 200 e campo `status` igual a `ok`, verifica que o arquivo foi staged e remove o diretório temporário. Erros de preparação ou execução causam falha no teste.
+## Behavior
+Creates a temporary repository, writes `generated.md`, and sends a `POST` request to `/v1/git/add`. Checks for HTTP status 200 and a `status` field equal to `ok`, verifies that the file was staged, and removes the temporary directory. Setup or execution errors fail the test.
 
-## Importações
-- `handle`: processa a requisição HTTP de teste.
-- `BashService`, `Invocation`: executam comandos Git no diretório do teste.
-- `std::fs`: cria, grava e remove arquivos e diretórios.
-- `std::io`: fornece o destino descartável para a saída do comando.
-- `SystemTime`, `UNIX_EPOCH`: tornam único o nome do diretório temporário.
+## Imports
+- `handle`: Processes the test HTTP request.
+- `BashService`, `Invocation`: Run Git commands in the test directory.
+- `std::fs`: Creates, writes, and removes files and directories.
+- `std::io`: Provides a sink for command output.
+- `SystemTime`, `UNIX_EPOCH`: Make the temporary directory name unique.

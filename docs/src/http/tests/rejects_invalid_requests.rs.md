@@ -1,8 +1,8 @@
-## Resumo
-Este arquivo não define uma função principal; contém apenas um teste de respostas HTTP.
+## Summary
+Defines no main function; contains only a test of HTTP responses.
 
-## Funcionamento
-O teste verifica que `/health` retorna 200, uma rota inexistente retorna 404, requisições GET incompatíveis retornam 405 e corpos inválidos retornam 400.
+## Behavior
+The test checks that `/health` returns 200, an unknown route returns 404, unsupported GET requests return 405, and invalid bodies return 400.
 
-## Importações
-- `super::super::handle::handle`: Executa as requisições HTTP verificadas pelo teste.
+## Imports
+- `super::super::handle::handle`: Runs the HTTP requests checked by the test.

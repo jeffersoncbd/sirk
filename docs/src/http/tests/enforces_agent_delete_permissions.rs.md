@@ -1,11 +1,11 @@
-## Resumo
-Verifica que a exclusão de arquivos exige permissão explícita do agente.
+## Summary
+Verifies that file deletion requires explicit agent permission.
 
-## Funcionamento
-Cria um agente que solicita excluir `note.txt` e executa a requisição sem confirmação e com confirmação permitida. Em ambos os casos, verifica a resposta; o arquivo só deve ser removido quando ambas as permissões estão liberadas.
+## Behavior
+Creates an agent that requests deletion of `note.txt` and runs the request with confirmation disallowed and allowed. It checks both responses; the file should be removed only when both permissions are enabled.
 
-## Importações
-- `handle`: Processa a requisição HTTP do agente.
-- `std::fs`: Cria arquivos e verifica sua remoção.
-- `PermissionsExt`: Torna o adaptador executável.
-- `SystemTime` e `UNIX_EPOCH`: Geram um nome temporário único.
+## Imports
+- `handle`: Processes the agent HTTP request.
+- `std::fs`: Creates files and checks their removal.
+- `PermissionsExt`: Makes the adapter executable.
+- `SystemTime` and `UNIX_EPOCH`: Generate a unique temporary name.

@@ -1,12 +1,12 @@
-## Resumo
-Conduz uma conversa com o agente, processando respostas e ferramentas até obter uma resposta final.
+## Summary
+Runs an agent conversation, processing responses and tools until a final response is received.
 
-## Funcionamento
-Registra e salva a entrada; se houver uma pergunta pendente, salva-a e retorna erro. Resolve o adaptador, executa chamadas e salva cada resposta. Trata pedidos de edição, exclusão, leitura ou árvore conforme as permissões configuradas; pedidos de entrada do usuário e respostas vazias retornam erro. Erros de execução e gravação são propagados.
+## Behavior
+Records and saves the input; if a question is pending, saves it and returns an error. Resolves the adapter, executes calls, and saves each response. Handles edit, delete, read, or tree requests according to configured permissions; user-input requests and empty responses return errors. Execution and write errors are propagated.
 
-## Importações
-- `adapters`: resolve o adaptador e interpreta respostas.
-- `RunRequest`: reúne os parâmetros enviados ao agente.
-- `Block`, `History`: armazenam e persistem o histórico.
-- `Invocation`: representa a chamada ao agente.
-- `tools`: identifica e executa ferramentas.
+## Imports
+- `adapters`: Resolves the adapter and interprets responses.
+- `RunRequest`: Holds parameters sent to the agent.
+- `Block`, `History`: Store and persist the history.
+- `Invocation`: Represents the agent call.
+- `tools`: Identifies and runs tools.

@@ -1,8 +1,8 @@
-## Resumo
-Verifica a conversão de opções genéricas em uma invocação do OpenCode.
+## Summary
+Verifies that generic options are converted into an OpenCode invocation.
 
-## Funcionamento
-Cria uma solicitação com prompt, diretório, modelo e fluxo de eventos habilitado; compara a invocação resultante com o comando esperado e exige que a conversão não retorne erro.
+## Behavior
+Creates a request with a prompt, directory, model, and event streaming enabled; compares the resulting invocation with the expected command and requires conversion to succeed.
 
-## Importações
-- `super::*`: disponibiliza os tipos e o adaptador do módulo pai.
+## Imports
+- `super::*`: Provides the parent module's types and adapter.

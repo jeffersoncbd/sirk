@@ -1,12 +1,12 @@
-## Resumo
-Verifica se `{{ outputs.plan }}` é preservado como texto literal na entrada enviada ao agente.
+## Summary
+Verifies that `{{ outputs.plan }}` is preserved as literal text in the input sent to the agent.
 
-## Funcionamento
-Cria um agente temporário com um adaptador que aceita a expressão literal, envia a entrada pela rota HTTP e confirma uma resposta `200` com o resultado esperado. Ao final, remove o diretório temporário.
+## Behavior
+Creates a temporary agent with an adapter that accepts the literal expression, sends the input through the HTTP route, and checks for a `200` response with the expected result. It removes the temporary directory afterward.
 
-## Importações
-- `handle`: Executa a requisição HTTP testada.
-- `std::fs`: Cria arquivos e diretórios temporários.
-- `PermissionsExt`: Define permissão executável para o adaptador.
-- `SystemTime`, `UNIX_EPOCH`: Geram um nome temporário único.
-- `serde_json`: Monta a requisição e interpreta a resposta.
+## Imports
+- `handle`: Runs the HTTP request under test.
+- `std::fs`: Creates temporary files and directories.
+- `PermissionsExt`: Sets executable permission on the adapter.
+- `SystemTime`, `UNIX_EPOCH`: Generate a unique temporary name.
+- `serde_json`: Builds the request and parses the response.

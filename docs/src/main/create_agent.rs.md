@@ -1,8 +1,8 @@
-## Resumo
-Cria um agente no diretório atual e informa o caminho criado.
+## Summary
+Creates an agent in the current directory and reports the created path.
 
-## Funcionamento
-Obtém o diretório atual, convertendo falhas em `String`, e chama a criação do agente com entrada pelo terminal. Erros são propagados; em caso de sucesso, exibe o caminho e retorna `Ok(())`.
+## Behavior
+Gets the current directory, converting failures to `String`, and calls agent creation with terminal input. Errors are propagated; on success, it displays the path and returns `Ok(())`.
 
-## Importações
-- `std::env`: Obtém o diretório atual.
+## Imports
+- `std::env`: Gets the current directory.

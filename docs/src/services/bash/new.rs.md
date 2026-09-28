@@ -1,8 +1,8 @@
-## Resumo
-Cria um `BashService` configurado com o executável informado.
+## Summary
+Creates a `BashService` configured with the supplied executable.
 
-## Funcionamento
-Recebe um valor conversível em `String`, converte-o e armazena-o no campo `executable` da instância retornada.
+## Behavior
+Receives a value convertible to `String`, converts it, and stores it in the returned instance's `executable` field.
 
-## Importações
-- `super::BashService`: Tipo construído pela função.
+## Imports
+- `super::BashService`: Type constructed by the function.

@@ -1,8 +1,8 @@
-## Resumo
-Retorna uma mensagem estática com a ajuda de uso do S.I.R.K.
+## Summary
+Returns a static S.I.R.K. usage-help message.
 
-## Funcionamento
-Fornece os comandos disponíveis, informa o endereço HTTP padrão e descreve a criação interativa de agentes e o cancelamento de perguntas com `/cancel`.
+## Behavior
+Lists available commands, reports the default HTTP address, and describes interactive agent creation and question cancellation with `/cancel`.
 
-## Importações
-- Nenhuma: a função não depende de importações.
+## Imports
+- None: The function has no imports.

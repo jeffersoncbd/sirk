@@ -1,10 +1,10 @@
-## Resumo
-O arquivo declara submódulos de testes do adaptador OpenCode.
+## Summary
+Declares test submodules for the OpenCode adapter.
 
-## Funcionamento
-Não há função principal; o arquivo importa símbolos do módulo pai e tipos de suporte, e declara dois módulos de testes.
+## Behavior
+There is no main function; the file imports parent-module symbols and support types, and declares two test modules.
 
-## Importações
-- `super::*`: Símbolos do módulo pai.
-- `crate::harness`: Tipos usados pelos testes do adaptador.
-- `std::path::PathBuf`: Tipo para representar caminhos.
+## Imports
+- `super::*`: Parent-module symbols.
+- `crate::harness`: Types used by adapter tests.
+- `std::path::PathBuf`: Type for representing paths.

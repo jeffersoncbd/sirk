@@ -1,13 +1,13 @@
-## Resumo
-Expõe `run::run` como ponto de entrada da execução de agentes.
+## Summary
+Exposes `run::run` as the entry point for agent execution.
 
-## Funcionamento
-Declara os módulos internos do serviço e reexporta `run` com visibilidade restrita à crate; não define uma função neste arquivo.
+## Behavior
+Declares the service's internal modules and re-exports `run` with crate-level visibility; this file defines no function.
 
-## Importações
-- `conversation`: Módulo interno de conversa.
-- `delete_request`: Módulo interno para pedidos de exclusão.
-- `edit_request`: Módulo interno para pedidos de edição.
-- `execute`: Módulo interno de execução.
-- `prompt`: Módulo interno de prompts.
-- `run::run`: Função reexportada para uso na crate.
+## Imports
+- `conversation`: Internal conversation module.
+- `delete_request`: Internal module for deletion requests.
+- `edit_request`: Internal module for edit requests.
+- `execute`: Internal execution module.
+- `prompt`: Internal prompt module.
+- `run::run`: Function re-exported for use within the crate.

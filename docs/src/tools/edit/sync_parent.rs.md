@@ -1,9 +1,9 @@
-## Resumo
-Sincroniza em disco o diretório pai do caminho informado.
+## Summary
+Synchronizes the parent directory of the supplied path to disk.
 
-## Funcionamento
-Obtém o diretório pai, abre-o e chama `sync_all`; converte falhas de abertura ou sincronização em `String`. Espera que o caminho tenha diretório pai.
+## Behavior
+Gets the parent directory, opens it, and calls `sync_all`; converts open or synchronization failures to `String`. Expects the path to have a parent directory.
 
-## Importações
-- `std::fs::File`: abre o diretório para sincronização.
-- `std::path::Path`: representa o caminho recebido.
+## Imports
+- `std::fs::File`: Opens the directory for synchronization.
+- `std::path::Path`: Represents the supplied path.

@@ -1,9 +1,9 @@
-## Resumo
-`with_prefix` antepõe um comando à invocação, preservando suas configurações de execução.
+## Summary
+`with_prefix` prepends a command to an invocation while preserving its execution settings.
 
-## Funcionamento
-Se o prefixo estiver vazio, retorna a invocação sem alterações. Caso contrário, usa o primeiro item como programa e insere os demais argumentos antes do programa e dos argumentos originais. Mantém o diretório de trabalho e o ambiente; não retorna erros.
+## Behavior
+If the prefix is empty, it returns the invocation unchanged. Otherwise, it uses the first item as the program and inserts the remaining arguments before the original program and arguments. It preserves the working directory and environment and returns no errors.
 
-## Importações
-- `std::mem`: Substitui o programa e recupera seu valor original.
-- `std::collections::BTreeMap`: Armazena variáveis de ambiente da invocação.
+## Imports
+- `std::mem`: Replaces the program and retrieves its original value.
+- `std::collections::BTreeMap`: Stores invocation environment variables.

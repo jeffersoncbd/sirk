@@ -1,8 +1,8 @@
-## Resumo
-Verifica que as operações de anexar e antepor produzem o texto esperado e que conflitos de versão são detectados.
+## Summary
+Checks that append and prepend operations produce the expected text and that version conflicts are detected.
 
-## Funcionamento
-Testa os resultados de `Append` e `Prepend`, inclusive com conteúdo vazio. Também confirma que uma versão incompatível gera erro e que uma edição sem versão não é aceita nesse caso.
+## Behavior
+Tests `Append` and `Prepend` results, including empty contents. It also confirms that a mismatched version produces an error and that an edit without a version is rejected in this case.
 
-## Importações
-- `super::*`: Importa os tipos e auxiliares do módulo pai usados no teste.
+## Imports
+- `super::*`: Imports parent-module types and helpers used by the test.

@@ -1,8 +1,8 @@
-## Resumo
-Monta o prompt do agente com instruções de ferramentas e o histórico da conversa.
+## Summary
+Builds the agent prompt from tool instructions and conversation history.
 
-## Funcionamento
-Começa pelas instruções do agente e acrescenta as ferramentas disponíveis conforme suas permissões. Em seguida, inclui os blocos do histórico com seus papéis; pula uma entrada do usuário quando ela vem após uma solicitação de edição ou exclusão.
+## Behavior
+Starts with the agent instructions and adds available tools according to its permissions. Then includes history blocks with their roles, skipping a user entry when it follows an edit or delete request.
 
-## Importações
-- `crate::history::{Block, History}`: Tipos usados para ler e classificar o histórico.
+## Imports
+- `crate::history::{Block, History}`: Types used to read and classify history.

@@ -1,9 +1,9 @@
-## Resumo
-Organiza as ferramentas disponíveis aos agentes.
+## Summary
+Organizes the tools available to agents.
 
-## Funcionamento
-Declara módulos públicos e internos e reexporta `execute_with_input` e `request`.
+## Behavior
+Declares public and internal modules and re-exports `execute_with_input` and `request`.
 
-## Importações
-- `delete`, `edit`, `new_agent`, `read`, `tree`: ferramentas públicas.
-- `execute_with_input`, `format_paths`, `request`: módulos internos.
+## Imports
+- `delete`, `edit`, `new_agent`, `read`, `tree`: Public tools.
+- `execute_with_input`, `format_paths`, `request`: Internal modules.

@@ -1,8 +1,8 @@
-## Resumo
-Define `Tree`, que representa a raiz e os caminhos de arquivos encontrados.
+## Summary
+Defines `Tree`, which represents the root and paths of discovered files.
 
-## Funcionamento
-Armazena a raiz em `root` e os caminhos em `files`, ordenados, sem duplicatas e relativos à raiz.
+## Behavior
+Stores the root in `root` and paths in `files`, sorted, deduplicated, and relative to the root.
 
-## Importações
-- `std::path::PathBuf`: Representa caminhos do sistema de arquivos.
+## Imports
+- `std::path::PathBuf`: Represents filesystem paths.

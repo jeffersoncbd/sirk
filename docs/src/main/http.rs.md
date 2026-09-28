@@ -1,8 +1,8 @@
-## Resumo
-Inicia o servidor HTTP no endereço informado ou em `127.0.0.1:8080`.
+## Summary
+Starts the HTTP server at the supplied address or `127.0.0.1:8080`.
 
-## Funcionamento
-Usa o endereço recebido quando disponível; caso contrário, aplica o endereço padrão. Retorna o resultado de `sirk::http::serve`, incluindo eventuais erros.
+## Behavior
+Uses the supplied address when available; otherwise, applies the default. Returns the result of `sirk::http::serve`, including any errors.
 
-## Importações
-- `sirk::http`: Inicia o servidor HTTP.
+## Imports
+- `sirk::http`: Starts the HTTP server.

@@ -1,8 +1,8 @@
-## Resumo
-Reexporta os contratos de integração do harness.
+## Summary
+Re-exports the harness integration contracts.
 
-## Funcionamento
-Expõe tipos de `interfaces` neste módulo.
+## Behavior
+Exposes types from `interfaces` through this module.
 
-## Importações
-- `crate::interfaces`: Tipos do harness.
+## Imports
+- `crate::interfaces`: Harness types.

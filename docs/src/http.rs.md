@@ -1,10 +1,10 @@
-## Resumo
-Expõe a função `serve` do transporte HTTP.
+## Summary
+Exposes the HTTP transport's `serve` function.
 
-## Funcionamento
-Declara módulos internos e reexporta `serve::serve`.
+## Behavior
+Declares internal modules and re-exports `serve::serve`.
 
-## Importações
-- `handle`: suporte interno.
-- `serve`: implementação reexportada.
-- `types`: tipos internos.
+## Imports
+- `handle`: Internal support.
+- `serve`: Re-exported implementation.
+- `types`: Internal types.

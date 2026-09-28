@@ -1,8 +1,8 @@
-## Resumo
-Cria um adaptador Codex com o executável informado.
+## Summary
+Creates a Codex adapter with the supplied executable.
 
-## Funcionamento
-Converte `executable` para `String` e o armazena na nova instância.
+## Behavior
+Converts `executable` to `String` and stores it in the new instance.
 
-## Importações
-- `super::CodexAdapter`: Tipo ao qual o construtor pertence.
+## Imports
+- `super::CodexAdapter`: Type that owns the constructor.

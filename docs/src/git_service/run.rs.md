@@ -1,11 +1,11 @@
-## Resumo
-Executa um comando Git no diretório indicado e retorna sua saída padrão em bytes.
+## Summary
+Runs a Git command in the specified directory and returns stdout as bytes.
 
-## Funcionamento
-Monta uma invocação de `git` com os argumentos fornecidos e ambiente padrão. Converte falhas de execução em `Err` com contexto; se o processo terminar com sucesso, retorna `stdout`, caso contrário informa o status de saída.
+## Behavior
+Builds a `git` invocation with the supplied arguments and default environment. Converts execution failures into contextual `Err` values; returns `stdout` on success or reports the exit status on failure.
 
-## Importações
-- `BashService`: executa o processo e captura sua saída.
-- `Invocation`: define programa, argumentos, diretório e ambiente.
-- `std::io`: fornece o destino descartável para outra saída.
-- `std::path::Path`: representa o diretório de trabalho.
+## Imports
+- `BashService`: Executes the process and captures its output.
+- `Invocation`: Defines the program, arguments, directory, and environment.
+- `std::io`: Provides a sink for other output.
+- `std::path::Path`: Represents the working directory.

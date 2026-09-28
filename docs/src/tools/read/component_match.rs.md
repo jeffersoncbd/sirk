@@ -1,8 +1,8 @@
-## Resumo
-Compara duas sequências de caracteres, aceitando `*` e `?` como curingas.
+## Summary
+Compares two character sequences, accepting `*` and `?` as wildcards.
 
-## Funcionamento
-Retorna `true` quando ambas as sequências terminam juntas. `*` corresponde a zero ou mais caracteres, `?` corresponde a um caractere e caracteres literais precisam coincidir; nos demais casos, retorna `false`.
+## Behavior
+Returns `true` when both sequences end together. `*` matches zero or more characters, `?` matches one character, and literal characters must match; otherwise, returns `false`.
 
-## Importações
-- Nenhuma.
+## Imports
+- None.

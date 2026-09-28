@@ -1,15 +1,15 @@
-## Resumo
-Configura o pacote `sirk`, suas bibliotecas, dependências e executável.
+## Summary
+Configures the `sirk` package, its libraries, dependencies, and executable.
 
-## Funcionamento
-Define metadados do pacote, aponta a biblioteca para `src/lib.rs`, o executável para `src/main.rs` e declara as dependências do projeto.
+## Behavior
+Defines package metadata, points the library to `src/lib.rs` and the executable to `src/main.rs`, and declares project dependencies.
 
-## Importações
-- `serde`: serialização e desserialização
-- `serde_yaml`: suporte a YAML
-- `serde_json`: suporte a JSON
-- `dotenvy`: leitura de variáveis de ambiente
-- `sha2`: funções de hash SHA-2
-- `sirk-sdk`: SDK local do projeto
-- `similar`: comparação de textos
-- `tiny_http`: servidor HTTP leve
+## Imports
+- `serde`: Serialization and deserialization.
+- `serde_yaml`: YAML support.
+- `serde_json`: JSON support.
+- `dotenvy`: Environment-variable loading.
+- `sha2`: SHA-2 hashing functions.
+- `sirk-sdk`: The project's local SDK.
+- `similar`: Text comparison.
+- `tiny_http`: Lightweight HTTP server.

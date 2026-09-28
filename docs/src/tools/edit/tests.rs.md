@@ -1,8 +1,8 @@
-## Resumo
-Cria uma requisição de edição para `file.txt` com a versão do conteúdo anterior.
+## Summary
+Creates an edit request for `file.txt` with the version of the previous contents.
 
-## Funcionamento
-Preenche a operação e a entrada recebidas, deixa os campos de linha e intervalo vazios e calcula a versão a partir de `before`.
+## Behavior
+Sets the supplied operation and input, leaves the line and range fields empty, and calculates the version from `before`.
 
-## Importações
-- `super::*`: importa os tipos e funções do módulo pai.
+## Imports
+- `super::*`: Imports the parent module's types and functions.

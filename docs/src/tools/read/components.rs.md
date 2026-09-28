@@ -1,8 +1,8 @@
-## Resumo
-Compara componentes de um padrão com os de um caminho, permitindo `**` e correspondência por prefixo.
+## Summary
+Compares pattern components with path components, supporting `**` and prefix matching.
 
-## Funcionamento
-Retorna `true` quando padrão e caminho terminam juntos; se o padrão termina antes, usa `prefix` como resultado. `**` pode corresponder a zero ou mais componentes. Nos demais casos, compara cada par de componentes recursivamente; combinações incompatíveis retornam `false`.
+## Behavior
+Returns `true` when the pattern and path end together; if the pattern ends first, uses `prefix` as the result. `**` can match zero or more components. Otherwise, compares each component pair recursively; incompatible combinations return `false`.
 
-## Importações
-- `super::component`: Compara um componente do padrão com o caminho.
+## Imports
+- `super::component`: Compares one pattern component with a path component.
