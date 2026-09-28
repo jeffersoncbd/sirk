@@ -1,6 +1,7 @@
 pub mod adapters;
 mod agent_service;
 pub mod agents;
+mod git_service;
 pub mod harness;
 pub mod history;
 pub mod http;

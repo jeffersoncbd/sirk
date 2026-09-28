@@ -1,12 +1,14 @@
 ## Resumo
-Organiza os módulos de teste relacionados ao comportamento HTTP.
+Agrupa os módulos de teste do comportamento HTTP.
 
 ## Funcionamento
-Declara cinco módulos de teste e associa cada um ao arquivo correspondente em `tests/`; não define uma função principal.
+Declara sete módulos e associa cada um ao arquivo de teste correspondente.
 
 ## Importações
-- `tests/enforces_agent_delete_permissions.rs`: Testes de permissões para excluir agentes.
-- `tests/handles_agent_edits.rs`: Testes de edição de agentes.
-- `tests/handles_agent_requests.rs`: Testes de requisições de agentes.
-- `tests/preserves_literal_template_input.rs`: Testes de preservação de entradas literais.
-- `tests/rejects_invalid_requests.rs`: Testes de rejeição de requisições inválidas.
+- `enforces_agent_delete_permissions`: Testa permissões para excluir agentes.
+- `handles_agent_edits`: Testa edições de agentes.
+- `handles_agent_requests`: Testa requisições de agentes.
+- `handles_git_add_requests`: Testa requisições Git add.
+- `handles_git_status_requests`: Testa requisições Git status.
+- `preserves_literal_template_input`: Testa preservação de entradas literais.
+- `rejects_invalid_requests`: Testa rejeição de requisições inválidas.

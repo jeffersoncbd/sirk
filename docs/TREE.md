@@ -47,6 +47,11 @@ src/agents/model.rs - Desserializa um modelo opcional e normaliza seu valor, rem
 src/agents/tree_default.rs - Permite o uso da ferramenta TREE retornando sempre `true`, sem validações ou efeitos colaterais.
 src/agents/tree_permission.rs - Desserializa `allow` como `true` e rejeita qualquer outro valor com erro indicando o valor esperado.
 src/bin/documentation.rs - Conecta-se ao S.I.R.K. e executa o fluxo de documentação, retornando seu resultado.
+src/git_service.rs - Centraliza e expõe as operações de adição ao Git e consulta do status do repositório.
+src/git_service/add.rs - Adiciona ao Git todas as alterações do projeto associado ao diretório informado e retorna erros caso a localização ou o comando falhe.
+src/git_service/project.rs - Resolve um diretório Git e retorna a raiz do projeto e seu prefixo relativo, convertendo falhas em mensagens de erro.
+src/git_service/run.rs - Executa comandos Git no diretório indicado e retorna a saída padrão em bytes, contextualizando falhas de execução ou de status.
+src/git_service/status.rs - Lista, em ordem e sem duplicatas, os caminhos alterados no Git dentro do diretório solicitado, excluindo arquivos ignorados.
 src/harness.rs - Reexporta os tipos das interfaces que definem os contratos de integração do harness.
 src/history.rs - Define o histórico de conversas editável, reunindo seu caminho, snapshot, blocos e arquivo de lock.
 src/history/create.rs - Cria e salva um histórico vazio associado ao snapshot, em arquivo identificado pelo horário e PID do processo.
@@ -55,15 +60,17 @@ src/history/lock.rs - Adquire um bloqueio exclusivo no arquivo de bloqueio assoc
 src/history/reserved.rs - Identifica linhas que contêm marcadores reservados do histórico, sem produzir efeitos colaterais.
 src/history/save.rs - Persiste o snapshot do histórico em disco, serializando metadados e blocos em YAML.
 src/http.rs - Expõe a função `serve` do transporte HTTP e organiza seus módulos internos de suporte.
-src/http/handle.rs - Gerencia a rota de saúde e as solicitações HTTP para executar um agente, retornando resultados ou erros apropriados.
+src/http/handle.rs - Encaminha verificações de saúde e solicitações HTTP para operações de agentes e Git, retornando os resultados adequados.
 src/http/serve.rs - Inicia um servidor HTTP que processa requisições em threads separadas e retorna respostas JSON.
-src/http/tests.rs - Declara os módulos de teste que verificam o comportamento HTTP de agentes e requisições.
+src/http/tests.rs - Agrupa e organiza os módulos que testam o comportamento HTTP.
 src/http/tests/enforces_agent_delete_permissions.rs - Verifica que arquivos só são excluídos quando as permissões explícitas do agente estão liberadas.
 src/http/tests/handles_agent_edits.rs - Testa se uma requisição HTTP executa um agente capaz de editar um arquivo e retornar a resposta esperada.
 src/http/tests/handles_agent_requests.rs - Verifica via requisição HTTP se a execução de um agente retorna o status e o resultado esperados.
+src/http/tests/handles_git_add_requests.rs - O teste confirma que a rota `/v1/git/add` adiciona ao stage do Git um arquivo no diretório informado.
+src/http/tests/handles_git_status_requests.rs - Verifica se a rota de status do Git retorna apenas os arquivos visíveis, excluindo os ignorados por `.treeignore`.
 src/http/tests/preserves_literal_template_input.rs - Verifica se `{{ outputs.plan }}` é preservado literalmente na entrada do agente enviada pela rota HTTP.
-src/http/tests/rejects_invalid_requests.rs - Verifica se o servidor retorna os códigos HTTP esperados para rotas válidas, inexistentes e requisições inválidas.
-src/http/types.rs - Define os tipos de dados usados para representar solicitações de agente e respostas HTTP.
+src/http/tests/rejects_invalid_requests.rs - Verifica as respostas HTTP de sucesso e erro para rotas, métodos e corpos inválidos.
+src/http/types.rs - Define estruturas para solicitações de agente e diretório, além de respostas HTTP com status e corpo.
 src/input.rs - Implementa a leitura de respostas e confirmações do usuário pelo terminal interativo.
 src/interfaces/harness.rs - Define a interface e os tipos comuns para integrar adaptadores que executam agentes de programação.
 src/interfaces/harness/display.rs - Formata variantes de `HarnessError` como mensagens legíveis, incluindo o adaptador e os detalhes disponíveis.
@@ -73,7 +80,7 @@ src/interfaces/history/text.rs - Retorna uma referência ao texto associado ao b
 src/interfaces/input.rs - Define a interface comum para perguntar ao usuário e aguardar confirmações, retornando respostas ou erros.
 src/interfaces/invocation.rs - Adiciona um comando prefixo à invocação, preservando o programa original e suas configurações de execução.
 src/interfaces/mod.rs - Centraliza e reexporta tipos comuns de harness, histórico, entrada do usuário e invocação.
-src/lib.rs - Declara os módulos do crate, expondo-os publicamente, exceto `agent_service`, que permanece privado.
+src/lib.rs - Declara os módulos do crate, expondo-os publicamente, exceto `agent_service` e `git_service`, que permanecem privados.
 src/main.rs - Encaminha os argumentos do comando para execução e define o código de saída conforme o resultado.
 src/main/create_agent.rs - Cria um agente no diretório atual com entrada pelo terminal e exibe o caminho criado.
 src/main/http.rs - Inicia o servidor HTTP no endereço informado ou no padrão, retornando eventuais erros.

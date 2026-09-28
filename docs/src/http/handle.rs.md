@@ -1,9 +1,9 @@
 ## Resumo
-`handle` atende verificações de saúde e solicitações HTTP para executar um agente.
+`handle` encaminha verificações de saúde e solicitações HTTP para execução de agentes e operações Git.
 
 ## Funcionamento
-Responde `200` a `GET /health`; para outras rotas, retorna `404`, e para métodos diferentes de `POST` em `/v1/agent/run`, retorna `405`. Nessa rota, desserializa o corpo como `AgentRequest`: falhas retornam `400`; a execução do agente retorna `200` com o resultado ou `500` com o erro.
+Responde `200` a `GET /health`; rejeita rotas desconhecidas com `404` e métodos inválidos com `405`. Nas rotas POST, desserializa o corpo conforme a operação: erros de formato retornam `400`, erros dos serviços retornam `500` e resultados bem-sucedidos retornam `200`.
 
 ## Importações
-- `super::types`: Tipos da solicitação e da resposta HTTP.
-- `serde_json`: Cria e serializa os corpos JSON.
+- `super::types`: Tipos das solicitações e da resposta HTTP.
+- `serde_json`: Cria corpos de resposta em JSON.

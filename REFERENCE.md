@@ -23,8 +23,15 @@ HTTP has no authentication or TLS; use a trusted network for external binds.
 
 The Rust SDK's `Sirk::connect()` checks the default HTTP service and sends the
 calling process's current directory. `Sirk::connect_to(endpoint, directory)`
-selects another endpoint and server-visible directory. The SDK owns host-side
-Git, TREE, and confirmation helpers; agent tool requests remain in S.I.R.K.
+selects another endpoint and server-visible directory. The SDK owns TREE and
+confirmation helpers; agent tool requests remain in S.I.R.K.
+
+`POST /v1/git/status` accepts `{"directory":"/workspace/project"}` and
+returns `{"paths":["src/lib.rs"]}`. It lists modified, untracked, and deleted
+regular files relative to the requested directory, respecting `.treeignore`.
+`POST /v1/git/add` accepts the same body, stages all changes below that
+directory with Git, and returns `{"status":"ok"}`. These endpoints are for
+SDK workflows and are not agent tools.
 
 ## Agent definitions
 

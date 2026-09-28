@@ -10,9 +10,9 @@ in the effort to feed billions of people worldwide.
 [Read the account at the Science History Institute](https://www.sciencehistory.org/stories/magazine/the-tragedy-of-the-worlds-first-seed-bank/).
 
 S.I.R.K. runs Markdown-defined coding agents through HTTP. Language SDKs own
-workflow control, filesystem access, Git, and user interaction. Supported
-adapters are Codex, OpenCode, Ollama, Ollama Web, and OpenRouter. Claude Code
-is not implemented.
+workflow control, filesystem access, and user interaction. Git operations use
+the service's HTTP API. Supported adapters are Codex, OpenCode, Ollama, Ollama
+Web, and OpenRouter. Claude Code is not implemented.
 
 ## Setup
 
@@ -34,9 +34,10 @@ its endpoint. Bash is required; TREE also requires Git and a working tree.
 
 Start the HTTP service with `./sirk http` (default `127.0.0.1:8080`). An
 explicit address such as `0.0.0.0:8080` allows connections from another host
-or container. HTTP provides `GET /health` and `POST /v1/agent/run`. The POST
-body supplies the server-visible project `directory`, `agent`, and `input`.
-HTTP has no authentication, so expose it only on trusted networks.
+or container. HTTP provides `GET /health`, `POST /v1/agent/run`,
+`POST /v1/git/status`, and `POST /v1/git/add`. Git requests supply the
+server-visible project `directory`; agent requests also supply `agent` and
+`input`. HTTP has no authentication, so expose it only on trusted networks.
 
 The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:
 

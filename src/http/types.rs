@@ -9,6 +9,12 @@ pub(super) struct AgentRequest {
     pub input: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct DirectoryRequest {
+    pub directory: PathBuf,
+}
+
 #[derive(Debug, PartialEq)]
 pub(super) struct HttpResponse {
     pub status: u16,
