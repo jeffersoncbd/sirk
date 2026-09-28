@@ -1,5 +1,5 @@
 .env.example - Documenta as variáveis de ambiente para configurar URLs e chaves de API dos serviços Ollama e OpenRouter.
-Cargo.toml - Configura o pacote `sirk`, definindo suas bibliotecas e dependências para serialização, ambiente, hashing, comparação de textos e HTTP.
+Cargo.toml - Define o pacote `sirk`, seus pontos de entrada e as dependências usadas pela biblioteca e pelo executável.
 src/adapters/codex.rs - Configura a execução de solicitações pelo comando `codex exec`, montando seus argumentos e prompt.
 src/adapters/codex/default.rs - Define a configuração padrão do CodexAdapter para usar o comando `codex`.
 src/adapters/codex/new.rs - Cria uma instância de `CodexAdapter` armazenando o executável informado como texto.
@@ -73,26 +73,18 @@ src/interfaces/history/text.rs - Retorna uma referência ao texto associado ao b
 src/interfaces/input.rs - Define a interface comum para perguntar ao usuário e aguardar confirmações, retornando respostas ou erros.
 src/interfaces/invocation.rs - Adiciona um comando prefixo à invocação, preservando o programa original e suas configurações de execução.
 src/interfaces/mod.rs - Centraliza e reexporta tipos comuns de harness, histórico, entrada do usuário e invocação.
-src/lib.rs - Declara os módulos do crate, expondo-os publicamente e mantendo `agent_service` privado.
-src/main.rs - Repassa os argumentos da linha de comando para execução e define o código de saída conforme o resultado.
+src/lib.rs - Declara os módulos do crate, expondo-os publicamente, exceto `agent_service`, que permanece privado.
+src/main.rs - Encaminha os argumentos do comando para execução e define o código de saída conforme o resultado.
 src/main/create_agent.rs - Cria um agente no diretório atual com entrada pelo terminal e exibe o caminho criado.
 src/main/http.rs - Inicia o servidor HTTP no endereço informado ou no padrão, retornando eventuais erros.
 src/main/print_usage.rs - Exibe na saída padrão o texto de uso fornecido pelo módulo `usage`.
-src/main/rpc.rs - Inicia o servidor RPC do S.I.R.K. e propaga o resultado, incluindo possíveis erros.
-src/main/run.rs - Interpreta os argumentos e encaminha a execução para criação de agente, HTTP, RPC ou exibição da ajuda.
+src/main/run.rs - Despacha os argumentos para criar um agente, executar o comando HTTP ou exibir a ajuda.
 src/main/tests.rs - Reúne testes de execução e uso da aplicação, com acesso às funções `run` e `usage`.
 src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Verifica que `run`, chamada sem argumentos, termina sem erro; não descreve um fluxo de produção.
 src/main/tests/rejects_an_invalid_command.rs - Confirma que o comando inválido `"invalid"` é rejeitado com uma mensagem de erro correspondente.
-src/main/tests/rejects_removed_workflow_commands.rs - Verifica que `run` rejeita comandos de workflow removidos e retorna um erro de comando inválido.
-src/main/tests/usage_lists_service_commands.rs - O arquivo contém apenas um teste do módulo e não define funções de produção.
-src/main/usage.rs - Retorna a ajuda estática do S.I.R.K., com comandos, endereço HTTP padrão e opções de criação interativa de agentes.
-src/rpc.rs - Organiza os módulos do transporte JSON-RPC delimitado por linhas e reexporta a função serve.
-src/rpc/handle.rs - Valida e processa chamadas JSON-RPC `agent.run`, executa o agente no diretório indicado e retorna o resultado ou erro.
-src/rpc/serve.rs - Processa requisições JSON-RPC da entrada padrão e envia respostas serializadas pela saída padrão.
-src/rpc/tests.rs - Declara módulos de testes RPC para solicitações de agentes e rejeição de métodos desconhecidos.
-src/rpc/tests/handles_agent_requests.rs - Verifica que `agent.run` retorna o resultado produzido pelo adaptador simulado, sem erros.
-src/rpc/tests/rejects_unknown_methods.rs - Verifica se métodos desconhecidos retornam o erro JSON-RPC `-32601` com a mensagem `"Method not found"`.
-src/rpc/types.rs - Define os tipos e regras de serialização usados para representar requisições, parâmetros, respostas e erros RPC.
+src/main/tests/rejects_removed_workflow_commands.rs - Verifica se o comando `run` rejeita comandos inválidos ou removidos com uma mensagem de erro esperada.
+src/main/tests/usage_lists_service_commands.rs - O arquivo contém um teste que verifica se `usage()` inclui os comandos esperados e omite os obsoletos.
+src/main/usage.rs - Exibe a ajuda de uso do S.I.R.K., com comandos disponíveis, endereço padrão e orientações para criar agentes e cancelar perguntas.
 src/services/bash.rs - Define o serviço compartilhado para executar processos via Bash e representar seus status e saídas capturadas.
 src/services/bash/default.rs - Configura o BashService padrão para executar comandos usando o executável `bash`.
 src/services/bash/execute_bytes_to.rs - Executa uma invocação do Bash e retorna seu status junto aos bytes capturados da saída.

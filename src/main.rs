@@ -4,8 +4,6 @@ mod create_agent;
 mod http;
 #[path = "main/print_usage.rs"]
 mod print_usage;
-#[path = "main/rpc.rs"]
-mod rpc;
 #[path = "main/run.rs"]
 mod run;
 #[path = "main/usage.rs"]

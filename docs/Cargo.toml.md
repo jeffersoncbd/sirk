@@ -1,8 +1,8 @@
 ## Resumo
-Configura o pacote `sirk`, suas bibliotecas e dependências.
+Configura o pacote `sirk`, suas bibliotecas, dependências e executável.
 
 ## Funcionamento
-Define a biblioteca em `src/lib.rs`, o executável em `src/main.rs` e as dependências usadas pelo projeto; não contém uma função principal.
+Define metadados do pacote, aponta a biblioteca para `src/lib.rs`, o executável para `src/main.rs` e declara as dependências do projeto.
 
 ## Importações
 - `serde`: serialização e desserialização

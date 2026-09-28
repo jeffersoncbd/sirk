@@ -1,8 +1,8 @@
 ## Resumo
-Verifica que `run` rejeita comandos de workflow removidos.
+Verifica que `run` rejeita comandos inválidos ou removidos.
 
 ## Funcionamento
-Executa `run` com os comandos `run documentation` e `resume history/run-old.log`; em ambos os casos, espera um erro contendo “invalid command”.
+Executa `run` com os argumentos `run documentation`, `resume history/run-old.log` e `rpc`; em cada caso, espera um erro contendo “invalid command”.
 
 ## Importações
-- `super::*`: Importa itens do módulo pai, incluindo `run`.
+- `super::*`: Importa `run` do módulo pai.

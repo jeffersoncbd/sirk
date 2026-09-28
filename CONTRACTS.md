@@ -16,12 +16,8 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   agent metadata. Only explicit agent permissions enable external edits or
   deletion.
 
-## SDK transports
+## SDK HTTP transport
 
-- Keep agent execution independent from transport framing. JSON-RPC and HTTP
-  call the same service and preserve the same permissions and error text.
-- Preserve `sirk rpc` as line-delimited JSON-RPC 2.0 over stdin/stdout. It uses
-  the process working directory and exposes `agent.run`.
 - `sirk http` binds to `127.0.0.1:8080` by default. An explicit address may
   override the bind; external exposure does not imply authentication or TLS.
 - HTTP exposes `GET /health` and `POST /v1/agent/run`. The request contains the

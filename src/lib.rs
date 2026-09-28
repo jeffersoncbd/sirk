@@ -6,6 +6,5 @@ pub mod history;
 pub mod http;
 pub mod input;
 pub mod interfaces;
-pub mod rpc;
 pub mod services;
 pub mod tools;

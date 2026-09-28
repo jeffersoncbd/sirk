@@ -9,10 +9,10 @@ support crop research and food supplies around the world. Their legacy lives on
 in the effort to feed billions of people worldwide.
 [Read the account at the Science History Institute](https://www.sciencehistory.org/stories/magazine/the-tragedy-of-the-worlds-first-seed-bank/).
 
-S.I.R.K. runs Markdown-defined coding agents through HTTP or line-delimited
-JSON-RPC. Language SDKs own workflow control, filesystem access, Git, and user
-interaction. Supported adapters are Codex, OpenCode, Ollama, Ollama Web, and
-OpenRouter. Claude Code is not implemented.
+S.I.R.K. runs Markdown-defined coding agents through HTTP. Language SDKs own
+workflow control, filesystem access, Git, and user interaction. Supported
+adapters are Codex, OpenCode, Ollama, Ollama Web, and OpenRouter. Claude Code
+is not implemented.
 
 ## Setup
 
@@ -47,10 +47,8 @@ let sirk = Sirk::connect()?;
 let explanation = sirk.agent("code-explainer", "Explain this module")?;
 ```
 
-For existing clients, `./sirk rpc` serves `agent.run` as one JSON-RPC 2.0
-message per line on stdin/stdout. Both transports use the same agent service
-and permission checks. Each call saves a conversation log under `history/`.
-There is no CLI command to resume a log.
+Each call saves a conversation log under `history/`. There is no CLI command
+to resume a log.
 
 Create an agent in `.agents/<name>.md`:
 

@@ -2,7 +2,7 @@
 Executa o comando recebido e define o código de saída do programa.
 
 ## Funcionamento
-Repassa os argumentos da linha de comando, exceto o nome do executável, para `run::run`. Em caso de sucesso, retorna `ExitCode::SUCCESS`; se houver erro, exibe a mensagem em stderr e retorna o código 2.
+Passa os argumentos, exceto o nome do executável, para `run::run`. Se a execução for bem-sucedida, retorna `ExitCode::SUCCESS`; caso contrário, exibe o erro em stderr e retorna o código 2.
 
 ## Importações
 - `std::env`: Obtém os argumentos da linha de comando.

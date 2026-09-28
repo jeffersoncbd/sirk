@@ -1,14 +1,10 @@
 # S.I.R.K. agent reference
 
-S.I.R.K. serves individual agents over HTTP or JSON-RPC. The caller owns
-workflow sequencing, project files, Git, and user interaction. Agent input is
-passed through as literal text, including `{{ ... }}` sequences.
+S.I.R.K. serves individual agents over HTTP. The caller owns workflow
+sequencing, project files, Git, and user interaction. Agent input is passed
+through as literal text, including `{{ ... }}` sequences.
 
-## Transports
-
-`sirk rpc` reads one JSON-RPC 2.0 request per line from stdin and writes one
-response per line to stdout. It uses the process working directory. The method
-is `agent.run`, with `agent` and `input` string parameters.
+## HTTP
 
 `sirk http [address]` binds to `127.0.0.1:8080` by default. It provides
 `GET /health` and `POST /v1/agent/run`:
@@ -53,8 +49,8 @@ not shell syntax. `TREE_TOOL: allow`, `EDIT_TOOL: allow`, and
 `DELETE_TOOL: allow` grant the corresponding agent requests. The optional
 `DELETE_WITHOUT_CONFIRM: allow` requires `DELETE_TOOL: allow`.
 
-`ask` is accepted as an initial question, but HTTP and RPC have no interactive
-answer channel; such a call fails when input is required. `json: true` is not
+`ask` is accepted as an initial question, but HTTP has no interactive answer
+channel; such a call fails when input is required. `json: true` is not
 supported. Unknown metadata, including `write`, is rejected. Codex runs in a
 read-only sandbox with no approval escalation. OpenCode is invoked without
 `--auto`; configure its permissions in the OpenCode environment.
@@ -86,9 +82,9 @@ to the agent. The target must be an existing regular UTF-8 file inside the
 execution directory.
 
 With `DELETE_TOOL: allow`, the agent can answer with `DELETE:` followed by a
-JSON object containing `path`. HTTP and RPC cannot collect confirmation, so
-deletion needs `"force":true` and `DELETE_WITHOUT_CONFIRM: allow`. DELETE
-accepts only an existing regular file inside the execution directory.
+JSON object containing `path`. HTTP cannot collect confirmation, so deletion
+needs `"force":true` and `DELETE_WITHOUT_CONFIRM: allow`. DELETE accepts only
+an existing regular file inside the execution directory.
 
 Only one tool request is processed per agent response. A failed provider call
 or empty response ends the call with an error. No provider session is resumed;

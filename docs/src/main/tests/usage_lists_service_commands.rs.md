@@ -2,7 +2,7 @@
 O arquivo não contém uma função de produção para documentar.
 
 ## Funcionamento
-Não há fluxo de produção neste arquivo; ele contém apenas um teste, que foi desconsiderado conforme solicitado.
+Contém apenas um teste que verifica se a saída de `usage()` inclui comandos esperados e omite comandos obsoletos.
 
 ## Importações
-- `super::*`: Importa os itens do módulo pai usados pelo teste.
+- `super::*`: Importa `usage()` do módulo pai para o teste.

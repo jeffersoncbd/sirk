@@ -274,6 +274,7 @@ dependencies = [
 [[package]]
 name = "sirk-sdk"
 version = "0.1.0"
+source = "git+https://github.com/jeffersoncbd/sirk-rust-sdk#5724aef3fe5f383278e76a1d80b219c588a693bc"
 dependencies = [
  "serde",
  "serde_json",
