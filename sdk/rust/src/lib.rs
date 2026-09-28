@@ -1,12 +1,16 @@
 mod agent;
-mod drop;
+mod connect;
+mod connect_to;
 mod error;
+mod http;
 mod protocol;
 mod sirk;
-mod start;
+mod tools;
+mod transport;
 
 pub use error::Error;
 pub use sirk::Sirk;
+pub use tools::{Git, Tools};
 
 #[cfg(test)]
 mod tests;

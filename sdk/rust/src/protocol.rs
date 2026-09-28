@@ -1,29 +1,20 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Serialize)]
-pub(super) struct Request<'a> {
-    pub jsonrpc: &'static str,
-    pub id: u64,
-    pub method: &'static str,
-    pub params: AgentParams<'a>,
-}
-
-#[derive(Serialize)]
-pub(super) struct AgentParams<'a> {
+pub(super) struct AgentRequest<'a> {
+    pub directory: &'a Path,
     pub agent: &'a str,
     pub input: &'a str,
 }
 
 #[derive(Deserialize)]
-pub(super) struct Response {
-    pub jsonrpc: String,
-    pub id: u64,
+pub(super) struct AgentResponse {
     pub result: Option<String>,
-    pub error: Option<RpcError>,
+    pub error: Option<String>,
 }
 
 #[derive(Deserialize)]
-pub(super) struct RpcError {
-    pub code: i64,
-    pub message: String,
+pub(super) struct HealthResponse {
+    pub status: String,
 }

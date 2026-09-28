@@ -1,11 +1,8 @@
-use std::{
-    io::BufReader,
-    process::{Child, ChildStdin, ChildStdout},
-};
+use crate::transport::Transport;
+use std::path::PathBuf;
 
 pub struct Sirk {
-    pub(super) child: Child,
-    pub(super) input: Option<ChildStdin>,
-    pub(super) output: BufReader<ChildStdout>,
-    pub(super) next_id: u64,
+    pub(super) directory: PathBuf,
+    pub(super) local_directory: PathBuf,
+    pub(super) transport: Box<dyn Transport>,
 }
