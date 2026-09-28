@@ -1,6 +1,7 @@
 /history/
 /target/
 /sdk/rust/target/
+/flows/documentation/target/
 
 /sirk
 

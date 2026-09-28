@@ -1,0 +1,44 @@
+use super::super::handle::handle;
+use serde_json::Value;
+use std::{
+    fs,
+    os::unix::fs::PermissionsExt,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+#[test]
+fn handles_agent_requests() {
+    let directory = std::env::temp_dir().join(format!(
+        "sirk-http-test-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(directory.join(".agents")).unwrap();
+    let adapter = directory.join("adapter");
+    fs::write(&adapter, "#!/bin/sh\nprintf '%s' 'served over HTTP'\n").unwrap();
+    let mut permissions = fs::metadata(&adapter).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&adapter, permissions).unwrap();
+    fs::write(
+        directory.join(".agents/code-explainer.md"),
+        format!(
+            "---\nadapter: codex\ncall_prefix: '{}'\n---\nExplain code.",
+            adapter.display()
+        ),
+    )
+    .unwrap();
+    let body = serde_json::json!({
+        "directory": directory,
+        "agent": "code-explainer",
+        "input": "Explain this file"
+    })
+    .to_string();
+    let response = handle("POST", "/v1/agent/run", &body);
+    assert_eq!(response.status, 200);
+    let response: Value = serde_json::from_str(&response.body).unwrap();
+    assert_eq!(response["result"], "served over HTTP");
+    fs::remove_dir_all(directory).unwrap();
+}

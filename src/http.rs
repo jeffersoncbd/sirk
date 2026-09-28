@@ -1,4 +1,4 @@
-//! Line-delimited JSON-RPC transport used by language SDKs.
+//! HTTP transport for remote and containerized language SDKs.
 
 mod handle;
 mod serve;

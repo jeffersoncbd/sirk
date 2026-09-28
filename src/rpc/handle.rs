@@ -1,7 +1,4 @@
-use super::{
-    run_agent::run_agent,
-    types::{AgentParams, Request, Response, RpcError},
-};
+use super::types::{AgentParams, Request, Response, RpcError};
 use serde_json::Value;
 use std::path::Path;
 
@@ -43,7 +40,7 @@ pub(super) fn handle(request: Request, directory: &Path) -> Response {
             };
         }
     };
-    match run_agent(directory, params.agent, params.input) {
+    match crate::agent_service::run(directory, params.agent, params.input) {
         Ok(result) => Response {
             jsonrpc: "2.0",
             id,

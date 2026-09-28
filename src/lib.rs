@@ -1,7 +1,9 @@
 pub mod adapters;
+mod agent_service;
 pub mod agents;
 pub mod harness;
 pub mod history;
+pub mod http;
 pub mod input;
 pub mod interfaces;
 pub mod rpc;

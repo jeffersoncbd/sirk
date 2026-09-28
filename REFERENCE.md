@@ -4,11 +4,46 @@ Detailed usage for agents, YAML tools, scopes, and recovery. Start with the
 [quick-start manual](README.md); use the sections below as needed.
 
 - [Agents](#agent-definitions) and [generation](#generate-an-agent-with-a-model)
+- [SDK transports](#sdk-transports)
 - [Workflows and outputs](#workflows-and-outputs)
 - [Tools](#tools): TREE, READ, WRITE, EDIT, CUSTOM-TOOL, IF, LOOP
 - [User questions](#questions-to-the-user)
 - [History and resumption](#history-editing-and-resumption)
 - [Limitations](#current-limitations)
+
+## SDK transports
+
+`sirk rpc` serves line-delimited JSON-RPC 2.0 over stdin and stdout. It uses the
+process working directory as the execution directory and preserves the existing
+`agent.run` protocol for SDKs that manage a child CLI process.
+
+`sirk http [address]` serves HTTP independently from the JSON-RPC transport. Its
+default address is `127.0.0.1:8080`; pass an explicit address such as
+`0.0.0.0:8080` when the server must accept container or remote connections.
+
+Check availability with `GET /health`. Run an agent with:
+
+```http
+POST /v1/agent/run
+Content-Type: application/json
+
+{
+  "directory": "/workspace/project",
+  "agent": "code-explainer",
+  "input": "Explain this module"
+}
+```
+
+The directory is interpreted by the HTTP server, so callers using a container
+must provide the path of the mounted project inside that container. Success
+returns HTTP 200 with `{"result":"..."}`. Invalid JSON or fields return 400,
+unknown routes return 404, unsupported methods return 405, and agent execution
+failures return 500 with `{"error":"..."}`.
+
+The HTTP server has no authentication or TLS. Its default loopback bind is the
+safe local configuration; an externally bound server should only be exposed on
+a trusted network. RPC and HTTP are transport adapters over the same silent
+agent execution service, including history and agent tool permissions.
 
 ## Agent definitions
 

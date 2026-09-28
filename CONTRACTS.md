@@ -5,6 +5,7 @@ the relevant sections alongside its module documentation from [TREE.md](docs/TRE
 Development workflow and checks are in [AGENTS.md](AGENTS.md).
 
 - [Language, files, and permissions](#language-files-and-permissions)
+- [SDK transports](#sdk-transports)
 - [Tools and loops](#tools-and-loops)
 - [Conversations and durable history](#conversations-and-durable-history)
 - [Agent generation](#agent-generation)
@@ -22,6 +23,19 @@ Development workflow and checks are in [AGENTS.md](AGENTS.md).
   `--skip-git-repo-check`. Do not restore a `write` metadata option or automatic
   write approvals. The orchestrator may write history and generated definitions.
 - Child stdin is closed; user interaction goes through `UserInput`.
+
+## SDK transports
+
+- Keep agent execution independent from transport framing. Stdio JSON-RPC and
+  HTTP must call the same silent agent execution service and preserve agent
+  permissions, history, and error text.
+- Preserve `sirk rpc` as line-delimited JSON-RPC 2.0 over stdin/stdout. It uses
+  the process working directory and continues to expose `agent.run`.
+- `sirk http` binds to `127.0.0.1:8080` by default. An explicit address may
+  override the bind for container use; external exposure does not imply
+  authentication or TLS.
+- HTTP exposes `GET /health` and `POST /v1/agent/run`. The agent request includes
+  the execution directory as seen by the server, the agent ID, and its input.
 
 ## Tools and loops
 

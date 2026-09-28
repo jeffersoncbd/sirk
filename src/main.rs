@@ -1,5 +1,7 @@
 #[path = "main/create_agent.rs"]
 mod create_agent;
+#[path = "main/http.rs"]
+mod http;
 #[path = "main/print_usage.rs"]
 mod print_usage;
 #[path = "main/resume.rs"]

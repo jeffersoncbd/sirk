@@ -1,4 +1,4 @@
-use super::{create_agent, print_usage, resume, rpc, run_workflow, usage};
+use super::{create_agent, http, print_usage, resume, rpc, run_workflow, usage};
 use std::path::Path;
 
 pub(super) fn run(arguments: Vec<String>) -> Result<(), String> {
@@ -10,6 +10,8 @@ pub(super) fn run(arguments: Vec<String>) -> Result<(), String> {
         [command] if matches!(command.as_str(), "--newAgent" | "--new-agent") => {
             create_agent::create()
         }
+        [command] if command == "http" => http::http(None),
+        [command, address] if command == "http" => http::http(Some(address)),
         [command] if command == "rpc" => rpc::rpc(),
         [command, name] if command == "run" => run_workflow::run_workflow(name),
         [command, path] if command == "resume" => resume::resume(Path::new(path)),

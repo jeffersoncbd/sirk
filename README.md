@@ -37,13 +37,25 @@ execution directory's `.env` file or environment. `OPENROUTER_URL` may override
 its API endpoint.
 Bash is required; TREE also requires Git and a working tree.
 
-## Language SDK protocol
+## Language SDK transports
 
 Language SDKs start `sirk rpc` in the project directory and exchange one
 JSON-RPC 2.0 message per line over stdin/stdout. The public protocol currently
 exposes only `agent.run`; workflow control, filesystem access, Git, and user
 interaction belong to the host language. Agent permissions still control the
 CLI's internal READ, TREE, EDIT, and DELETE operations.
+
+For a persistent or containerized server, start the independent HTTP transport:
+
+```bash
+sirk http                    # 127.0.0.1:8080
+sirk http 0.0.0.0:8080       # explicit external/container bind
+```
+
+It provides `GET /health` and `POST /v1/agent/run`. The POST body contains the
+server-visible project `directory`, `agent`, and `input`. HTTP has no
+authentication yet, so expose it only on trusted networks. Both transports use
+the same agent execution service and preserve the existing permission model.
 
 The standalone [Rust SDK](sdk/rust/README.md) has no source or package dependency
 on the CLI:
@@ -53,6 +65,13 @@ use sirk_sdk::Sirk;
 
 let mut sirk = Sirk::start("./sirk", ".")?;
 let explanation = sirk.agent("code-explainer", "Explain this module")?;
+```
+
+This repository's first SDK workflow is [flows/documentation.rs](flows/documentation.rs).
+It owns its filesystem and Git operations and can be run with:
+
+```bash
+cargo run --manifest-path flows/documentation/Cargo.toml
 ```
 
 Enable the repository's documentation pre-commit hook once per clone:

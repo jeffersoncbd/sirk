@@ -4,7 +4,7 @@ use crate::{
 };
 use std::path::Path;
 
-pub(super) fn run_agent(directory: &Path, agent: String, input: String) -> Result<String, String> {
+pub(crate) fn run(directory: &Path, agent: String, input: String) -> Result<String, String> {
     let workflow = Workflow {
         version: 1,
         steps: vec![Step {

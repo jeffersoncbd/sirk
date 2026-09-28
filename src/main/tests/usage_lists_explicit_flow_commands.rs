@@ -6,6 +6,7 @@ fn usage_lists_explicit_flow_commands() {
     assert!(text.starts_with("S.I.R.K."));
     assert!(text.contains("sirk run <flow-name>"));
     assert!(text.contains("sirk rpc"));
+    assert!(text.contains("sirk http [address]"));
     assert!(text.contains("Flows resolve to flows/<flow-name>.yml."));
     assert!(!text.contains("Interactive commands:"));
     assert!(!text.contains("<flow-name>      Start a flow directly"));

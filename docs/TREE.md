@@ -1,5 +1,5 @@
 .env.example - Arquivo .env de exemplo que documenta as variáveis OLLAMA_WEB_URL, OLLAMA_API_KEY, OPENROUTER_URL e OPENROUTER_API_KEY obrigatórias.
-Cargo.toml - O manifesto configura o pacote Rust `new-harness` como biblioteca e CLI neutro de provedor, com dependências para serialização, ambiente, hashes e comparação textual.
+Cargo.toml - Define o pacote Rust, seus alvos de biblioteca e CLI e as dependências necessárias ao harness.
 sdk/rust/Cargo.toml - Define os metadados e as dependências do pacote Rust `sirk-sdk` para o protocolo JSON-RPC S.I.R.K.
 sdk/rust/README.md - Oferece um SDK Rust para iniciar o S.I.R.K. e executar agentes por JSON-RPC.
 sdk/rust/src/agent.rs - Envia uma solicitação `agent.run` ao CLI e retorna o resultado em texto, tratando erros de transporte e protocolo.
@@ -41,6 +41,9 @@ src/adapters/openrouter/endpoint.rs - Resolve a URL do endpoint de chat da OpenR
 src/adapters/openrouter/new.rs - Constrói um OpenRouterAdapter, normalizando a URL base (não vazia via nonempty) e descartando api_key ausente ou em branco.
 src/adapters/openrouter/nonempty.rs - Valida se uma string não está vazia após trim e a retorna como Option<String>.
 src/adapters/resolve.rs - Converte um nome de harness em `Box<dyn HarnessAdapter>`, retornando `None` para nomes desconhecidos.
+src/agent_service.rs - Expõe internamente `run` como ponto de entrada do serviço de execução de agentes.
+src/agent_service/execute.rs - Executa uma invocação via BashService e retorna sua saída padrão quando o processo termina com sucesso.
+src/agent_service/run.rs - Executa silenciosamente um agente com a entrada fornecida e retorna o resultado textual gerado.
 src/agents.rs - Converte um arquivo Markdown de agente com front matter YAML em um `Agent` validado.
 src/agents/call_prefix.rs - Desserializa o campo `call_prefix` de configuração de agente, aceitando string ou lista e validando tokens não vazios.
 src/agents/delete_permission.rs - Deserializador customizado que converte a string "allow" em bool para a tool de delete, validando a configuração.
@@ -60,6 +63,13 @@ src/history/open.rs - Abre, bloqueia e carrega um arquivo de histórico, parsean
 src/history/parse.rs - Interpreta um histórico v2, desserializa o snapshot e organiza o conteúdo em etapas, blocos e rótulos.
 src/history/reserved.rs - Função `reserved` indica se uma linha do log é um marcador de seção reservada.
 src/history/save.rs - Serializa o histórico de uma workflow em YAML legível, com gravação atômica em arquivo temporário.
+src/http.rs - Disponibiliza transporte HTTP para SDKs remotos e executados em contêineres.
+src/http/handle.rs - Gerencia as rotas de saúde e execução de agentes, convertendo requisições HTTP em respostas adequadas.
+src/http/serve.rs - Inicia um servidor HTTP que processa requisições em threads separadas e envia respostas em JSON.
+src/http/tests.rs - Organiza os testes HTTP de requisições de agentes e de rejeição de requisições inválidas.
+src/http/tests/handles_agent_requests.rs - Verifica se `/v1/agent/run` executa um agente temporário e retorna sua saída esperada.
+src/http/tests/rejects_invalid_requests.rs - Verifica se o servidor retorna os códigos HTTP esperados para requisições válidas e inválidas.
+src/http/types.rs - Define os tipos que representam uma solicitação HTTP de agente e uma resposta com código de status e corpo.
 src/input.rs - Fornece entrada de usuário via terminal, com `ask` lendo respostas do stdin e `await_confirmation` lendo de `/dev/tty`.
 src/interfaces/harness.rs - Converte uma RunRequest em uma Invocation para o CLI do agente, validando as opções suportadas.
 src/interfaces/harness/display.rs - Implementa a trait `Display` para `HarnessError`, formatando cada variante como mensagem legível.
@@ -71,25 +81,26 @@ src/interfaces/invocation.rs - Aplica um prefixo a uma Invocation, redefinindo o
 src/interfaces/mod.rs - Módulo raiz de interfaces que reexporta os tipos compartilhados entre as sub-rotinas internas.
 src/interfaces/workflow.rs - Estruturas serializáveis (serde) que definem um workflow, seus passos, entradas e coordenadas de edição.
 src/interfaces/workflow/default.rs - Implementa `Default` para `StepInput`, criando uma entrada de texto vazia como valor inicial.
-src/lib.rs - Expõe publicamente os dez módulos da biblioteca como ponto de entrada do crate.
-src/main.rs - Inicia o CLI, encaminha os argumentos para execução e converte o resultado em código de saída.
+src/lib.rs - Expõe publicamente os dez módulos do crate para que possam ser usados externamente.
+src/main.rs - Serve como ponto de entrada do CLI, encaminhando argumentos ao fluxo principal e definindo o código de saída.
 src/main/create_agent.rs - Cria um agente no diretório atual usando entrada de terminal e exibe o caminho criado.
+src/main/http.rs - Inicia o servidor HTTP no endereço informado ou em 127.0.0.1:8080 quando nenhum endereço é fornecido.
 src/main/print_usage.rs - Exibe na saída padrão o texto de uso retornado por `super::usage::usage()`.
 src/main/resume.rs - Retoma a execução do harness a partir de um caminho de estado, propagando erros e concluindo com sucesso.
 src/main/rpc.rs - Inicia o servidor RPC do S.I.R.K. delegando a execução a `serve()` e retornando seu resultado.
-src/main/run.rs - Interpreta os argumentos da linha de comando e encaminha cada subcomando à operação correspondente.
+src/main/run.rs - Interpreta os argumentos da linha de comando e encaminha cada operação ao módulo correspondente.
 src/main/run_workflow.rs - Carrega um workflow pelo nome, resolve o diretório atual e inicia sua execução, propagando erros.
 src/main/tests.rs - Valida a CLI, seu texto de uso e a resolução segura de nomes de fluxos em `flows/`.
 src/main/tests/accepts_no_arguments_without_starting_a_prompt.rs - Confirma que a execução sem argumentos termina sem erro, sem verificar se um prompt foi iniciado.
 src/main/tests/rejects_an_invalid_command.rs - Confirma que `run` rejeita comandos inválidos com uma mensagem de erro apropriada.
 src/main/tests/rejects_flow_paths_and_extensions.rs - Confirma que `workflow_path` rejeita caminhos vazios, sem extensão, com travessia de diretório ou aninhados.
 src/main/tests/resolves_flow_names_inside_the_flows_directory.rs - Verifica se nomes de fluxo são resolvidos para os arquivos `.yml` esperados em `flows/`.
-src/main/tests/usage_lists_explicit_flow_commands.rs - Verifica que usage() apresenta instruções para executar e resolver fluxos, sem descrever comandos interativos.
-src/main/usage.rs - Fornece o texto estático de ajuda do CLI `new-harness`, descrevendo criação de agentes e execução ou retomada de fluxos.
+src/main/tests/usage_lists_explicit_flow_commands.rs - Verifica que `usage()` documenta os comandos de fluxo e omite instruções sobre comandos interativos.
+src/main/usage.rs - Fornece o texto estático de ajuda e uso do CLI `new-harness` para criação de agentes e execução ou retomada de fluxos.
 src/main/workflow_path.rs - Valida o nome de um fluxo e constrói o caminho `flows/<nome>.yml`.
-src/rpc.rs - Organiza os módulos internos do transporte JSON-RPC e expõe serve como ponto de entrada externo.
+src/rpc.rs - Expõe `serve` como ponto de entrada do transporte JSON-RPC e organiza seus módulos internos.
 src/rpc/execute.rs - Executa uma invocação e retorna a saída padrão apenas se o processo terminar com sucesso.
-src/rpc/handle.rs - Valida requisições RPC para `agent.run` e converte a execução ou suas falhas em respostas apropriadas.
+src/rpc/handle.rs - Valida chamadas RPC `agent.run`, executa o agente solicitado e retorna o resultado ou um erro correspondente.
 src/rpc/run_agent.rs - Executa um agente em um fluxo silencioso de uma etapa e retorna a saída `result`.
 src/rpc/serve.rs - Processa requisições RPC em JSON pela entrada padrão e envia as respostas serializadas pela saída padrão.
 src/rpc/tests.rs - Reúne testes de RPC para requisições de agentes e rejeição de métodos desconhecidos.
