@@ -17,8 +17,7 @@ impl History {
         let history = Self {
             path,
             snapshot,
-            steps: Vec::new(),
-            labels: Vec::new(),
+            blocks: Vec::new(),
             _lock: lock,
         };
         history.save()?;

@@ -1,142 +1,67 @@
 # S.I.R.K. development contracts
 
-Compatibility requirements for changes to the corresponding subsystem. Read only
-the relevant sections alongside its module documentation from [TREE.md](docs/TREE.md).
-Development workflow and checks are in [AGENTS.md](AGENTS.md).
-
-- [Language, files, and permissions](#language-files-and-permissions)
-- [SDK transports](#sdk-transports)
-- [Tools and loops](#tools-and-loops)
-- [Conversations and durable history](#conversations-and-durable-history)
-- [Agent generation](#agent-generation)
+Compatibility requirements for the agent service and SDK transports. Contributor
+workflow and checks are in [AGENTS.md](AGENTS.md).
 
 ## Language, files, and permissions
 
-- Tool-owned code, comments, messages, tests, logs, and documentation are English.
-  Preserve user-authored instructions and responses in their original language.
-- Resolve agent definitions and history from the execution working directory,
-  not the workflow file's parent. Resume uses the saved directory.
-- Validate every referenced agent, including nested loop bodies, before running
-  any workflow step.
-- Model names are trimmed and lowercased when loading Markdown and snapshots.
+- Tool-owned code, comments, messages, tests, logs, and documentation are
+  English. Preserve user-authored instructions and responses in their original
+  language.
+- Resolve agent definitions and history from the execution directory. Agent
+  input is literal text; do not expand `{{ ... }}` or other template syntax.
+- Normalize model names when loading Markdown metadata. Child stdin is closed.
 - Keep Codex read-only with `approval_policy="never"` and
-  `--skip-git-repo-check`. Do not restore a `write` metadata option or automatic
-  write approvals. The orchestrator may write history and generated definitions.
-- Child stdin is closed; user interaction goes through `UserInput`.
+  `--skip-git-repo-check`. Do not add automatic write approvals or `write`
+  agent metadata. Only explicit agent permissions enable external edits or
+  deletion.
 
 ## SDK transports
 
-- Keep agent execution independent from transport framing. Stdio JSON-RPC and
-  HTTP must call the same silent agent execution service and preserve agent
-  permissions, history, and error text.
+- Keep agent execution independent from transport framing. JSON-RPC and HTTP
+  call the same service and preserve the same permissions and error text.
 - Preserve `sirk rpc` as line-delimited JSON-RPC 2.0 over stdin/stdout. It uses
-  the process working directory and continues to expose `agent.run`.
+  the process working directory and exposes `agent.run`.
 - `sirk http` binds to `127.0.0.1:8080` by default. An explicit address may
-  override the bind for container use; external exposure does not imply
-  authentication or TLS.
-- HTTP exposes `GET /health` and `POST /v1/agent/run`. The agent request includes
-  the execution directory as seen by the server, the agent ID, and its input.
+  override the bind; external exposure does not imply authentication or TLS.
+- HTTP exposes `GET /health` and `POST /v1/agent/run`. The request contains the
+  server-visible execution directory, agent ID, and literal input.
+- The Rust SDK connects to HTTP without starting a CLI process. Its default
+  endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
+  current directory. Custom endpoints preserve supplied server-visible paths.
 
-## Tools and loops
+## Agent tools
 
-- TREE must return a valid, pretty-printed JSON array with one path per line,
-  no descriptive header, and `[]` for no files. Do not use Rust debug formatting
-  as a substitute for JSON serialization.
-- Use Git to evaluate standard ignores. Tracked files survive standard ignores.
-  Evaluate `.treeignore` independently and subtract matches, including tracked
-  files. Its negations must not revive files excluded by standard Git rules.
-- Preserve path bytes in the low-level listing. JSON rendering rejects
-  non-UTF-8 paths rather than silently changing them.
-- GIT-STATUS-TREE includes deleted paths as well as existing status entries, so
-  workflows can remove derived artifacts. It still applies `.treeignore` to
-  every status entry.
-- READ returns exact UTF-8 contents, including empty text, without headers by
-  default. A READ workflow step with `enumerate: true` returns a `Line | Content`
-  presentation with one-based source-line prefixes; its version output still
-  hashes the exact unformatted contents. Agents with EDIT_TOOL permission receive
-  the same presentation for READ requests. READ accepts only regular files whose
-  resolved paths stay within the execution directory. TREE ignore rules are not
-  READ access rules.
-- WRITE is YAML-only and is never advertised to agents. It creates missing
-  parent directories and writes text to a regular path inside the execution
-  directory; existing files fail unless the workflow explicitly sets `force: true`.
-  With `skip: true`, existing regular files complete without modification; missing
-  files are created normally. Reject force and skip when both are true. Skipped
-  writes have an empty successful result and must not run again on resume.
-- DELETE removes only an existing regular file inside the execution directory.
-  It rejects directories, symlinks, and paths outside that directory. DELETE is
-  YAML-only unless the agent explicitly has `DELETE_TOOL: allow`; confirmation
-  is required unless YAML sets `force: true`. An agent may bypass confirmation
-  only with both `DELETE_TOOL: allow` and `DELETE_WITHOUT_CONFIRM: allow`.
-- EDIT is YAML-only and edits existing regular UTF-8 files. Operations are insert,
-  delete, replace, prepend and append. Line coordinates are 1-based, ranges are
-  inclusive, and inserted text is exact. Coordinates accept numeric YAML values or
-  templates that render to positive integers. Coordinate operations require a
-  SHA-256 version from READ's optional version-output; append/prepend may omit it.
-- Append/prepend create absent targets in existing parent directories. Persist
-  absence separately from empty content, publish creation without overwriting a
-  concurrently created file, and never recreate a deleted prepared-update target.
-- Keep READ's unformatted text exact when emitting version-output. Its digest
-  follows ordinary output scope rules and is reconstructed from saved text on
-  resume, including enumerated READ results.
-- Persist EDIT's request and prepared original content in its INPUT block before
-  mutation. Resume distinguishes original, already-applied and conflicting file
-  contents. Validate prepared records and completed diffs before pending work.
-  Keep ANSI presentation out of saved diffs and preserve existing v2 markers.
-- CUSTOM-TOOL is YAML-only. Resolve `custom-tool: name` to `tools/name.sh`,
-  require a string-array input, pass each item as one positional argument, and
-  use exact UTF-8 stdout as the result. Keep script execution in `BashService`.
-- Recognize ordinary agent requests only as standalone `TREE` from agents with
-  `TREE_TOOL: allow`, or one-line `READ: <path>` responses. DELETE is an explicit external tool with separate,
-  validated agent permissions; use the same deletion implementation for YAML
-  steps and that external tool.
-- LOOP is YAML-only. Do not register it in the agent tool dispatcher or
-  advertise it in model prompts.
-- IF is YAML-only, with is_true/is_false step lists and a strict true/false
-  condition (surrounding whitespace accepted). Validate both branches, including
-  agents, before execution. IF has no aggregate output and shares its enclosing
-  scope; only names available on both paths may be referenced afterward.
-- Persist IF's resolved condition in INPUT and include true/false in child labels.
-  Resume the saved branch, restore its outputs and reject opposite-branch records
-  or later records after pending work. Recurse through IF as well as LOOP when
-  validating agents and history. Preserve legacy workflows and v2 logs.
-- LOOP accepts string arrays, runs `iter` in order, and has no aggregate output.
-  Each iteration gets fresh locals and read-only `loop.item`. Inside a loop,
-  `output: content` assigns `loop.content`; outside it assigns
-  `outputs.content`. Preserve compatibility with `{{ loop.content }}` output
-  targets in older definitions.
-- Nested loops restore the parent scope. Local assignments must not leak into
-  another iteration or global outputs. Outer outputs remain readable.
-- Inserted content is never recursively expanded as a template.
+- TREE returns a pretty-printed JSON array of relative paths and `[]` for no
+  files. Git ignores apply to untracked files; `.treeignore` independently
+  removes matching paths, including tracked paths. Preserve path bytes during
+  listing and reject non-UTF-8 paths at JSON rendering.
+- READ returns exact UTF-8 contents, including empty text. Agents with
+  `EDIT_TOOL: allow` receive line-numbered READ results. READ only accepts
+  regular files inside the execution directory; `.readignore` controls access.
+- Recognize ordinary requests only as standalone `TREE` from agents with
+  `TREE_TOOL: allow`, or one-line `READ: <path>` responses.
+- EDIT and DELETE require their explicit agent permissions. Persist an EDIT
+  preparation before mutation, protect against intervening file changes, and
+  return plain diffs without ANSI formatting. DELETE removes one regular file
+  inside the execution directory; a noninteractive request requires both
+  `DELETE_TOOL: allow` and `DELETE_WITHOUT_CONFIRM: allow` with `force: true`.
+- Do not expose host-side SDK filesystem or Git helpers as agent tools.
 
-## Conversations and durable history
+## Conversations and history
 
-- Keep the transcript as the sole execution-state document. Save configuration
-  once and reconstruct explicit context; do not silently adopt native provider
-  session resumption.
-- Keep body markers minimal: `==> ASK`, `==> INPUT`, `<== OUTPUT`,
-  `==> TREE`, and `==> READ`. Preserve escaping, exact content, and hierarchical
-  LOOP labels. Do not reintroduce per-turn numbering or repeated agent labels.
-- Save input before invoking a tool/model. Save only complete successful results
-  using atomic replacement, file/directory synchronization, and exclusive locks.
-- Resume must validate all existing records before executing pending work.
-  Reconstruct local scopes, reuse saved tool results, and reject later records
-  after a pending step.
-- Failed calls remain pending; empty agent responses fail, but empty READ
-  results are valid. Preserve the possibility of retry after a call completed
-  but its result was not saved.
-- Preserve existing transcripts. Legacy non-v2 logs are not resumable; avoid
-  breaking supported v2 logs when adding features.
-- The CLI prints no history banner or success footer. The no-argument command
-  loop remains available; it is not a general persistent chat UI.
+- Reconstruct explicit conversation context for each provider turn; do not
+  silently adopt provider session resumption.
+- Save input before invoking the provider and complete tool results after
+  execution. Use atomic replacement, file and directory synchronization, and
+  exclusive locks for logs.
+- Failed calls leave a diagnostic pending record. Empty agent responses fail;
+  empty READ results are valid. Logs are not resumed through the CLI.
 
 ## Agent generation
 
-- `--newAgent` / `--new-agent` is standalone, not exposed to models or YAML.
+- `--newAgent` / `--new-agent` is standalone and is not exposed to models.
 - Ask separately for the created agent's adapter/model and the generator's
-  adapter/model. Invoke the generator with its configuration and save the
-  target agent's configuration.
-- Generate the full definition from the description, validate it before
-  writing, and keep canonical target metadata. Reject changed metadata,
-  invalid definitions, and failed processes.
-- Do not overwrite existing agents. Retain model lowercase normalization.
+  adapter/model. Validate the complete generated definition before writing.
+- Reject changed metadata, invalid definitions, failed processes, and
+  overwrites. Retain model lowercase normalization.

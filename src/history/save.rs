@@ -8,16 +8,12 @@ impl History {
     pub fn save(&self) -> Result<(), String> {
         let metadata = serde_yaml::to_string(&self.snapshot).map_err(|e| e.to_string())?;
         let mut source = format!("{TITLE}{metadata}---\n");
-        for (index, blocks) in self.steps.iter().enumerate() {
-            let label = self.labels.get(index).cloned().unwrap_or_else(|| {
-                format!(
-                    "Step {} — {}",
-                    index + 1,
-                    self.snapshot.workflow.steps[index].name()
-                )
-            });
-            source.push_str(&format!("{SEPARATOR}\n{label}\n\n"));
-            for block in blocks {
+        if !self.blocks.is_empty() {
+            source.push_str(&format!(
+                "{SEPARATOR}\nStep 1 — {}\n\n",
+                self.snapshot.agent.id
+            ));
+            for block in &self.blocks {
                 source.push_str(block.marker());
                 source.push('\n');
                 for line in block.text().split('\n') {

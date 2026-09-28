@@ -26,7 +26,7 @@ impl Request {
         if !matches!(self.operation, Operation::Append | Operation::Prepend)
             && self.version.is_none()
         {
-            return Err("EDIT by line requires version from a previous READ version-output".into());
+            return Err("EDIT by line requires a SHA-256 version of the current file".into());
         }
         if self
             .version

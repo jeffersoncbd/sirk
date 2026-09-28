@@ -9,170 +9,72 @@ support crop research and food supplies around the world. Their legacy lives on
 in the effort to feed billions of people worldwide.
 [Read the account at the Science History Institute](https://www.sciencehistory.org/stories/magazine/the-tragedy-of-the-worlds-first-seed-bank/).
 
-Run coding agents behind language-native workflows, with agent instructions in
-Markdown and an editable history. Legacy YAML workflows remain supported during
-the SDK migration. Supports the Codex, OpenCode, Ollama, Ollama Web, and
-OpenRouter adapters; Claude Code is not implemented.
+S.I.R.K. runs Markdown-defined coding agents through HTTP or line-delimited
+JSON-RPC. Language SDKs own workflow control, filesystem access, Git, and user
+interaction. Supported adapters are Codex, OpenCode, Ollama, Ollama Web, and
+OpenRouter. Claude Code is not implemented.
 
 ## Setup
 
-Build from the project root in the supplied VS Code Dev Container:
+Build on the host from the project root:
 
 ```bash
 cargo build
-```
-
-On the host, from the project root:
-
-```bash
 cp target/debug/sirk ./sirk
 ./sirk --help
 ```
 
-Repeat the copy after rebuilding. The host must support the binary's architecture
-and system libraries. Install and authenticate the selected CLI where you run
-the binary. The `openrouter` adapter uses `curl`, an `OPENROUTER_API_KEY`, and
-an explicit model slug such as `~openai/gpt-sol-latest`; configure the key in the
-execution directory's `.env` file or environment. `OPENROUTER_URL` may override
-its API endpoint.
-Bash is required; TREE also requires Git and a working tree.
+Repeat the copy after rebuilding. Install and authenticate the selected CLI
+where the service runs. OpenRouter uses `curl`, `OPENROUTER_API_KEY`, and an
+explicit model slug such as `~openai/gpt-sol-latest`; set the key in the
+execution directory's `.env` file or environment. `OPENROUTER_URL` can override
+its endpoint. Bash is required; TREE also requires Git and a working tree.
 
-## Language SDK transports
+## Run the service and SDK
 
-Language SDKs start `sirk rpc` in the project directory and exchange one
-JSON-RPC 2.0 message per line over stdin/stdout. The public protocol currently
-exposes only `agent.run`; workflow control, filesystem access, Git, and user
-interaction belong to the host language. Agent permissions still control the
-CLI's internal READ, TREE, EDIT, and DELETE operations.
+Start the HTTP service with `./sirk http` (default `127.0.0.1:8080`). An
+explicit address such as `0.0.0.0:8080` allows connections from another host
+or container. HTTP provides `GET /health` and `POST /v1/agent/run`. The POST
+body supplies the server-visible project `directory`, `agent`, and `input`.
+HTTP has no authentication, so expose it only on trusted networks.
 
-For a persistent or containerized server, start the independent HTTP transport:
-
-```bash
-sirk http                    # 127.0.0.1:8080
-sirk http 0.0.0.0:8080       # explicit external/container bind
-```
-
-It provides `GET /health` and `POST /v1/agent/run`. The POST body contains the
-server-visible project `directory`, `agent`, and `input`. HTTP has no
-authentication yet, so expose it only on trusted networks. Both transports use
-the same agent execution service and preserve the existing permission model.
-
-The standalone [Rust SDK](sdk/rust/README.md) has no source or package dependency
-on the CLI:
+The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:
 
 ```rust
 use sirk_sdk::Sirk;
 
-let mut sirk = Sirk::start("./sirk", ".")?;
+let sirk = Sirk::connect()?;
 let explanation = sirk.agent("code-explainer", "Explain this module")?;
 ```
 
-This repository's first SDK workflow is [flows/documentation.rs](flows/documentation.rs).
-It owns its filesystem and Git operations and can be run with:
+For existing clients, `./sirk rpc` serves `agent.run` as one JSON-RPC 2.0
+message per line on stdin/stdout. Both transports use the same agent service
+and permission checks. Each call saves a conversation log under `history/`.
+There is no CLI command to resume a log.
 
-```bash
-cargo run --manifest-path flows/documentation/Cargo.toml
-```
-
-Enable the repository's documentation pre-commit hook once per clone:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-The hook runs `./sirk run documentation` before every commit.
-It requires the root executable and an authenticated Codex installation, and a
-workflow failure cancels the commit. Generated documentation remains available
-in the working tree for a subsequent commit.
-
-## First workflow
-
-Create `.agents/planner.md`:
+Create an agent in `.agents/<name>.md`:
 
 ```markdown
 ---
 adapter: codex
 ---
 
-Produce a concise implementation plan for the user's request.
+Explain the requested code clearly and concisely.
 ```
 
-Create `flows/workflow.yml`:
+`./sirk --new-agent` (alias `--newAgent`) can generate a definition
+interactively. It asks separately for the created agent's and generator's
+adapter and model. Omit `model` in a hand-written definition to use the
+adapter's default.
 
-```yaml
-version: 1
-steps:
-  - agent: planner
-    input: "Plan a command-line task tracker."
-    output: plan
-```
+The repository's Rust documentation workflow is
+[flows/documentation.rs](flows/documentation.rs). Run it with
+`cargo run --bin documentation` while the HTTP service is running. To enable
+the documentation pre-commit hook, run `git config core.hooksPath .githooks`.
+The hook requires a running service and authenticated Codex; a failure cancels
+the commit and leaves generated files in the working tree.
 
-Run from the project directory containing `.agents/` and `flows/`:
-
-```bash
-./sirk run workflow
-./sirk resume history/run-<id>.log
-./sirk --new-agent
-```
-
-`--new-agent` (also `--newAgent`) generates an agent interactively without
-replacing existing files. It asks separately for the created agent's and the
-generator's adapter/model. Optional agent metadata: `model` and an initial `ask`
-question. Omit `model` to use the harness default.
-
-Run `./sirk --help` to show the available commands. Flow names resolve
-to `flows/<flow-name>.yml`.
-User answers are single-line; `/cancel` or EOF interrupts a workflow.
-Non-interactive commands exit with 0 on success and 2 on failure.
-
-## Workflow basics
-
-Steps run sequentially. Each specifies `agent`, `tool`, or `custom-tool`.
-Use `output: name` and `{{ outputs.name }}` to pass results to later steps.
-Inside LOOP, use `{{ loop.item }}` and `{{ loop.name }}`; locals belong to one
-iteration. Templates do not expand inserted content again.
-
-| Tool | Purpose |
-| --- | --- |
-| TREE | List files as JSON, respecting Git ignores and `.treeignore`. |
-| GIT-STATUS-TREE | List changed, untracked, and deleted paths as JSON, filtered by `.treeignore`. |
-| READ | Read UTF-8 text; `.readignore` blocks matching paths with `AccessDenied`; `enumerate: true` adds line numbers and `version-output` supports EDIT. |
-| WRITE | Create files and parent directories; `force` replaces, `skip` preserves existing files. |
-| DELETE | Delete one regular file; confirmation is required unless `force: true` is set. |
-| EDIT | Insert, delete, replace, prepend, or append text; line edits require a READ version. |
-| ASK | Ask the user for a nonempty answer; `input` is the question and `output` can pass on the answer. |
-| AWAIT | Pause and wait for the user to press Enter before continuing. |
-| CUSTOM-TOOL | Run `tools/<name>.sh` with a string array of arguments via `custom-tool: name`. |
-| LOOP | Run `iter` steps for each string in an array. |
-| IF | Select `is_true` or `is_false` steps from a strict boolean condition. |
-
-Agents run read-only and can request `READ: <path>` or `ASK: <question>`. An
-agent may request `TREE` only with explicit `TREE_TOOL: allow` metadata.
-An agent with explicit `DELETE_TOOL: allow` metadata may also request deletion.
-Other tools are workflow-only. File tools operate inside the execution directory.
-Agent definitions and history also resolve there, regardless of the YAML's path.
-When answering an `ASK`, the user may instead enter a standalone `READ: <path>`
-or `TREE`; its read-only result is returned to the agent before it continues.
-
-Use `.readignore` to prevent READ from exposing sensitive files. It accepts one
-relative pattern per line; blank lines and `#` comments are ignored. A pattern
-such as `.env` blocks that filename at any depth, while `secrets/` blocks a
-directory and `*.pem` blocks matching filenames. A blocked request returns
-`AccessDenied`.
-
-Each run saves `history/run-<id>.log`. Resume uses its saved directory and
-configuration, reuses completed results, and retries pending work. To regenerate
-an agent response, stop the run, remove its `<== OUTPUT` block and everything
-after it, then resume. Consult the recovery reference before editing tool or
-branch records. Never edit a running transcript.
-
-## Documentation
-
-- [Workflow reference](REFERENCE.md): full YAML examples, tool options,
-  agent generation, history editing, and limitations.
-- [Documentation index](docs/TREE.md): trusted map of source files and their
-  module documentation; consult individual documents as needed.
-- [Development instructions](AGENTS.md): contributor workflow and checks.
-
-Execution is sequential, without automatic retries or timeouts. JSON harness
-streams (`json: true`) are not supported.
+See the [agent reference](REFERENCE.md) for permissions and tool requests, and
+the [development instructions](AGENTS.md) for contributor checks. Agent calls
+have no automatic retries or timeouts. JSON harness streams (`json: true`) are
+not supported.

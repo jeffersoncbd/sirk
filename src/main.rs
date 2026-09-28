@@ -4,18 +4,12 @@ mod create_agent;
 mod http;
 #[path = "main/print_usage.rs"]
 mod print_usage;
-#[path = "main/resume.rs"]
-mod resume;
 #[path = "main/rpc.rs"]
 mod rpc;
 #[path = "main/run.rs"]
 mod run;
-#[path = "main/run_workflow.rs"]
-mod run_workflow;
 #[path = "main/usage.rs"]
 mod usage;
-#[path = "main/workflow_path.rs"]
-mod workflow_path;
 
 use std::{env, process::ExitCode};
 

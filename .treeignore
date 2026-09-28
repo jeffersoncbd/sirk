@@ -1,16 +1,12 @@
 /.agents/
-/.devcontainer/
 /.githooks/
 /docs/
-/examples/
 /flows/
-/tools/
 
 /*.md
-/*.yml
+/build.sh
 
 .gitignore
 .readignore
 .treeignore
-/build.sh
 Cargo.lock

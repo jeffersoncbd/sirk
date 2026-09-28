@@ -1,4 +1,4 @@
-use crate::{agents::Agent, workflow::Workflow};
+use crate::agents::Agent;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -6,8 +6,7 @@ use std::path::PathBuf;
 #[serde(deny_unknown_fields)]
 pub struct Snapshot {
     pub directory: PathBuf,
-    pub workflow: Workflow,
-    pub agents: Vec<Agent>,
+    pub agent: Agent,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
