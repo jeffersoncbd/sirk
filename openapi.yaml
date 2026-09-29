@@ -71,8 +71,16 @@ paths:
   /v1/agent/run:
     post:
       summary: Run a named agent
-      description: Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. The result is the agent's final response after any enabled tool requests have been handled.
+      description: Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. The result is the agent's final response after any enabled tool requests have been handled. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory; the complete prompt and each model response are appended to that flow's transcript.
       operationId: runAgent
+      parameters:
+      - name: X-Sirk-Flow-Id
+        in: header
+        description: Required identifier returned by POST /v1/flows for this directory.
+        required: true
+        schema:
+          type: string
+        example: flow-18f-1234-0
       requestBody:
         description: Agent execution request.
         content:
@@ -94,13 +102,13 @@ paths:
               example:
                 result: The module exposes the public S.I.R.K. API.
         '400':
-          description: The request body is invalid, incomplete, or contains an unknown field.
+          description: The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: Invalid request
+                error: Missing or invalid X-Sirk-Flow-Id header
         '405':
           description: The endpoint does not accept the HTTP method used.
           content:
@@ -117,11 +125,58 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 error: An operation-specific error message.
+  /v1/flows:
+    post:
+      summary: Create a flow transcript
+      description: Creates one empty transcript in `directory` and returns its identifier. Include the returned value as the required `X-Sirk-Flow-Id` header on every later agent, TREE, and Git request for this execution. Agent calls append each complete prompt delivered to the model and each complete model response to this single transcript. The transcript contains no agent metadata, resumable state, or tool-only records.
+      operationId: createFlow
+      requestBody:
+        description: Server-visible directory where the flow transcript is stored.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectoryRequest'
+            example:
+              directory: /workspace/project
+        required: true
+      responses:
+        '201':
+          description: The flow transcript was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResponse'
+              example:
+                flowId: flow-18f-1234-0
+        '400':
+          description: The request body is invalid, incomplete, or contains an unknown field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid request
+        '500':
+          description: The flow transcript could not be created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: An operation-specific error message.
   /v1/git/add:
     post:
       summary: Stage all changes below a directory
-      description: Runs Git add for every change below `directory`, including deletions. The requested directory must exist and be within a Git working tree visible to the server.
+      description: Runs Git add for every change below `directory`, including deletions. The requested directory must exist and be within a Git working tree visible to the server. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory.
       operationId: gitAdd
+      parameters:
+      - name: X-Sirk-Flow-Id
+        in: header
+        description: Required identifier returned by POST /v1/flows for this directory.
+        required: true
+        schema:
+          type: string
+        example: flow-18f-1234-0
       requestBody:
         description: Server-visible Git directory.
         content:
@@ -141,13 +196,13 @@ paths:
               example:
                 status: ok
         '400':
-          description: The request body is invalid, incomplete, or contains an unknown field.
+          description: The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: Invalid request
+                error: Missing or invalid X-Sirk-Flow-Id header
         '405':
           description: The endpoint does not accept the HTTP method used.
           content:
@@ -167,8 +222,16 @@ paths:
   /v1/git/status:
     post:
       summary: List changed paths below a directory
-      description: Returns sorted, unique relative UTF-8 paths for modified, untracked, and deleted regular files in the Git project below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server.
+      description: Returns sorted, unique relative UTF-8 paths for modified, untracked, and deleted regular files in the Git project below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory.
       operationId: gitStatus
+      parameters:
+      - name: X-Sirk-Flow-Id
+        in: header
+        description: Required identifier returned by POST /v1/flows for this directory.
+        required: true
+        schema:
+          type: string
+        example: flow-18f-1234-0
       requestBody:
         description: Server-visible Git directory.
         content:
@@ -190,13 +253,13 @@ paths:
                 - src/lib.rs
                 - README.md
         '400':
-          description: The request body is invalid, incomplete, or contains an unknown field.
+          description: The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: Invalid request
+                error: Missing or invalid X-Sirk-Flow-Id header
         '405':
           description: The endpoint does not accept the HTTP method used.
           content:
@@ -216,8 +279,16 @@ paths:
   /v1/tree:
     post:
       summary: List files below a directory
-      description: Returns sorted, unique relative UTF-8 paths for tracked and non-ignored untracked files below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server.
+      description: Returns sorted, unique relative UTF-8 paths for tracked and non-ignored untracked files below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory.
       operationId: tree
+      parameters:
+      - name: X-Sirk-Flow-Id
+        in: header
+        description: Required identifier returned by POST /v1/flows for this directory.
+        required: true
+        schema:
+          type: string
+        example: flow-18f-1234-0
       requestBody:
         description: Server-visible Git directory.
         content:
@@ -239,13 +310,13 @@ paths:
                 - README.md
                 - src/lib.rs
         '400':
-          description: The request body is invalid, incomplete, or contains an unknown field.
+          description: The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                error: Invalid request
+                error: Missing or invalid X-Sirk-Flow-Id header
         '405':
           description: The endpoint does not accept the HTTP method used.
           content:
@@ -303,7 +374,7 @@ components:
       properties:
         directory:
           type: string
-          description: Server-visible directory within a Git working tree.
+          description: Server-visible execution directory.
           examples:
           - /workspace/project
       additionalProperties: false
@@ -315,6 +386,15 @@ components:
         error:
           type: string
           description: Human-readable failure message.
+      additionalProperties: false
+    FlowResponse:
+      type: object
+      required:
+      - flowId
+      properties:
+        flowId:
+          type: string
+          description: Identifier required in X-Sirk-Flow-Id for the flow's later requests.
       additionalProperties: false
     GitStatusResponse:
       type: object

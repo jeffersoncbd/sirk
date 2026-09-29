@@ -35,12 +35,16 @@ its endpoint. Bash is required; TREE also requires Git and a working tree.
 Start the HTTP service with `./sirk http` (default `127.0.0.1:8080`). An
 explicit address such as `0.0.0.0:8080` allows connections from another host
 or container. HTTP provides `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
-`POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
-`POST /v1/git/add`.
+`POST /v1/flows`, `POST /v1/agent/run`, `POST /v1/tree`,
+`POST /v1/git/status`, and `POST /v1/git/add`.
 `/openapi.yaml` returns the API specification as plain text; open `/swagger`
 in a browser to view it in Swagger UI. TREE and Git requests supply the
 server-visible project `directory`; agent requests also supply `agent` and
-`input`. HTTP has no authentication, so expose it only on trusted networks.
+`input`. Create a flow with `POST /v1/flows` before making agent, TREE, or Git
+requests, then send its returned `flowId` in the `X-Sirk-Flow-Id` header. One
+flow creates one transcript under `history/`, recording complete model prompts
+and responses for all agent calls in that execution. HTTP has no authentication,
+so expose it only on trusted networks.
 
 The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:
 
@@ -51,8 +55,9 @@ let sirk = Sirk::connect()?;
 let explanation = sirk.agent("code-explainer", "Explain this module")?;
 ```
 
-Each call saves a conversation log under `history/`. There is no CLI command
-to resume a log.
+The SDK must create a flow before its first agent, TREE, or Git request and
+send the returned ID in `X-Sirk-Flow-Id`. The flow transcript is saved under
+`history/`; there is no resume operation.
 
 Create an agent in `.agents/<name>.md`:
 

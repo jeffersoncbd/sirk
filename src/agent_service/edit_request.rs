@@ -57,6 +57,5 @@ pub(super) fn edit_request(history: &mut History, payload: &str) -> Result<Strin
     history.blocks.push(Block::Input(
         serde_json::to_string(&pending).map_err(|error| error.to_string())?,
     ));
-    history.save()?;
     pending.commit(&history.snapshot.directory)
 }

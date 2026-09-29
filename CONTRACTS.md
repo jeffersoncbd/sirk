@@ -9,8 +9,9 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   request the work. Translate user-supplied text before placing it in source
   code, identifiers, tests, documentation, messages, errors, logs, agent
   definitions, or generated files.
-- Resolve agent definitions and history from the execution directory. Agent
-  input is literal text; do not expand `{{ ... }}` or other template syntax.
+- Resolve agent definitions and flow transcripts from the execution directory.
+  Agent input is literal text; do not expand `{{ ... }}` or other template
+  syntax.
 - Normalize model names when loading Markdown metadata. Child stdin is closed.
 - Keep Codex read-only with `approval_policy="never"` and
   `--skip-git-repo-check`. Do not add automatic write approvals or `write`
@@ -27,13 +28,15 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   controllers, and DTOs under `src/http/schemas/`. The versioned YAML file must
   exactly match the generated document and must not be edited by hand.
 - HTTP exposes `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
-  `POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
-  `POST /v1/git/add`.
+  `POST /v1/flows`, `POST /v1/agent/run`, `POST /v1/tree`,
+  `POST /v1/git/status`, and `POST /v1/git/add`.
   `/openapi.yaml` returns the embedded OpenAPI document as plain text.
   `/swagger` returns an HTML Swagger UI configured to load that document.
-  Agent requests contain the server-visible execution directory, agent ID,
-  and literal input. TREE and Git requests contain only the server-visible
-  execution directory.
+  Creating a flow requires the server-visible execution directory and returns
+  `flowId`. Agent, TREE, and Git requests require `X-Sirk-Flow-Id`; it must
+  identify an existing flow for the supplied directory. Agent requests also
+  contain an agent ID and literal input. TREE and Git requests otherwise
+  contain only the server-visible execution directory.
 - The Rust SDK connects to HTTP without starting a CLI process. Its default
   endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
   current directory. Custom endpoints preserve supplied server-visible paths.
@@ -65,11 +68,12 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
 
 - Reconstruct explicit conversation context for each provider turn; do not
   silently adopt provider session resumption.
-- Save input before invoking the provider and complete tool results after
-  execution. Use atomic replacement, file and directory synchronization, and
-  exclusive locks for logs.
-- Failed calls leave a diagnostic pending record. Empty agent responses fail;
-  empty READ results are valid. Logs are not resumed through the CLI.
+- A flow creates exactly one transcript. Before each provider call, append the
+  complete rendered prompt; after it, append the complete normalized model
+  response. Do not record agent metadata, resumable state, or tool-only
+  entries. Use file and directory synchronization plus exclusive locks.
+- Empty agent responses fail; empty READ results are valid. Flow transcripts
+  are not resumed through the CLI.
 
 ## Agent generation
 

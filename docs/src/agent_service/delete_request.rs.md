@@ -1,9 +1,9 @@
 ## Summary
-Processes a file-deletion request, enforcing permission for forced execution and preventing repeats.
+Validates a file-deletion request, prevents repeats, and performs authorized forced deletion.
 
 ## Behavior
-Parses the payload as JSON and rejects unknown fields. If `force` is not authorized, returns a failure message; if the same request was already completed, reports that no changes were applied. Otherwise, records and saves the request in history. Without `force`, returns an error because user input is unavailable; with `force`, attempts to delete the file and returns empty success or a failure message.
+Parses JSON with only `path` and optional `force` fields. Rejects unauthorized forced requests and reports requests already completed; otherwise records the payload in history. Non-forced requests return an error because user input is unavailable. Forced requests attempt deletion and return an empty success string or a failure message.
 
 ## Imports
-- `crate::history::{Block, History}`: Accesses and updates the history.
-- `serde::Deserialize`: Allows parsing the JSON request.
+- `crate::history::{Block, History}`: Reads settings and tracks request history.
+- `serde::Deserialize`: Deserializes the request payload.

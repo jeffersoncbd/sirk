@@ -1,8 +1,8 @@
 ## Summary
-`DirectoryRequest` represents a request containing a server-visible directory path.
+`DirectoryRequest` carries a server-visible directory path supplied in a request.
 
 ## Behavior
-The request deserializes a `directory` field into a `PathBuf`, rejects unknown fields, and exposes the path as a string in the OpenAPI schema.
+Deserialization reads the `directory` field into a `PathBuf` and rejects unknown fields. Its schema presents the path as a string with an example.
 
 ## Imports
 - `serde`: Provides request deserialization.

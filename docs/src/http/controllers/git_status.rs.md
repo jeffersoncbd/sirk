@@ -1,12 +1,12 @@
 ## Summary
-`git_status` returns changed Git paths for a requested directory.
+`git_status` returns changed Git paths for a directory after validating its flow ID.
 
 ## Behavior
-Invalid JSON requests receive `400 Bad Request`. Valid requests run the Git status lookup on a blocking task; success returns the paths, while lookup or task failures return `500 Internal Server Error` with an error message.
+Invalid JSON or flow validation returns `400`; flow ID extraction may return an error response. The Git lookup runs on a blocking task. Success returns the paths; lookup or task failures return `500` with an error message.
 
 ## Imports
 - `JsonResponse`: Wraps JSON response bodies
-- `DirectoryRequest`: Provides the requested directory
+- `DirectoryRequest`: Supplies the requested directory
 - `ErrorResponse`, `GitStatusResponse`: Define response bodies
-- `axum`: Provides JSON extraction and HTTP responses
-- `tokio::task`: Runs the blocking Git lookup
+- `axum`: Extracts JSON and builds HTTP responses
+- `tokio::task`: Runs the Git lookup on a blocking task

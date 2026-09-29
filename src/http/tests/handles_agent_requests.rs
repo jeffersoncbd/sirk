@@ -1,4 +1,4 @@
-use super::request::request;
+use super::{flow::flow, request::request};
 use axum::body::to_bytes;
 use serde_json::Value;
 use std::{
@@ -37,10 +37,15 @@ async fn handles_agent_requests() {
         "input": "Explain this file"
     })
     .to_string();
-    let response = request("POST", "/v1/agent/run", body).await;
+    let flow_id = flow(&directory).await;
+    let response = request("POST", "/v1/agent/run", body, Some(&flow_id)).await;
     assert_eq!(response.status(), 200);
     let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let response: Value = serde_json::from_slice(&response).unwrap();
-    assert_eq!(response["result"], "served over HTTP");
+    assert_eq!(response["result"], "served over HTTP", "{response}");
+    let transcript =
+        fs::read_to_string(directory.join("history").join(format!("{flow_id}.log"))).unwrap();
+    assert!(transcript.contains("==> INPUT\nExplain code."));
+    assert!(transcript.contains("<== OUTPUT\nserved over HTTP"));
     fs::remove_dir_all(directory).unwrap();
 }

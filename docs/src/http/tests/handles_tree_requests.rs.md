@@ -1,11 +1,11 @@
 ## Summary
-`handles_tree_requests` tests that `POST /v1/tree` returns visible Git paths while excluding files listed in `.treeignore`.
+`handles_tree_requests` verifies that `POST /v1/tree` returns repository paths while excluding files named in `.treeignore`.
 
 ## Behavior
-The test creates a temporary Git repository with visible and ignored files, sends a tree request, and asserts a successful response containing only `.treeignore` and `visible.rs`. It removes the temporary directory afterward.
+The test creates a temporary Git repository with one visible file and one ignored file, sends a tree request, and checks for HTTP 200 and the expected paths. It removes the temporary directory afterward.
 
 ## Imports
-- `super::request::request`: Sends the HTTP request.
-- `crate::services::{BashService, Invocation}`: Initializes the test Git repository.
+- `super::{flow, request}`: Creates a flow and sends the HTTP request.
+- `crate::services::{BashService, Invocation}`: Initializes the temporary Git repository.
 - `axum::body::to_bytes`: Reads the response body.
 - `std::{fs, io, time}`: Creates files, captures command output, and names the temporary directory.

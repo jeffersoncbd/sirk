@@ -1,18 +1,14 @@
-use super::{History, Snapshot};
-use std::{
-    fs,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use super::{History, Snapshot, valid_flow_id};
 
 impl History {
-    pub fn create(snapshot: Snapshot) -> Result<Self, String> {
-        let directory = snapshot.directory.join("history");
-        fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
-        let time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| e.to_string())?
-            .as_nanos();
-        let path = directory.join(format!("run-{time}-{}.log", std::process::id()));
+    pub fn create(snapshot: Snapshot, flow_id: &str) -> Result<Self, String> {
+        if !valid_flow_id(flow_id) {
+            return Err("invalid flow ID".to_owned());
+        }
+        let path = Self::flow_path(&snapshot.directory, flow_id)?;
+        if !path.is_file() {
+            return Err(format!("unknown flow ID `{flow_id}`"));
+        }
         let lock = Self::lock(&path)?;
         let history = Self {
             path,
@@ -20,7 +16,6 @@ impl History {
             blocks: Vec::new(),
             _lock: lock,
         };
-        history.save()?;
         Ok(history)
     }
 }

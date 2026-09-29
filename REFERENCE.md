@@ -6,12 +6,29 @@ through as literal text, including `{{ ... }}` sequences.
 
 ## HTTP
 
-`sirk http [address]` binds to `127.0.0.1:8080` by default. It provides
-`GET /health` and `POST /v1/agent/run`:
+`sirk http [address]` binds to `127.0.0.1:8080` by default. Create a flow
+before making execution requests:
+
+```http
+POST /v1/flows
+Content-Type: application/json
+
+{"directory":"/workspace/project"}
+```
+
+The server returns HTTP 201 with `{"flowId":"flow-..."}` and creates an
+empty transcript under the directory's `history/` folder. Every later
+`POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
+`POST /v1/git/add` request must include that value in `X-Sirk-Flow-Id`. The
+flow ID is valid only for the directory used to create it. Health, OpenAPI,
+and Swagger requests do not use a flow ID.
+
+`POST /v1/agent/run` then uses the flow header:
 
 ```http
 POST /v1/agent/run
 Content-Type: application/json
+X-Sirk-Flow-Id: flow-...
 
 {"directory":"/workspace/project","agent":"code-explainer","input":"Explain this module"}
 ```
@@ -26,14 +43,15 @@ calling process's current directory. `Sirk::connect_to(endpoint, directory)`
 selects another endpoint and server-visible directory. The SDK owns
 confirmation helpers; agent tool requests remain in S.I.R.K.
 
-`POST /v1/tree` accepts `{"directory":"/workspace/project"}` and returns
+`POST /v1/tree` accepts `{"directory":"/workspace/project"}` and the required
+`X-Sirk-Flow-Id` header, then returns
 `{"paths":["src/lib.rs"]}`. It lists tracked and non-ignored untracked regular
 files relative to the requested directory, respecting `.treeignore`. TREE is
 implemented by S.I.R.K.; clients use this endpoint instead of a filesystem
-helper. `POST /v1/git/status` accepts the same body and
+helper. `POST /v1/git/status` accepts the same body and header and
 returns `{"paths":["src/lib.rs"]}`. It lists modified, untracked, and deleted
 regular files relative to the requested directory, respecting `.treeignore`.
-`POST /v1/git/add` accepts the same body, stages all changes below that
+`POST /v1/git/add` accepts the same body and header, stages all changes below that
 directory with Git, and returns `{"status":"ok"}`. These endpoints are for
 SDK workflows and are not agent tools.
 
@@ -114,9 +132,9 @@ call's log.
 
 ## Conversation logs
 
-Each agent call writes `history/run-<id>.log` under its execution directory.
-The log records the loaded agent configuration and complete conversation using
-`==> INPUT`, `<== OUTPUT`, `==> TREE`, `==> READ`, `==> EDIT`, and `==> DELETE`
-markers. Input is saved before a provider call, and successful results are
-saved after completion. Logs use atomic replacement and an exclusive lock.
-They are diagnostic records; the CLI has no resume command.
+Each flow writes one `history/<flowId>.log` transcript under its execution
+directory. Each provider call appends `==> INPUT` followed by the complete
+prompt delivered to the model and `<== OUTPUT` followed by the complete
+normalized model response. Tool-only records, agent metadata, and resumable
+state are omitted. The transcript is locked while an agent call writes to it.
+It is a diagnostic record; the CLI has no resume command.

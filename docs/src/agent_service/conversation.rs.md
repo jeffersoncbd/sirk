@@ -1,12 +1,12 @@
 ## Summary
-Runs an agent conversation, handling tool requests until it receives a final response.
+Runs an agent conversation until it returns a final response or encounters an error.
 
 ## Behavior
-Saves the input and each response to history, then repeatedly invokes the configured adapter. It handles edit, write, delete, read, and tree requests subject to the agent’s permissions; pending or requested user input and empty responses return errors. Adapter, tool, and history errors are propagated.
+Records the input and each response in history, then invokes the configured adapter in a loop. It executes permitted edit, write, delete, read, and tree requests; unavailable user input, unauthorized tools, empty responses, and adapter, tool, or history failures return errors.
 
 ## Imports
-- `adapters`: Resolves the adapter and parses its responses.
-- `RunRequest`: Supplies parameters for each agent invocation.
-- `Block`, `History`: Store and persist conversation history.
-- `Invocation`: Represents an agent call.
-- `tools`: Parses and executes agent tool requests.
+- `adapters`: Resolves the agent adapter and parses responses.
+- `RunRequest`: Supplies parameters for each adapter invocation.
+- `Block`, `History`: Store conversation history.
+- `Invocation`: Represents an agent invocation.
+- `tools`: Parses and executes read and tree requests.

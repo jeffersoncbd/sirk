@@ -1,8 +1,8 @@
 ## Summary
-Builds an HTTP request and dispatches it through the application router.
+Builds a JSON HTTP request, optionally adds a flow ID header, and dispatches it through the application router.
 
 ## Behavior
-Sets the method, path, JSON content type, and body, then sends the request through `routes()` with `oneshot`. Panics if request construction or dispatch fails.
+Sets the method, path, content type, and body, then adds `X-Sirk-Flow-Id` when provided. Sends the request through `routes()` with `oneshot` and panics if construction or dispatch fails.
 
 ## Imports
 - `routes`: Provides the application router.

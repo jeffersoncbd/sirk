@@ -1,5 +1,7 @@
 #[path = "tests/enforces_agent_delete_permissions.rs"]
 mod enforces_agent_delete_permissions;
+#[path = "tests/flow.rs"]
+mod flow;
 #[path = "tests/handles_agent_edits.rs"]
 mod handles_agent_edits;
 #[path = "tests/handles_agent_requests.rs"]

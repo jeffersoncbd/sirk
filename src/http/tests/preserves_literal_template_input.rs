@@ -1,4 +1,4 @@
-use super::request::request;
+use super::{flow::flow, request::request};
 use axum::body::to_bytes;
 use std::{
     fs,
@@ -36,7 +36,8 @@ async fn preserves_literal_template_input() {
         "input": "File content: {{ outputs.plan }}"
     })
     .to_string();
-    let response = request("POST", "/v1/agent/run", body).await;
+    let flow_id = flow(&directory).await;
+    let response = request("POST", "/v1/agent/run", body, Some(&flow_id)).await;
     let status = response.status();
     let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     assert_eq!(status, 200, "{}", String::from_utf8_lossy(&response));

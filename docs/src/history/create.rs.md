@@ -1,10 +1,8 @@
 ## Summary
-Creates and saves a new history associated with the snapshot.
+Creates an empty history for a valid flow associated with the snapshot.
 
 ## Behavior
-Creates the `history` directory, generates a file name from the time and process PID, acquires a lock, initializes an empty history, and saves it. Creation, time, locking, or save errors are converted to `String`.
+Validates the flow ID, resolves its path, and returns an error if the ID is invalid or the flow file is missing. It acquires a lock and returns a `History` with empty blocks, retaining the snapshot and lock.
 
 ## Imports
-- `super`: `History` and `Snapshot` types.
-- `std::fs`: History-directory creation.
-- `std::time`: File timestamp generation.
+- `super`: Provides `History`, `Snapshot`, and flow ID validation.

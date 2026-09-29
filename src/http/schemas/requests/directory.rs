@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub(in crate::http) struct DirectoryRequest {
-    /// Server-visible directory within a Git working tree.
+    /// Server-visible execution directory.
     #[schema(value_type = String, examples("/workspace/project"))]
     pub(in crate::http) directory: PathBuf,
 }

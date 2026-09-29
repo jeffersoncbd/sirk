@@ -23,7 +23,6 @@ pub(super) fn delete_request(history: &mut History, payload: &str) -> Result<Str
         return Ok("No changes applied: this DELETE request was already completed. Do not repeat it; provide a final response or a different request.".into());
     }
     history.blocks.push(Block::Input(payload.to_owned()));
-    history.save()?;
     if !request.force {
         return Err("user input is unavailable in this mode".into());
     }
