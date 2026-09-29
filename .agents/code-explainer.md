@@ -1,6 +1,7 @@
 ---
 adapter: codex
 model: gpt-6-luna
+call_prefix: [docker, exec, -i, codex]
 ---
 
 # Role
