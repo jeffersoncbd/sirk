@@ -14,11 +14,11 @@ pub fn serve(address: &str) -> Result<(), String> {
                 Err(_) => HttpResponse {
                     status: 400,
                     body: serde_json::json!({ "error": "Invalid request body" }).to_string(),
+                    content_type: super::types::JSON_CONTENT_TYPE,
                 },
             };
-            let content_type =
-                Header::from_bytes(b"Content-Type", b"application/json; charset=utf-8")
-                    .expect("static HTTP header must be valid");
+            let content_type = Header::from_bytes(b"Content-Type", response.content_type)
+                .expect("static HTTP header must be valid");
             let response = Response::from_string(response.body)
                 .with_status_code(StatusCode(response.status))
                 .with_header(content_type);

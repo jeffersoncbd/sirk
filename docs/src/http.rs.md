@@ -1,10 +1,12 @@
 ## Summary
-Exposes the HTTP transport's `serve` function.
+Defines the HTTP transport module and re-exports its `serve` function.
 
 ## Behavior
-Declares internal modules and re-exports `serve::serve`.
+Declares internal support modules for request handling, OpenAPI, Swagger, and types, then exposes `serve::serve` as the module’s public entry point.
 
 ## Imports
-- `handle`: Internal support.
-- `serve`: Re-exported implementation.
-- `types`: Internal types.
+- `handle`: Internal request-handling support.
+- `openapi`: OpenAPI support.
+- `serve`: Provides the public `serve` function.
+- `swagger`: Swagger support.
+- `types`: Internal HTTP types.

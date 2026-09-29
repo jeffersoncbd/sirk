@@ -1,8 +1,8 @@
 ## Summary
-Defines no main function; contains only a test of HTTP responses.
+Tests that the HTTP handler returns the expected responses for documented routes and invalid requests.
 
 ## Behavior
-The test checks that `/health` returns 200, an unknown route returns 404, unsupported GET requests return 405, and invalid bodies return 400.
+Checks successful health, OpenAPI, and Swagger responses, including their content; verifies unknown routes return 404, unsupported methods return 405, and invalid POST bodies return 400.
 
 ## Imports
-- `super::super::handle::handle`: Runs the HTTP requests checked by the test.
+- `super::super::handle::handle`: Handles the HTTP requests under test.

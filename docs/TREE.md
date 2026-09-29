@@ -1,6 +1,7 @@
 
 .env.example - Documents environment variables for configuring Ollama and OpenRouter service URLs and API keys.
 Cargo.toml - Defines the `sirk` package, its entry points, and dependencies used by the library and executable.
+openapi.yaml - Specifies S.I.R.K.’s HTTP routes, request and response formats, errors, and server behavior.
 src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
 src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
 src/adapters/codex/new.rs - Creates a `CodexAdapter` that stores the supplied executable as text.
@@ -60,9 +61,11 @@ src/history/drop.rs - Releases the `History` lock when the value is dropped, ign
 src/history/lock.rs - Acquires an exclusive lock on the history lock file.
 src/history/reserved.rs - Identifies lines containing reserved history markers without side effects.
 src/history/save.rs - Persists the history snapshot to disk by serializing metadata and blocks as YAML.
-src/http.rs - Exposes the HTTP transport's `serve` function and organizes internal support modules.
-src/http/handle.rs - Routes health checks and HTTP requests to agent and Git operations, returning appropriate results.
-src/http/serve.rs - Starts an HTTP server that processes requests in separate threads and returns JSON responses.
+src/http.rs - Defines HTTP support modules and re-exports `serve` as the public entry point.
+src/http/handle.rs - Handles health and API documentation routes, dispatching agent and Git requests with appropriate HTTP responses.
+src/http/openapi.rs - Embeds the OpenAPI specification as a string constant for use by the HTTP module.
+src/http/serve.rs - Runs a threaded HTTP server that forwards requests to a handler and returns its responses.
+src/http/swagger.rs - SWAGGER_UI embeds an HTML page that loads Swagger UI and displays the API specification at `/openapi.yaml`.
 src/http/tests.rs - Groups modules that test HTTP behavior.
 src/http/tests/enforces_agent_delete_permissions.rs - Verifies that files are deleted only when the agent's explicit permissions are enabled.
 src/http/tests/handles_agent_edits.rs - Tests an HTTP request that runs an agent able to edit a file and return the expected response.
@@ -70,8 +73,8 @@ src/http/tests/handles_agent_requests.rs - Verifies through an HTTP request that
 src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the supplied directory.
 src/http/tests/handles_git_status_requests.rs - Verifies that Git status returns visible files while excluding `.treeignore` matches.
 src/http/tests/preserves_literal_template_input.rs - Verifies that `{{ outputs.plan }}` is preserved literally in agent input sent through HTTP.
-src/http/tests/rejects_invalid_requests.rs - Verifies HTTP success and error responses for invalid routes, methods, and bodies.
-src/http/types.rs - Defines agent and directory request structures and HTTP responses with a status and body.
+src/http/tests/rejects_invalid_requests.rs - Tests HTTP handler responses for documented routes, unknown routes, unsupported methods, and invalid request bodies.
+src/http/types.rs - Defines HTTP content-type constants and request and response data types.
 src/input.rs - Reads user responses and confirmations from the interactive terminal.
 src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.
 src/interfaces/harness/display.rs - Formats `HarnessError` variants as readable messages, including the adapter and available details.

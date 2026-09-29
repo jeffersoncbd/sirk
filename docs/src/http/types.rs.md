@@ -1,9 +1,9 @@
 ## Summary
-Defines types for agent and directory requests and HTTP responses.
+Defines HTTP content-type constants and request and response data types.
 
 ## Behavior
-`AgentRequest` holds a directory, agent, and input; `DirectoryRequest` contains the directory. Both reject unknown fields during deserialization. `HttpResponse` stores the status code and body.
+`AgentRequest` carries a directory, agent name, and input; `DirectoryRequest` carries a directory. Both reject unknown fields when deserialized. `HttpResponse` stores a status code, body, and content type.
 
 ## Imports
-- `serde`: Deserializes requests and rejects unknown fields.
-- `std::path::PathBuf`: Represents directories in requests.
+- `serde`: Deserializes request types.
+- `std::path::PathBuf`: Represents request directories.

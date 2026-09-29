@@ -30,8 +30,13 @@ unless requested. `.agents/` contains product data, not development instructions
   documentation workflow is [documentation.rs](flows/documentation.rs).
 - Stay within the requested feature. Known limitations, the deprecated
   `serde_yaml 0.9` dependency, and the broken `build.sh` are not implicit tasks.
-- Write tool-owned code, comments, messages, tests, and logs in English.
-  Preserve user-authored text in its original language.
+- The project is English-only. Write every project artifact in English,
+  regardless of the language used in the conversation with an AI agent.
+  This includes source code, identifiers, function and test names, comments,
+  documentation, specifications, agent definitions, messages, errors, logs,
+  command output, and generated files. Do not create, retain, or copy
+  project content in another language; translate user-supplied text before
+  placing it in a project artifact.
 
 ## Implementation boundaries
 

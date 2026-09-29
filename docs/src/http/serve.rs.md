@@ -1,10 +1,10 @@
 ## Summary
-Starts an HTTP server that processes requests in separate threads.
+Runs an HTTP server that handles each incoming request on a separate thread.
 
 ## Behavior
-Binds the server to the supplied address and returns initialization errors as `String`. For each request, reads the body and calls `handle`; a read failure produces a 400 response. Sends the response as JSON and logs send failures to `stderr`.
+Binds to the supplied address, returning bind errors as `String`, then reads each request body and passes it with the method and path to `handle`. If reading fails, it sends a 400 JSON error. It sends the resulting response with its status and content type, logging send failures to `stderr`.
 
 ## Imports
 - `super::handle`: Processes the request method, path, and body.
-- `super::types`: Provides the HTTP response structure.
+- `super::types::HttpResponse`: Represents the response for an invalid body.
 - `tiny_http`: Creates the server and builds and sends HTTP responses.

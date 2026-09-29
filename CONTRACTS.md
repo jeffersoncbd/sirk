@@ -20,10 +20,13 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
 
 - `sirk http` binds to `127.0.0.1:8080` by default. An explicit address may
   override the bind; external exposure does not imply authentication or TLS.
-- HTTP exposes `GET /health`, `POST /v1/agent/run`, `POST /v1/git/status`, and
-  `POST /v1/git/add`. Agent requests contain the server-visible execution
-  directory, agent ID, and literal input. Git requests contain only the
-  server-visible execution directory.
+- HTTP exposes `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
+  `POST /v1/agent/run`, `POST /v1/git/status`, and `POST /v1/git/add`.
+  `/openapi.yaml` returns the embedded OpenAPI document as plain text.
+  `/swagger` returns an HTML Swagger UI configured to load that document.
+  Agent requests contain the server-visible execution directory, agent ID,
+  and literal input. Git requests contain only the server-visible execution
+  directory.
 - The Rust SDK connects to HTTP without starting a CLI process. Its default
   endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
   current directory. Custom endpoints preserve supplied server-visible paths.
