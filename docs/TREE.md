@@ -1,7 +1,7 @@
 
 .env.example - Documents environment variables for configuring Ollama and OpenRouter service URLs and API keys.
 Cargo.toml - Defines the `sirk` package, library, executable, and their runtime and development dependencies.
-openapi.yaml - Defines the S.I.R.K. HTTP API, its request and response schemas, routes, and server characteristics.
+openapi.yaml - Defines the S.I.R.K. HTTP API endpoints, schemas, responses, and server behavior.
 src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
 src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
 src/adapters/codex/new.rs - Creates a `CodexAdapter` that stores the supplied executable as text.
@@ -64,7 +64,7 @@ src/history/reserved.rs - Identifies lines containing reserved history markers w
 src/history/save.rs - Persists the history snapshot to disk by serializing metadata and blocks as YAML.
 src/http.rs - Exposes the HTTP server entry point and generated OpenAPI document to other modules.
 src/http/content_type.rs - Defines shared UTF-8 media type constants for HTML, JSON, and plain text responses.
-src/http/controllers.rs - Declares and exposes the HTTP controller submodules to their parent module.
+src/http/controllers.rs - Declares the HTTP controller submodules for use by the parent module.
 src/http/controllers/agent_run.rs - Runs an agent request asynchronously and returns either its result or a JSON error response.
 src/http/controllers/git_add.rs - Stages changes under the requested directory with Git and returns an HTTP status response.
 src/http/controllers/git_status.rs - git_status returns changed Git paths for a requested directory, with errors for invalid requests or failed lookups.
@@ -73,32 +73,35 @@ src/http/controllers/method_not_allowed.rs - Returns an HTTP 405 JSON error resp
 src/http/controllers/not_found.rs - Returns a JSON 404 response with a “Not found” error for unmatched requests.
 src/http/controllers/openapi.rs - Serves the binary’s OpenAPI specification as plain text.
 src/http/controllers/swagger.rs - Serves the embedded Swagger UI as an HTML response.
+src/http/controllers/tree.rs - Returns relative file paths beneath the requested directory as JSON, with errors for invalid input or listing failures.
 src/http/json_response.rs - Converts a serializable value into an HTTP response with a JSON content type.
 src/http/openapi.rs - Embeds the OpenAPI specification as a string constant for use by the HTTP module.
-src/http/routes.rs - Builds the HTTP router with API and fallback endpoints, and returns it with the OpenAPI document.
+src/http/routes.rs - Builds the HTTP router, registers endpoints and fallbacks, and returns it with its OpenAPI document.
 src/http/schemas.rs - This module exposes the request and response schema submodules to its parent.
 src/http/schemas/requests.rs - This module exposes the agent-run and directory request types within `crate::http`.
 src/http/schemas/requests/agent_run.rs - Defines the HTTP request for running an agent with an execution directory, agent identifier, and literal input.
 src/http/schemas/requests/directory.rs - DirectoryRequest represents a request containing a server-visible directory path.
-src/http/schemas/responses.rs - This module exposes HTTP response schemas by declaring submodules and re-exporting their response types.
+src/http/schemas/responses.rs - Re-exports HTTP response schema types from seven submodules within `crate::http`.
 src/http/schemas/responses/agent_run.rs - AgentRunResponse represents an agent’s final text result for serialization and OpenAPI documentation.
 src/http/schemas/responses/error.rs - Represents an HTTP error response with a human-readable message.
 src/http/schemas/responses/git_status.rs - Represents sorted, unique Git status paths relative to the requested directory in an HTTP response.
 src/http/schemas/responses/health.rs - Defines the health endpoint’s success response with a status field.
 src/http/schemas/responses/status.rs - Defines a serializable HTTP status response with a fixed success indicator and OpenAPI schema.
 src/http/schemas/responses/success.rs - SuccessStatus defines the serializable `ok` status for successful HTTP responses.
+src/http/schemas/responses/tree.rs - TreeResponse serializes sorted, unique paths relative to the requested directory and rejects unknown fields.
 src/http/serve.rs - Runs the HTTP server at the supplied address on a multi-threaded Tokio runtime, returning errors as strings.
 src/http/spec.rs - Returns the OpenAPI document generated from the HTTP routes.
 src/http/swagger.rs - SWAGGER_UI embeds an HTML page that loads Swagger UI and displays the API specification at `/openapi.yaml`.
-src/http/tests.rs - Declares nine HTTP test modules and maps each module to its corresponding test file.
+src/http/tests.rs - Declares the HTTP test modules and maps each to its test file.
 src/http/tests/enforces_agent_delete_permissions.rs - Verifies that file deletion occurs only when delete and no-confirmation permissions are both enabled.
 src/http/tests/handles_agent_edits.rs - Tests that an HTTP agent run appends text to a file and returns the expected result.
 src/http/tests/handles_agent_requests.rs - Tests that an agent can be run over HTTP and return its output successfully.
 src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the specified Git repository.
 src/http/tests/handles_git_status_requests.rs - Verifies that the Git status endpoint excludes files ignored by `.treeignore`.
+src/http/tests/handles_tree_requests.rs - Tests that `POST /v1/tree` returns visible Git paths while excluding files listed in `.treeignore`.
 src/http/tests/openapi_is_current.rs - This file contains no production behavior; it only tests the OpenAPI document.
 src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.
-src/http/tests/rejects_invalid_requests.rs - Tests HTTP route responses for successful endpoints and invalid paths, methods, and request bodies.
+src/http/tests/rejects_invalid_requests.rs - Verifies expected responses and content types for health, OpenAPI, Swagger, and invalid HTTP requests.
 src/http/tests/request.rs - Builds an HTTP request and dispatches it through the application router.
 src/input.rs - Reads user responses and confirmations from the interactive terminal.
 src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.

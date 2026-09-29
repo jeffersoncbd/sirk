@@ -27,18 +27,21 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   controllers, and DTOs under `src/http/schemas/`. The versioned YAML file must
   exactly match the generated document and must not be edited by hand.
 - HTTP exposes `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
-  `POST /v1/agent/run`, `POST /v1/git/status`, and `POST /v1/git/add`.
+  `POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
+  `POST /v1/git/add`.
   `/openapi.yaml` returns the embedded OpenAPI document as plain text.
   `/swagger` returns an HTML Swagger UI configured to load that document.
   Agent requests contain the server-visible execution directory, agent ID,
-  and literal input. Git requests contain only the server-visible execution
-  directory.
+  and literal input. TREE and Git requests contain only the server-visible
+  execution directory.
 - The Rust SDK connects to HTTP without starting a CLI process. Its default
   endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
   current directory. Custom endpoints preserve supplied server-visible paths.
-- Git status returns sorted, unique UTF-8 paths for modified, untracked, and
-  deleted regular files, excluding `.treeignore` matches. Git add stages all
-  changes below the supplied directory. These SDK endpoints are not agent tools.
+- TREE returns sorted, unique UTF-8 paths for tracked and non-ignored untracked
+  files, excluding `.treeignore` matches. Git status returns sorted, unique
+  UTF-8 paths for modified, untracked, and deleted regular files, excluding
+  `.treeignore` matches. Git add stages all changes below the supplied directory.
+  These HTTP endpoints are not agent tools.
 
 ## Agent tools
 

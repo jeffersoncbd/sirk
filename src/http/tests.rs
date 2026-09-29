@@ -8,6 +8,8 @@ mod handles_agent_requests;
 mod handles_git_add_requests;
 #[path = "tests/handles_git_status_requests.rs"]
 mod handles_git_status_requests;
+#[path = "tests/handles_tree_requests.rs"]
+mod handles_tree_requests;
 #[path = "tests/openapi_is_current.rs"]
 mod openapi_is_current;
 #[path = "tests/preserves_literal_template_input.rs"]

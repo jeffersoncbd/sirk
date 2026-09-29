@@ -1,8 +1,8 @@
 ## Summary
-This module exposes HTTP response schema types within `crate::http`.
+This module re-exports HTTP response schema types.
 
 ## Behavior
-It declares six response schema submodules and re-exports their response types with visibility limited to the HTTP crate module.
+It declares seven response submodules and re-exports their types within `crate::http`.
 
 ## Imports
 - `agent_run`: Provides `AgentRunResponse`.
@@ -11,3 +11,4 @@ It declares six response schema submodules and re-exports their response types w
 - `health`: Provides `HealthResponse`.
 - `status`: Provides `StatusResponse`.
 - `success`: Provides `SuccessStatus`.
+- `tree`: Provides `TreeResponse`.

@@ -6,3 +6,4 @@ pub(super) mod method_not_allowed;
 pub(super) mod not_found;
 pub(super) mod openapi;
 pub(super) mod swagger;
+pub(super) mod tree;

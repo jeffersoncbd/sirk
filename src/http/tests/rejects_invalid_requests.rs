@@ -37,6 +37,10 @@ async fn rejects_invalid_requests() {
         405
     );
     assert_eq!(
+        request("GET", "/v1/tree", String::new()).await.status(),
+        405
+    );
+    assert_eq!(
         request("POST", "/v1/agent/run", "{}".to_owned())
             .await
             .status(),
@@ -46,6 +50,10 @@ async fn rejects_invalid_requests() {
         request("POST", "/v1/git/status", "{}".to_owned())
             .await
             .status(),
+        400
+    );
+    assert_eq!(
+        request("POST", "/v1/tree", "{}".to_owned()).await.status(),
         400
     );
     assert_eq!(

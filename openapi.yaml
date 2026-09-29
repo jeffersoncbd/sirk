@@ -213,6 +213,55 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 error: An operation-specific error message.
+  /v1/tree:
+    post:
+      summary: List files below a directory
+      description: Returns sorted, unique relative UTF-8 paths for tracked and non-ignored untracked files below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server.
+      operationId: tree
+      requestBody:
+        description: Server-visible Git directory.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectoryRequest'
+            example:
+              directory: /workspace/project
+        required: true
+      responses:
+        '200':
+          description: Files were listed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreeResponse'
+              example:
+                paths:
+                - README.md
+                - src/lib.rs
+        '400':
+          description: The request body is invalid, incomplete, or contains an unknown field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid request
+        '405':
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
+        '500':
+          description: The TREE operation could not be completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: An operation-specific error message.
 components:
   schemas:
     AgentRunRequest:
@@ -300,3 +349,14 @@ components:
       type: string
       enum:
       - ok
+    TreeResponse:
+      type: object
+      required:
+      - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+          description: Sorted, unique paths relative to the requested directory.
+      additionalProperties: false

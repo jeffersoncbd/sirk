@@ -1,5 +1,5 @@
 use super::controllers::{
-    agent_run, git_add, git_status, health, method_not_allowed, not_found, openapi, swagger,
+    agent_run, git_add, git_status, health, method_not_allowed, not_found, openapi, swagger, tree,
 };
 use super::spec::ApiDoc;
 use axum::Router;
@@ -14,6 +14,7 @@ pub(super) fn routes() -> (Router, utoipa::openapi::OpenApi) {
         .routes(utoipa_axum::routes!(openapi::openapi)) // GET /openapi.yaml
         .routes(utoipa_axum::routes!(swagger::swagger)) // GET /swagger
         .routes(utoipa_axum::routes!(agent_run::agent_run)) // POST /v1/agent/run
+        .routes(utoipa_axum::routes!(tree::tree)) // POST /v1/tree
         .routes(utoipa_axum::routes!(git_status::git_status)) // POST /v1/git/status
         .routes(utoipa_axum::routes!(git_add::git_add)) // POST /v1/git/add
         .split_for_parts();

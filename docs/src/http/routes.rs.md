@@ -1,12 +1,12 @@
 ## Summary
-`routes` builds the HTTP router and its OpenAPI document.
+Builds the HTTP router and its OpenAPI document.
 
 ## Behavior
-Creates the API document with its license omitted, registers the health, OpenAPI, Swagger, agent, and Git endpoints, then assigns fallbacks for unmatched paths and unsupported methods. Returns the router and document.
+Creates the document and removes its license, registers the API endpoints, and assigns fallbacks for unmatched paths and unsupported methods. Returns the router and document.
 
 ## Imports
-- `super::controllers`: Provides endpoint and fallback handlers.
-- `super::spec::ApiDoc`: Supplies the OpenAPI document definition.
+- `super::controllers`: Supplies endpoint and fallback handlers.
+- `super::spec::ApiDoc`: Defines the OpenAPI document.
 - `axum::Router`: Provides the HTTP router type.
-- `utoipa::OpenApi`: Provides the `openapi` method for `ApiDoc`.
-- `utoipa_axum::router::OpenApiRouter`: Builds routes with OpenAPI metadata.
+- `utoipa::OpenApi`: Provides the document-generation method.
+- `utoipa_axum::router::OpenApiRouter`: Builds documented routes.

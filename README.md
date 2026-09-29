@@ -35,11 +35,12 @@ its endpoint. Bash is required; TREE also requires Git and a working tree.
 Start the HTTP service with `./sirk http` (default `127.0.0.1:8080`). An
 explicit address such as `0.0.0.0:8080` allows connections from another host
 or container. HTTP provides `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
-`POST /v1/agent/run`, `POST /v1/git/status`, and `POST /v1/git/add`.
+`POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
+`POST /v1/git/add`.
 `/openapi.yaml` returns the API specification as plain text; open `/swagger`
-in a browser to view it in Swagger UI. Git requests supply the server-visible
-project `directory`; agent requests also supply `agent` and `input`. HTTP has
-no authentication, so expose it only on trusted networks.
+in a browser to view it in Swagger UI. TREE and Git requests supply the
+server-visible project `directory`; agent requests also supply `agent` and
+`input`. HTTP has no authentication, so expose it only on trusted networks.
 
 The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:
 
