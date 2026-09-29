@@ -1,7 +1,8 @@
 //! HTTP transport for remote and containerized language SDKs.
 
-mod handle;
+mod controllers;
 mod openapi;
+mod routes;
 mod serve;
 mod swagger;
 mod types;

@@ -1,11 +1,12 @@
 ## Summary
-Verifies that file deletion requires explicit agent permission.
+Verifies that deleting a file requires permission to delete without confirmation.
 
 ## Behavior
-Creates an agent that requests deletion of `note.txt` and runs the request with confirmation disallowed and allowed. It checks both responses; the file should be removed only when both permissions are enabled.
+Creates a temporary agent and file, then submits a deletion request under restricted and fully enabled permissions. Both requests must succeed, but the file is removed only when both deletion permissions are enabled.
 
 ## Imports
-- `handle`: Processes the agent HTTP request.
-- `std::fs`: Creates files and checks their removal.
-- `PermissionsExt`: Makes the adapter executable.
-- `SystemTime` and `UNIX_EPOCH`: Generate a unique temporary name.
+- `request`: Sends the agent run request.
+- `axum::body::to_bytes`: Reads the response body.
+- `std::fs`: Creates and removes files and directories.
+- `PermissionsExt`: Makes the test adapter executable.
+- `SystemTime` and `UNIX_EPOCH`: Generate a unique temporary directory.

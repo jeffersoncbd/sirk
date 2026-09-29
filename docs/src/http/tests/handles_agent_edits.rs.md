@@ -1,11 +1,12 @@
 ## Summary
-Contains a single test that verifies an agent can edit a file over HTTP.
+Verifies that an HTTP agent run appends text to a file and returns its result.
 
 ## Behavior
-The test creates a temporary directory, configures a fake adapter, and calls `handle` with a request to run the agent. It then checks the response and edited contents and removes the directory.
+Creates a temporary workspace with a fake executable adapter and editor agent, then sends a request to run the agent. It checks for a successful response, the expected result, and the updated file contents, then removes the workspace.
 
 ## Imports
-- `handle`: Executes the simulated HTTP request.
-- `std::fs`: Creates, reads, modifies, and removes test files.
-- `PermissionsExt`: Marks the adapter as executable.
-- `SystemTime` and `UNIX_EPOCH`: Generate a unique temporary directory name.
+- `request`: Sends the simulated HTTP request.
+- `axum::body::to_bytes`: Reads the response body.
+- `std::fs`: Creates, reads, and removes workspace files.
+- `PermissionsExt`: Makes the fake adapter executable.
+- `SystemTime`, `UNIX_EPOCH`: Create a unique temporary directory name.

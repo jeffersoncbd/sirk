@@ -46,6 +46,13 @@ functions. When adding another function or method, place it in a separate file
 and expose it through the appropriate module; never add a second function or
 method to the same file.
 
+Define every HTTP route in `src/http/routes.rs`. This is the only file allowed
+to register paths or HTTP methods with the router. Never create or register a
+route in a controller, handler, server, module file, test helper, or any other
+location. Keep `routes.rs` limited to the complete, readable route table and
+its fallback registrations; place endpoint behavior in `src/http/controllers/`
+and import those controllers into `routes.rs`.
+
 Keep orchestration out of `main.rs` and external process execution in
 `BashService`. Build executable/argument lists through `Invocation`; never
 interpolate prompts or paths into shell code.

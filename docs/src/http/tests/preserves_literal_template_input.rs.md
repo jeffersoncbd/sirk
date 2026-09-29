@@ -1,12 +1,12 @@
 ## Summary
-Verifies that `{{ outputs.plan }}` is preserved as literal text in the input sent to the agent.
+Tests that template-like input is passed to the agent as literal text.
 
 ## Behavior
-Creates a temporary agent with an adapter that accepts the literal expression, sends the input through the HTTP route, and checks for a `200` response with the expected result. It removes the temporary directory afterward.
+Creates a temporary agent with an adapter that succeeds only if it receives `{{ outputs.plan }}` unchanged, sends the input through the HTTP endpoint, and checks the response status and result. Removes the temporary directory afterward.
 
 ## Imports
-- `handle`: Runs the HTTP request under test.
-- `std::fs`: Creates temporary files and directories.
-- `PermissionsExt`: Sets executable permission on the adapter.
-- `SystemTime`, `UNIX_EPOCH`: Generate a unique temporary name.
-- `serde_json`: Builds the request and parses the response.
+- `request`: Sends the HTTP request under test.
+- `axum::body::to_bytes`: Reads the response body.
+- `std::fs`: Creates files and removes the temporary directory.
+- `PermissionsExt`: Makes the adapter executable.
+- `SystemTime`, `UNIX_EPOCH`: Generate a unique temporary directory name.

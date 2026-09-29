@@ -1,12 +1,13 @@
 ## Summary
-Tests whether an HTTP request stages a file in the supplied directory.
+Verifies that the `/v1/git/add` endpoint stages a file in the requested directory.
 
 ## Behavior
-Creates a temporary repository, writes `generated.md`, and sends a `POST` request to `/v1/git/add`. Checks for HTTP status 200 and a `status` field equal to `ok`, verifies that the file was staged, and removes the temporary directory. Setup or execution errors fail the test.
+Creates a temporary Git repository, writes `generated.md`, and sends a POST request with the directory path. It asserts a successful response with status `ok`, checks that the file is staged, and removes the temporary directory; setup or execution errors fail the test.
 
 ## Imports
-- `handle`: Processes the test HTTP request.
-- `BashService`, `Invocation`: Run Git commands in the test directory.
+- `request`: Sends the test HTTP request.
+- `BashService`, `Invocation`: Run Git commands in the temporary repository.
+- `axum::body::to_bytes`: Reads the response body.
 - `std::fs`: Creates, writes, and removes files and directories.
 - `std::io`: Provides a sink for command output.
-- `SystemTime`, `UNIX_EPOCH`: Make the temporary directory name unique.
+- `SystemTime`, `UNIX_EPOCH`: Generate a unique temporary directory name.

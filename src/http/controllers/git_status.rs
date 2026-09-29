@@ -1,0 +1,44 @@
+use super::super::types::{DirectoryRequest, JsonResponse};
+use axum::{
+    body::Bytes,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde_json::json;
+
+pub(in crate::http) async fn git_status(body: Bytes) -> Response {
+    let body = match String::from_utf8(body.to_vec()) {
+        Ok(body) => body,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                JsonResponse(json!({ "error": "Invalid request body" })),
+            )
+                .into_response();
+        }
+    };
+    let request = match serde_json::from_str::<DirectoryRequest>(&body) {
+        Ok(request) => request,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                JsonResponse(json!({ "error": "Invalid request" })),
+            )
+                .into_response();
+        }
+    };
+    match tokio::task::spawn_blocking(move || crate::git_service::status(&request.directory)).await
+    {
+        Ok(Ok(paths)) => JsonResponse(json!({ "paths": paths })).into_response(),
+        Ok(Err(error)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            JsonResponse(json!({ "error": error })),
+        )
+            .into_response(),
+        Err(error) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            JsonResponse(json!({ "error": format!("Git status task failed: {error}") })),
+        )
+            .into_response(),
+    }
+}

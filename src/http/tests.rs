@@ -13,3 +13,5 @@ mod preserves_literal_template_input;
 
 #[path = "tests/rejects_invalid_requests.rs"]
 mod rejects_invalid_requests;
+#[path = "tests/request.rs"]
+mod request;

@@ -1,4 +1,10 @@
+use axum::{
+    Json,
+    http::header,
+    response::{IntoResponse, Response},
+};
 use serde::Deserialize;
+use serde_json::Value;
 use std::path::PathBuf;
 
 pub(super) const HTML_CONTENT_TYPE: &str = "text/html; charset=utf-8";
@@ -19,9 +25,10 @@ pub(super) struct DirectoryRequest {
     pub directory: PathBuf,
 }
 
-#[derive(Debug, PartialEq)]
-pub(super) struct HttpResponse {
-    pub status: u16,
-    pub body: String,
-    pub content_type: &'static str,
+pub(super) struct JsonResponse(pub(super) Value);
+
+impl IntoResponse for JsonResponse {
+    fn into_response(self) -> Response {
+        ([(header::CONTENT_TYPE, JSON_CONTENT_TYPE)], Json(self.0)).into_response()
+    }
 }

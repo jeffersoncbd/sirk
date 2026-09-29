@@ -1,12 +1,13 @@
-use super::super::handle::handle;
+use super::request::request;
+use axum::body::to_bytes;
 use std::{
     fs,
     os::unix::fs::PermissionsExt,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[test]
-fn handles_agent_edits() {
+#[tokio::test]
+async fn handles_agent_edits() {
     let directory = std::env::temp_dir().join(format!(
         "sirk-agent-edit-{}-{}",
         std::process::id(),
@@ -36,10 +37,12 @@ fn handles_agent_edits() {
         "input": "Append text to note.txt"
     })
     .to_string();
-    let response = handle("POST", "/v1/agent/run", &body);
-    assert_eq!(response.status, 200, "{}", response.body);
+    let response = request("POST", "/v1/agent/run", body).await;
+    let status = response.status();
+    let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(status, 200, "{}", String::from_utf8_lossy(&response));
     assert_eq!(
-        serde_json::from_str::<serde_json::Value>(&response.body).unwrap()["result"],
+        serde_json::from_slice::<serde_json::Value>(&response).unwrap()["result"],
         "edited"
     );
     assert_eq!(

@@ -1,20 +1,57 @@
-use super::super::handle::handle;
+use super::request::request;
+use axum::{body::to_bytes, http::header};
 
-#[test]
-fn rejects_invalid_requests() {
-    assert_eq!(handle("GET", "/health", "").status, 200);
-    let openapi = handle("GET", "/openapi.yaml", "");
-    assert_eq!(openapi.status, 200);
-    assert_eq!(openapi.content_type, "text/plain; charset=utf-8");
-    assert_eq!(openapi.body, include_str!("../../../openapi.yaml"));
-    let swagger = handle("GET", "/swagger", "");
-    assert_eq!(swagger.status, 200);
-    assert_eq!(swagger.content_type, "text/html; charset=utf-8");
-    assert!(swagger.body.contains("/openapi.yaml"));
-    assert_eq!(handle("GET", "/missing", "").status, 404);
-    assert_eq!(handle("GET", "/v1/agent/run", "").status, 405);
-    assert_eq!(handle("GET", "/v1/git/status", "").status, 405);
-    assert_eq!(handle("POST", "/v1/agent/run", "{}").status, 400);
-    assert_eq!(handle("POST", "/v1/git/status", "{}").status, 400);
-    assert_eq!(handle("POST", "/v1/git/add", "{}").status, 400);
+#[tokio::test]
+async fn rejects_invalid_requests() {
+    assert_eq!(request("GET", "/health", String::new()).await.status(), 200);
+    let openapi = request("GET", "/openapi.yaml", String::new()).await;
+    assert_eq!(openapi.status(), 200);
+    assert_eq!(
+        openapi.headers()[header::CONTENT_TYPE],
+        "text/plain; charset=utf-8"
+    );
+    let openapi = to_bytes(openapi.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(openapi.as_ref(), include_bytes!("../../../openapi.yaml"));
+    let swagger = request("GET", "/swagger", String::new()).await;
+    assert_eq!(swagger.status(), 200);
+    assert_eq!(
+        swagger.headers()[header::CONTENT_TYPE],
+        "text/html; charset=utf-8"
+    );
+    let swagger = to_bytes(swagger.into_body(), usize::MAX).await.unwrap();
+    assert!(String::from_utf8_lossy(&swagger).contains("/openapi.yaml"));
+    assert_eq!(
+        request("GET", "/missing", String::new()).await.status(),
+        404
+    );
+    assert_eq!(
+        request("GET", "/v1/agent/run", String::new())
+            .await
+            .status(),
+        405
+    );
+    assert_eq!(
+        request("GET", "/v1/git/status", String::new())
+            .await
+            .status(),
+        405
+    );
+    assert_eq!(
+        request("POST", "/v1/agent/run", "{}".to_owned())
+            .await
+            .status(),
+        400
+    );
+    assert_eq!(
+        request("POST", "/v1/git/status", "{}".to_owned())
+            .await
+            .status(),
+        400
+    );
+    assert_eq!(
+        request("POST", "/v1/git/add", "{}".to_owned())
+            .await
+            .status(),
+        400
+    );
 }

@@ -1,9 +1,11 @@
 ## Summary
-Defines HTTP content-type constants and request and response data types.
+Converts a JSON value into an HTTP response with a JSON content type.
 
 ## Behavior
-`AgentRequest` carries a directory, agent name, and input; `DirectoryRequest` carries a directory. Both reject unknown fields when deserialized. `HttpResponse` stores a status code, body, and content type.
+`into_response` wraps the stored value as JSON and sets the response `Content-Type` header to `application/json; charset=utf-8`.
 
 ## Imports
+- `axum`: Builds the JSON response and sets its header.
 - `serde`: Deserializes request types.
+- `serde_json`: Provides the JSON value stored in the response.
 - `std::path::PathBuf`: Represents request directories.

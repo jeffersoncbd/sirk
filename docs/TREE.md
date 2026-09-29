@@ -1,6 +1,6 @@
 
 .env.example - Documents environment variables for configuring Ollama and OpenRouter service URLs and API keys.
-Cargo.toml - Defines the `sirk` package, its entry points, and dependencies used by the library and executable.
+Cargo.toml - Defines the sirk package, library, executable, and Rust dependency configuration.
 openapi.yaml - Specifies S.I.R.K.’s HTTP routes, request and response formats, errors, and server behavior.
 src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
 src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
@@ -61,20 +61,30 @@ src/history/drop.rs - Releases the `History` lock when the value is dropped, ign
 src/history/lock.rs - Acquires an exclusive lock on the history lock file.
 src/history/reserved.rs - Identifies lines containing reserved history markers without side effects.
 src/history/save.rs - Persists the history snapshot to disk by serializing metadata and blocks as YAML.
-src/http.rs - Defines HTTP support modules and re-exports `serve` as the public entry point.
-src/http/handle.rs - Handles health and API documentation routes, dispatching agent and Git requests with appropriate HTTP responses.
+src/http.rs - Declares HTTP support modules and re-exports `serve::serve` as the server entry point.
+src/http/controllers.rs - Declares and exposes the HTTP controller submodules to their parent module.
+src/http/controllers/agent_run.rs - Runs an agent request from an HTTP body and returns its JSON result or an HTTP error.
+src/http/controllers/git_add.rs - Validates a directory request, adds it through Git, and returns JSON success or an error response.
+src/http/controllers/git_status.rs - The handler returns Git status paths for a requested directory and reports request or lookup errors.
+src/http/controllers/health.rs - Returns a JSON response indicating the service is healthy.
+src/http/controllers/method_not_allowed.rs - Returns an Axum JSON response with HTTP 405 indicating that the requested method is not allowed.
+src/http/controllers/not_found.rs - Returns a JSON 404 response with an error message for unmatched requests.
+src/http/controllers/openapi.rs - Returns the OpenAPI document in an HTTP response with the appropriate content type.
+src/http/controllers/swagger.rs - Serves the embedded Swagger UI content with an HTML content type.
 src/http/openapi.rs - Embeds the OpenAPI specification as a string constant for use by the HTTP module.
-src/http/serve.rs - Runs a threaded HTTP server that forwards requests to a handler and returns its responses.
+src/http/routes.rs - Builds the HTTP router by mapping supported paths and methods to controllers and fallback handlers.
+src/http/serve.rs - Runs the HTTP server at the supplied address using a multi-threaded Tokio runtime.
 src/http/swagger.rs - SWAGGER_UI embeds an HTML page that loads Swagger UI and displays the API specification at `/openapi.yaml`.
-src/http/tests.rs - Groups modules that test HTTP behavior.
-src/http/tests/enforces_agent_delete_permissions.rs - Verifies that files are deleted only when the agent's explicit permissions are enabled.
-src/http/tests/handles_agent_edits.rs - Tests an HTTP request that runs an agent able to edit a file and return the expected response.
-src/http/tests/handles_agent_requests.rs - Verifies through an HTTP request that agent execution returns the expected status and result.
-src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the supplied directory.
-src/http/tests/handles_git_status_requests.rs - Verifies that Git status returns visible files while excluding `.treeignore` matches.
-src/http/tests/preserves_literal_template_input.rs - Verifies that `{{ outputs.plan }}` is preserved literally in agent input sent through HTTP.
-src/http/tests/rejects_invalid_requests.rs - Tests HTTP handler responses for documented routes, unknown routes, unsupported methods, and invalid request bodies.
-src/http/types.rs - Defines HTTP content-type constants and request and response data types.
+src/http/tests.rs - Groups HTTP request handling tests by declaring their corresponding test modules.
+src/http/tests/enforces_agent_delete_permissions.rs - Verifies that file deletion occurs only when delete and no-confirmation permissions are both enabled.
+src/http/tests/handles_agent_edits.rs - Tests that an HTTP agent run appends text to a file and returns the expected result.
+src/http/tests/handles_agent_requests.rs - Tests that an agent can be run over HTTP and return its output successfully.
+src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the specified Git repository.
+src/http/tests/handles_git_status_requests.rs - Verifies that the Git status endpoint excludes files ignored by `.treeignore`.
+src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.
+src/http/tests/rejects_invalid_requests.rs - Tests HTTP route responses for successful endpoints and invalid paths, methods, and request bodies.
+src/http/tests/request.rs - Builds and dispatches an HTTP request through the application routes, returning the response.
+src/http/types.rs - Converts a stored JSON value into an HTTP response with an application/json content type.
 src/input.rs - Reads user responses and confirmations from the interactive terminal.
 src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.
 src/interfaces/harness/display.rs - Formats `HarnessError` variants as readable messages, including the adapter and available details.

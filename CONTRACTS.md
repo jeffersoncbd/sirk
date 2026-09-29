@@ -5,9 +5,10 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
 
 ## Language, files, and permissions
 
-- Tool-owned code, comments, messages, tests, logs, and documentation are
-  English. Preserve user-authored instructions and responses in their original
-  language.
+- Every project artifact is English-only, regardless of the language used to
+  request the work. Translate user-supplied text before placing it in source
+  code, identifiers, tests, documentation, messages, errors, logs, agent
+  definitions, or generated files.
 - Resolve agent definitions and history from the execution directory. Agent
   input is literal text; do not expand `{{ ... }}` or other template syntax.
 - Normalize model names when loading Markdown metadata. Child stdin is closed.
@@ -20,6 +21,8 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
 
 - `sirk http` binds to `127.0.0.1:8080` by default. An explicit address may
   override the bind; external exposure does not imply authentication or TLS.
+- Axum serves the HTTP API. `src/http/routes.rs` is the sole route registry;
+  controllers contain endpoint behavior without registering paths or methods.
 - HTTP exposes `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
   `POST /v1/agent/run`, `POST /v1/git/status`, and `POST /v1/git/add`.
   `/openapi.yaml` returns the embedded OpenAPI document as plain text.

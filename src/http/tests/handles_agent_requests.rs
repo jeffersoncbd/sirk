@@ -1,4 +1,5 @@
-use super::super::handle::handle;
+use super::request::request;
+use axum::body::to_bytes;
 use serde_json::Value;
 use std::{
     fs,
@@ -6,8 +7,8 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[test]
-fn handles_agent_requests() {
+#[tokio::test]
+async fn handles_agent_requests() {
     let directory = std::env::temp_dir().join(format!(
         "sirk-http-test-{}-{}",
         std::process::id(),
@@ -36,9 +37,10 @@ fn handles_agent_requests() {
         "input": "Explain this file"
     })
     .to_string();
-    let response = handle("POST", "/v1/agent/run", &body);
-    assert_eq!(response.status, 200);
-    let response: Value = serde_json::from_str(&response.body).unwrap();
+    let response = request("POST", "/v1/agent/run", body).await;
+    assert_eq!(response.status(), 200);
+    let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let response: Value = serde_json::from_slice(&response).unwrap();
     assert_eq!(response["result"], "served over HTTP");
     fs::remove_dir_all(directory).unwrap();
 }

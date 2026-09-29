@@ -1,12 +1,13 @@
-use super::super::handle::handle;
+use super::request::request;
 use crate::services::{BashService, Invocation};
+use axum::body::to_bytes;
 use std::{
     fs, io,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[test]
-fn handles_git_add_requests() {
+#[tokio::test]
+async fn handles_git_add_requests() {
     let directory = std::env::temp_dir().join(format!(
         "sirk-http-git-add-{}-{}",
         std::process::id(),
@@ -29,14 +30,17 @@ fn handles_git_add_requests() {
         .unwrap();
     assert!(result.status.success());
     fs::write(directory.join("generated.md"), "generated").unwrap();
-    let response = handle(
+    let response = request(
         "POST",
         "/v1/git/add",
-        &serde_json::json!({ "directory": directory }).to_string(),
-    );
-    assert_eq!(response.status, 200, "{}", response.body);
+        serde_json::json!({ "directory": directory }).to_string(),
+    )
+    .await;
+    let status = response.status();
+    let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(status, 200, "{}", String::from_utf8_lossy(&response));
     assert_eq!(
-        serde_json::from_str::<serde_json::Value>(&response.body).unwrap()["status"],
+        serde_json::from_slice::<serde_json::Value>(&response).unwrap()["status"],
         "ok"
     );
     let staged = BashService::default()
