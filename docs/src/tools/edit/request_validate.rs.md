@@ -1,8 +1,8 @@
 ## Summary
-Checks that an edit request has a path, coordinates, contents, and version compatible with its operation.
+Validates an edit request’s path, operation-specific coordinates and content, and optional SHA-256 version.
 
 ## Behavior
-Returns `Err` with a specific message for an empty path, invalid coordinates, contents supplied for a deletion, or a missing or invalid required version. Lines start at 1; versions must contain 64 hexadecimal characters. Returns `Ok(())` if all checks pass.
+Returns `Err` with a specific message if the path is blank, coordinates or content conflict with the operation, a required version is missing, or a supplied version is not 64 hexadecimal characters. Line numbers start at 1; returns `Ok(())` when all checks pass.
 
 ## Imports
-- `super::{Operation, Request}`: Operation and validated-request types.
+- `super::{Operation, Request}`: Operation variants and the request type.

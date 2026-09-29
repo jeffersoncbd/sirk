@@ -11,13 +11,13 @@ impl Pending {
         self.validate()?;
         let before = self.before.as_deref().ok_or("EDIT is not prepared")?;
         let after = self.request.apply_to(before)?;
-        let target = target(directory, &self.request.path, self.was_missing)?;
-        let current = read_optional(&target)?;
+        let prepared_target = target(directory, &self.request.path, self.was_missing)?;
+        let current = read_optional(&prepared_target)?;
         if current.as_deref() == Some(&after) {
-            File::open(&target)
+            File::open(&prepared_target)
                 .and_then(|f| f.sync_all())
                 .map_err(|e| e.to_string())?;
-            sync_parent(&target)?;
+            sync_parent(&prepared_target)?;
             return self.diff();
         }
         let expected = if self.was_missing { None } else { Some(before) };
@@ -26,6 +26,10 @@ impl Pending {
                 "EDIT conflict: file differs from both prepared and resulting content".into(),
             );
         }
+        if self.was_missing {
+            fs::create_dir_all(prepared_target.parent().unwrap()).map_err(|e| e.to_string())?;
+        }
+        let target = target(directory, &self.request.path, self.was_missing)?;
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let (temporary, mut file) = loop {
             let name = format!(

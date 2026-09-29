@@ -3,13 +3,7 @@
 /// The header makes the prefix self-describing while each source line, including
 /// its original line ending, remains after its `N | ` prefix.
 pub fn enumerate(content: &str) -> String {
-    let mut numbered = String::from("Line | Content\n");
-    for (index, line) in content.split_inclusive('\n').enumerate() {
-        numbered.push_str(&(index + 1).to_string());
-        numbered.push_str(" | ");
-        numbered.push_str(line);
-    }
-    numbered
+    super::enumerate_from(content, 1)
 }
 
 #[cfg(test)]
@@ -25,6 +19,10 @@ mod tests {
             assert_eq!(enumerated_content(&numbered).unwrap(), content);
         }
         assert_eq!(enumerate("one\ntwo"), "Line | Content\n1 | one\n2 | two");
+        assert_eq!(
+            crate::tools::read::enumerate_from("two\n", 2),
+            "Line | Content\n2 | two\n"
+        );
         assert!(enumerated_content("1 | one\n").is_err());
         assert!(enumerated_content("Line | Content\n2 | one\n").is_err());
     }

@@ -1,15 +1,13 @@
 ## Summary
-Organizes the read-tool modules and exposes its public functions.
+Exposes the public functions for reading UTF-8 files and paginating their contents.
 
 ## Behavior
-Declares internal helper modules and re-exports `enumerate`, `enumerated_content`, and `read` for external use.
+Declares the read-tool modules and re-exports selected functions for external use.
 
 ## Imports
-- `component`: Internal component module.
-- `component_match`: Component matching.
-- `components`: Component definitions.
+- `allowed`: Checks whether a path may be read.
 - `enumerate`: Numbers file lines.
-- `enumerated_content`: Extracts numbered contents.
-- `ignore`: Exclusion rules.
-- `ignored`: Handles ignored items.
+- `enumerate_from`: Numbers lines from a starting point.
+- `enumerated_content`: Extracts numbered content.
+- `page`: Selects a page of content.
 - `run`: Implements file reading.

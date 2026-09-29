@@ -73,10 +73,13 @@ generator's adapter/model. Existing definitions are never overwritten.
 ## Agent tool requests
 
 The agent can answer with a standalone `READ: <path>` line. READ returns the
-exact UTF-8 contents of a regular file inside the execution directory. It
-rejects symlinks resolving outside that directory. `.readignore` blocks paths
-matching its Git-style patterns; blank lines and `#` comments are ignored.
-For agents with `EDIT_TOOL: allow`, READ results include source line numbers.
+exact UTF-8 contents of a regular file inside the execution directory. To read
+a page, it can answer with `READ:` followed by one JSON object with `path`,
+positive one-based `offset`, and positive `limit`; omitted values default to
+the first line and 2,000 lines. It rejects symlinks resolving outside that
+directory. `.readignore` blocks paths matching its Git-style patterns; blank
+lines and `#` comments are ignored. For agents with `EDIT_TOOL: allow`, READ
+results include the original source line numbers.
 
 With `TREE_TOOL: allow`, an agent can answer with exactly `TREE`. It receives a
 JSON array of sorted, unique relative paths. Git ignores apply to untracked
@@ -84,13 +87,20 @@ files, and `.treeignore` additionally hides tracked or untracked paths. TREE
 requires a Git working tree.
 
 With `EDIT_TOOL: allow`, the agent can answer with `EDIT:` followed by one JSON
-object containing `path`, `operation`, and `input`. Operations are `insert`,
-`delete`, `replace`, `prepend`, and `append`; insert also needs `line`, while
-delete and replace need inclusive `start` and `end` coordinates. Coordinates
-start at 1. The agent must not supply `version`; S.I.R.K. reads the current
-file and verifies it before writing. A successful edit returns a plain diff
-to the agent. The target must be an existing regular UTF-8 file inside the
-execution directory.
+object containing `filePath`, `oldString`, `newString`, and optional
+`replaceAll`. The exact old string must occur once unless `replaceAll` is true.
+S.I.R.K. reads the current UTF-8 file, enforces `.readignore`, verifies it has
+not changed before writing, and returns a plain diff. The legacy line-based
+form with `path`, `operation`, and `input` remains supported for existing
+agents.
+
+With `EDIT_TOOL: allow`, the agent can also answer with `WRITE:` followed by
+one JSON object containing `filePath` and `content`. It creates or atomically
+replaces one UTF-8 regular file, creating needed directories inside the
+execution directory. WRITE enforces `.readignore`, rejects paths outside that
+directory and symbolic links, records its preparation before mutation, and
+returns a plain diff. S.I.R.K. does not expose Bash, Python, or any other
+command-execution tool to agents.
 
 With `DELETE_TOOL: allow`, the agent can answer with `DELETE:` followed by a
 JSON object containing `path`. HTTP cannot collect confirmation, so deletion

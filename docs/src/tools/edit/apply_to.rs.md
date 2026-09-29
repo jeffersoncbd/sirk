@@ -1,8 +1,8 @@
 ## Summary
-Applies an edit operation to contents and returns the updated text or an error.
+Applies a validated edit request to text and returns the result or an error.
 
 ## Behavior
-Validates the request and checks that the supplied version matches the current contents. Calculates edit boundaries for the operation and rejects insertions or ranges beyond the end of the file. Finally, combines the previous contents, input, and preserved portion.
+Checks the request and optional version, then handles writes and string replacements directly. Other operations calculate byte boundaries from line numbers, reject ranges beyond EOF, and combine the input with the unchanged text.
 
 ## Imports
 - `super::{Operation, Request, version}`: Edit types and version calculation.

@@ -6,5 +6,6 @@ mod edit_request;
 mod execute;
 mod prompt;
 mod run;
+mod write_request;
 
 pub(crate) use run::run;

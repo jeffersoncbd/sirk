@@ -1,11 +1,11 @@
 ## Summary
-Prepares and applies an edit request while preventing a completed edit from being repeated.
+Prepares and commits an edit request while preventing completed edits from being repeated.
 
 ## Behavior
-Parses the payload as `Request` and rejects versions supplied by the requester. If the same edit already appears in history, returns a message without applying it. Otherwise, reads the file, calculates its version, prepares the edit, records and saves the request in history before confirming the change. Read or preparation errors become messages for correcting the request; parsing, serialization, save, or confirmation errors are propagated as `Err`.
+Parses the request and rejects a supplied version. Returns a message if an identical edit is already in history. For writes, checks that the path is allowed; for other operations, reads the file and may add its version. Preparation failures return corrective messages. On success, records and saves the pending edit before committing it; parsing, serialization, save, and commit errors are returned as `Err`.
 
 ## Imports
-- `Block`, `History`: History and request recording.
-- `Pending`, `Request`: Edit representation and preparation.
-- `read`: Reads the file before editing.
-- `serde_json`: JSON parsing and serialization.
+- `Block`, `History`: History records and persistence.
+- `Pending`, `Request`: Edit request preparation and commit.
+- `read`: Checks write access and reads files.
+- `serde_json`: Parses requests and serializes history.

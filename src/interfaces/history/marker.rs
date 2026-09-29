@@ -9,6 +9,7 @@ impl Block {
             Self::Tree(_) => "==> TREE",
             Self::Read(_) => "==> READ",
             Self::Edit(_) => "==> EDIT",
+            Self::Write(_) => "==> WRITE",
             Self::Delete(_) => "==> DELETE",
         }
     }

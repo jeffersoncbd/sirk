@@ -1,8 +1,8 @@
 ## Summary
-Returns the text marker corresponding to a history block type.
+Returns the text marker for a history block.
 
 ## Behavior
-Maps each `Block` variant to a fixed string and returns it as an `&str` reference without side effects.
+Matches each `Block` variant to a fixed marker string and returns it as `&str` without side effects.
 
 ## Imports
-- `super::Block`: Block type used to define the `marker` method.
+- `super::Block`: Defines the history block variants.

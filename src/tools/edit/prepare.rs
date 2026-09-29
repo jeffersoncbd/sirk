@@ -5,7 +5,7 @@ impl Pending {
     pub fn prepare(&mut self, directory: &Path) -> Result<(), String> {
         let allow_missing = matches!(
             self.request.operation,
-            Operation::Append | Operation::Prepend
+            Operation::Append | Operation::Prepend | Operation::Write
         );
         let target = target(directory, &self.request.path, allow_missing)?;
         let content = read_optional(&target)?;

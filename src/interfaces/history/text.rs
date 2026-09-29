@@ -9,6 +9,7 @@ impl Block {
             | Self::Tree(text)
             | Self::Read(text)
             | Self::Edit(text)
+            | Self::Write(text)
             | Self::Delete(text) => text,
         }
     }

@@ -9,6 +9,7 @@ pub(super) fn reserved(line: &str) -> bool {
             | "==> TREE"
             | "==> READ"
             | "==> EDIT"
+            | "==> WRITE"
             | "==> DELETE"
             | SEPARATOR
     ) || line.starts_with("Step ")

@@ -20,15 +20,30 @@ pub(super) fn edit_request(history: &mut History, payload: &str) -> Result<Strin
     }) {
         return Ok("No changes applied: this EDIT request was already completed. Do not repeat it; provide a final response or a different edit.".into());
     }
-    let before = match read::read(&history.snapshot.directory, &request.path) {
-        Ok(before) => before,
-        Err(error) => {
+    if request.operation == crate::tools::edit::Operation::Write {
+        if let Err(error) = read::allowed(&history.snapshot.directory, &request.path) {
             return Ok(format!(
-                "EDIT failed: {error}. Correct the request and try again."
+                "WRITE failed: {error}. Correct the request and try again."
             ));
         }
-    };
-    request.version = Some(crate::tools::edit::version(&before));
+    } else {
+        let before = match read::read(&history.snapshot.directory, &request.path) {
+            Ok(before) => before,
+            Err(error) => {
+                return Ok(format!(
+                    "EDIT failed: {error}. Correct the request and try again."
+                ));
+            }
+        };
+        if request.old_string.is_none()
+            && !matches!(
+                request.operation,
+                crate::tools::edit::Operation::Append | crate::tools::edit::Operation::Prepend
+            )
+        {
+            request.version = Some(crate::tools::edit::version(&before));
+        }
+    }
     let mut pending = Pending {
         request,
         before: None,

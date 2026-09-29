@@ -17,6 +17,7 @@ pub enum Block {
     Tree(String),
     Read(String),
     Edit(String),
+    Write(String),
     Delete(String),
 }
 

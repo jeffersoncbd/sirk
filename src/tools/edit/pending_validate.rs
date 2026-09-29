@@ -7,7 +7,7 @@ impl Pending {
             && (self.before.as_deref() != Some("")
                 || !matches!(
                     self.request.operation,
-                    Operation::Append | Operation::Prepend
+                    Operation::Append | Operation::Prepend | Operation::Write
                 ))
         {
             return Err("invalid EDIT creation record".into());

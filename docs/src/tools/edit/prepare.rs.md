@@ -1,12 +1,12 @@
 ## Summary
-Prepares an edit by checking the file and applying the operation to its current contents.
+Prepares an edit by resolving its target and validating the operation against the current contents.
 
 ## Behavior
-Allows a nonexistent file only for `Append` or `Prepend`; otherwise, returns an error. Reads the contents, applies the requested operation to validate it, and records the previous contents and whether the file was missing.
+Allows missing targets for `Append`, `Prepend`, and `Write`; other operations require an existing file. Reads the optional contents, applies the requested operation to validate it, then stores whether the file was missing and its previous contents. Returns an error if target resolution, reading, or application fails.
 
 ## Imports
-- `Operation`: Identifies the edit type.
-- `Pending`: Type that owns `prepare`.
-- `read_optional`: Reads contents if the file exists.
-- `target`: Resolves the target file path.
-- `Path`: Represents the working directory.
+- `Operation`: Identifies edit types that allow missing files.
+- `Pending`: Provides the request and stores preparation state.
+- `read_optional`: Reads file contents when the target exists.
+- `target`: Resolves the target path and checks missing-file rules.
+- `Path`: Supplies the working directory.

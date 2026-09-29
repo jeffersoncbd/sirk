@@ -1,15 +1,15 @@
 ## Summary
-Applies a prepared edit to the target file and returns its diff.
+Commits the prepared edit to its target file and returns the resulting diff.
 
 ## Behavior
-Validates the edit, calculates the final contents, and checks whether the file already contains that result; if so, synchronizes the file and its directory. Otherwise, requires the current contents to match the expected state, writes the result to a temporary file, and checks again for concurrent changes. Publishes the file without overwriting a target created during the operation, or replaces the existing file, synchronizes the directory, and removes the temporary file on error. Failures are returned as `Err`.
+Validates the edit and computes the new contents. It returns an error if the target matches neither the prepared nor resulting contents, or changes during preparation. Otherwise, it synchronizes an already-applied result or writes and syncs a temporary file, then publishes it while preserving existing permissions and avoiding overwriting a concurrently created target. Temporary files are removed on failure.
 
 ## Imports
-- `Pending`: Type that owns the method.
-- `read_optional`: Optional read of the target contents.
-- `sync_parent`: Synchronization of the parent directory.
-- `target`: Resolution of the target path.
-- `std::fs`: File metadata and operations.
-- `std::io::Write`: Writing temporary contents.
-- `std::path::Path`: Represents the target directory.
-- `std::sync::atomic`: Concurrent generation of temporary names.
+- `Pending`: Provides the edit request and commit state.
+- `read_optional`: Reads the target when it exists.
+- `sync_parent`: Synchronizes the target's parent directory.
+- `target`: Resolves the edit's target path.
+- `std::fs`: Creates, inspects, and publishes files.
+- `std::io::Write`: Writes the new file contents.
+- `std::path::Path`: Represents the input directory.
+- `std::sync::atomic`: Generates unique temporary names.

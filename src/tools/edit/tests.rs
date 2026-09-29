@@ -15,6 +15,9 @@ fn request(operation: Operation, before: &str, input: &str) -> Request {
         start: None,
         end: None,
         version: Some(version(before)),
+        old_string: None,
+        new_string: None,
+        replace_all: false,
         input: input.into(),
     }
 }

@@ -25,17 +25,26 @@ pub enum Operation {
     Replace,
     Prepend,
     Append,
+    Write,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Request {
+    #[serde(rename = "filePath", alias = "path")]
     pub path: String,
     pub operation: Operation,
     pub line: Option<usize>,
     pub start: Option<usize>,
     pub end: Option<usize>,
     pub version: Option<String>,
+    #[serde(default, rename = "oldString")]
+    pub old_string: Option<String>,
+    #[serde(default, rename = "newString")]
+    pub new_string: Option<String>,
+    #[serde(default, rename = "replaceAll")]
+    pub replace_all: bool,
+    #[serde(default, rename = "content", alias = "input")]
     pub input: String,
 }
 

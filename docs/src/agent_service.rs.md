@@ -1,13 +1,14 @@
 ## Summary
-Exposes `run::run` as the entry point for agent execution.
+Provides the transport-independent agent execution module and re-exports its entry point.
 
 ## Behavior
-Declares the service's internal modules and re-exports `run` with crate-level visibility; this file defines no function.
+Declares the service’s internal modules and makes `run::run` available within the crate.
 
 ## Imports
 - `conversation`: Internal conversation module.
-- `delete_request`: Internal module for deletion requests.
-- `edit_request`: Internal module for edit requests.
+- `delete_request`: Internal deletion-request module.
+- `edit_request`: Internal edit-request module.
 - `execute`: Internal execution module.
 - `prompt`: Internal prompt module.
-- `run::run`: Function re-exported for use within the crate.
+- `run::run`: Re-exported agent execution entry point.
+- `write_request`: Internal write-request module.

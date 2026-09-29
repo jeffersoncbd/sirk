@@ -32,13 +32,14 @@ src/adapters/openrouter/endpoint.rs - Configures the OpenRouter chat endpoint fr
 src/adapters/openrouter/new.rs - Creates an OpenRouter adapter with an executable and optional base URL and API key, discarding empty values.
 src/adapters/openrouter/nonempty.rs - Returns the original string if it contains non-whitespace content; otherwise, returns `None`.
 src/adapters/resolve.rs - Finds a harness adapter by name and returns `None` when no match exists.
-src/agent_service.rs - Exposes `run::run` internally as the entry point for agent execution.
-src/agent_service/conversation.rs - Runs the agent conversation, processing responses and tools until a final response is received.
+src/agent_service.rs - Organizes internal agent execution modules and re-exports the crate’s agent execution entry point.
+src/agent_service/conversation.rs - Runs an agent conversation, executes permitted tool requests, and records each exchange in history.
 src/agent_service/delete_request.rs - Processes file-deletion requests, checks authorization for forced execution, and prevents repeats.
-src/agent_service/edit_request.rs - Prepares and applies an edit request, records it in history, and prevents repeating completed edits.
+src/agent_service/edit_request.rs - Prepares and commits edit requests while checking access and preventing duplicates.
 src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
-src/agent_service/prompt.rs - Builds the agent prompt from tool instructions, permissions, and filtered conversation history.
+src/agent_service/prompt.rs - Builds agent prompts from configured tool instructions and labeled conversation history, skipping certain follow-up inputs.
 src/agent_service/run.rs - Runs a conversation with an agent loaded for a directory after validating its adapter and creating history.
+src/agent_service/write_request.rs - Converts a JSON payload into a write operation and delegates it to `edit_request`.
 src/agents.rs - Validates metadata and instructions in a text definition and converts it into an agent.
 src/agents/call_prefix.rs - Deserializes `call_prefix` as an argument list, accepting a string or list and treating absence as an empty list.
 src/agents/delete_permission.rs - Deserializes `"allow"` as `true` and rejects other values with a descriptive error.
@@ -60,7 +61,7 @@ src/history.rs - Defines mutable conversation history, including its path, snaps
 src/history/create.rs - Creates and saves empty history for a snapshot in a file named with the time and process PID.
 src/history/drop.rs - Releases the `History` lock when the value is dropped, ignoring unlock errors.
 src/history/lock.rs - Acquires an exclusive lock on the history lock file.
-src/history/reserved.rs - Identifies lines containing reserved history markers without side effects.
+src/history/reserved.rs - Detects whether a line matches a reserved history marker or prefix.
 src/history/save.rs - Persists the history snapshot to disk by serializing metadata and blocks as YAML.
 src/http.rs - Exposes the HTTP server entry point and generated OpenAPI document to other modules.
 src/http/content_type.rs - Defines shared UTF-8 media type constants for HTML, JSON, and plain text responses.
@@ -106,9 +107,9 @@ src/http/tests/request.rs - Builds an HTTP request and dispatches it through the
 src/input.rs - Reads user responses and confirmations from the interactive terminal.
 src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.
 src/interfaces/harness/display.rs - Formats `HarnessError` variants as readable messages, including the adapter and available details.
-src/interfaces/history.rs - Defines `Snapshot` and `Block` for representing and serializing history records.
-src/interfaces/history/marker.rs - Returns the fixed text marker corresponding to a history block type.
-src/interfaces/history/text.rs - Returns a reference to the text associated with a history block without modifying it.
+src/interfaces/history.rs - Defines serializable snapshot and content block types for recording agent activity and file operations.
+src/interfaces/history/marker.rs - Returns the fixed text marker associated with each history block variant.
+src/interfaces/history/text.rs - Returns a reference to the text stored in a history block.
 src/interfaces/input.rs - Defines the shared interface for asking the user questions and awaiting confirmations.
 src/interfaces/invocation.rs - Prepends a command to an invocation while preserving the original program and execution settings.
 src/interfaces/mod.rs - Centralizes and re-exports shared harness, history, user input, and invocation types.
@@ -134,38 +135,43 @@ src/services/bash/render.rs - Converts an `Invocation` into a command line, quot
 src/services/mod.rs - Collects and re-exports modules and types used to build and run commands.
 src/services/quote.rs - Converts `value` into shell-safe text while preserving references to valid environment variables.
 src/tools/delete.rs - Safely removes a regular file inside the execution directory, validating the path and synchronizing its parent.
-src/tools/edit.rs - Defines types representing file edit operations, their parameters, and previous file state.
-src/tools/edit/apply_to.rs - Applies a validated edit and returns updated contents or an error.
-src/tools/edit/commit.rs - Applies a pending edit to its target file, protects against concurrent changes, and returns a diff.
+src/tools/edit.rs - Defines edit request and pending state types, re-exporting edit display and version functions.
+src/tools/edit/apply_to.rs - Applies validated edit requests to text, handling writes, replacements, and line-based edits.
+src/tools/edit/commit.rs - Commits a validated prepared edit to its target file and returns the resulting diff.
 src/tools/edit/diff.rs - Generates a unified diff between original and edited contents to present prepared changes.
 src/tools/edit/display.rs - Renders and prints a diff, using colors when stdout is a terminal and `NO_COLOR` is unset.
-src/tools/edit/pending_validate.rs - Validates a `Pending` record against its request, previous file state, and operation.
-src/tools/edit/prepare.rs - Prepares a file edit by validating the operation and recording previous contents or their absence.
+src/tools/edit/pending_validate.rs - Validates a pending edit record and returns the first error if its contents or operation are invalid.
+src/tools/edit/prepare.rs - Resolves an edit target and validates the operation against its current contents.
 src/tools/edit/read_optional.rs - Reads a UTF-8 file and returns its contents, absence, or a read error.
 src/tools/edit/render.rs - Renders diffs, highlighting additions and removals with colors and escaping content control characters.
-src/tools/edit/request_validate.rs - Validates that edit request fields are compatible with the requested operation.
+src/tools/edit/request_validate.rs - Validates edit request paths, operation-specific fields, and optional SHA-256 versions.
 src/tools/edit/sync_parent.rs - Synchronizes the parent directory of a path to disk and converts failures into messages.
-src/tools/edit/target.rs - Resolves and validates an edit target path, ensuring it stays within the execution directory.
-src/tools/edit/tests.rs - Creates an edit request with its operation, input, and version calculated from previous contents.
+src/tools/edit/target.rs - Resolves edit target paths and rejects invalid paths or targets outside the execution directory.
+src/tools/edit/tests.rs - Builds a file edit request using the file’s prior contents to compute its version.
 src/tools/edit/tests/append_and_prepend_are_exact_and_versions_are_checked.rs - Validates append and prepend operations, including empty input, and detects version conflicts.
 src/tools/edit/tests/diff_and_color_rendering_preserve_plain_results.rs - Tests diff generation and rendering, including colors, escapes, and missing final newlines.
 src/tools/edit/tests/line_edits_preserve_bytes_and_handle_eof.rs - The file’s documented behavior was not provided, so I can’t summarize its purpose.
 src/tools/edit/version.rs - Calculates the SHA-256 hash of a string's UTF-8 bytes and returns a lowercase hexadecimal digest.
-src/tools/execute_with_input.rs - Runs TREE or READ in the supplied directory, formatting listings or returning requested contents.
+src/tools/execute_with_input.rs - Executes TREE or READ in the given directory and returns the result, reporting errors for failed or unknown operations.
 src/tools/format_paths.rs - Formats file paths as a pretty-printed JSON array, reporting conversion and serialization errors with the tool name.
 src/tools/mod.rs - Organizes agent tools and re-exports execution and request operations.
 src/tools/new_agent.rs - `create_with` gathers and validates agent settings, generates the definition, and safely saves it under `.agents`.
 src/tools/new_agent/adapter.rs - Prompts for an available adapter and repeats the question if the input does not match.
 src/tools/new_agent/answer.rs - Repeats prompts until receiving a nonempty value and propagates interaction errors.
 src/tools/new_agent/create.rs - Generates an agent in the supplied directory and returns the saved path.
-src/tools/read.rs - Organizes the read tool's internal modules and exposes its main functions for external use.
+src/tools/read.rs - Exposes file-reading and pagination functions for external use.
+src/tools/read/allowed.rs - Validates that a requested path is nonempty, safely contained, resolvable, and not ignored.
 src/tools/read/component.rs - Compares a pattern and a value as character sequences and returns whether they match.
 src/tools/read/component_match.rs - Compares character sequences with `*` and `?` wildcards and reports whether they match.
 src/tools/read/components.rs - Compares pattern and path components, supporting `**` and prefix matching.
-src/tools/read/enumerate.rs - Prefixes each content line with numbering starting at 1 while preserving its original terminators.
+src/tools/read/enumerate.rs - enumerate numbers file content lines from one and returns the formatted text.
+src/tools/read/enumerate_from.rs - Formats content lines with numbered prefixes starting at a supplied offset and returns them after a header.
 src/tools/read/enumerated_content.rs - Reconstructs original contents from numbered output by removing numbers and joining valid lines.
 src/tools/read/ignore.rs - Determines whether a path matches an ignore pattern by comparing its components.
 src/tools/read/ignored.rs - Checks whether a path matches exclusion rules defined in `.readignore`.
+src/tools/read/page.rs - Reads and returns a requested line range from a file under the specified directory.
+src/tools/read/page_tests.rs - The file contains only tests and has no production function to summarize.
+src/tools/read/request.rs - Parses READ input into a file path, line offset, and limit, returning validation errors as strings.
 src/tools/read/run.rs - Reads UTF-8 files inside the execution directory while blocking invalid or ignored paths.
 src/tools/request.rs - Parses file tree and read requests, identifying the request type and requested path.
 src/tools/tree.rs - Represents a file tree root and its sorted, deduplicated relative paths.

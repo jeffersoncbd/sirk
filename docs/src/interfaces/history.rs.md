@@ -1,10 +1,10 @@
 ## Summary
-Defines the data types used to represent history records.
+Defines history record types for snapshots and recorded content blocks.
 
 ## Behavior
-`Snapshot` holds the directory and agent, supports serialization, and rejects unknown fields. `Block` enumerates recorded content types, each associated with a string.
+`Snapshot` stores a directory and agent and supports serialization and deserialization while rejecting unknown fields. `Block` represents recorded asks, inputs, outputs, trees, reads, edits, writes, and deletes, each with associated text.
 
 ## Imports
-- `crate::agents::Agent`: Agent type stored in the snapshot.
-- `serde`: Derives serialization and deserialization for `Snapshot`.
-- `std::path::PathBuf`: Represents the snapshot directory.
+- `crate::agents::Agent`: Agent stored in a snapshot.
+- `serde`: Serialization and deserialization derives.
+- `std::path::PathBuf`: Snapshot directory path.

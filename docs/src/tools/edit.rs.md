@@ -1,8 +1,8 @@
 ## Summary
-Defines data types for requesting and recording file edits.
+Defines edit request types and re-exports edit display and version functions.
 
 ## Behavior
-`Operation` enumerates the available operations; `Request` holds the path, operation, parameters, and edit content. `Pending` stores the request and the file's previous state, including whether the file did not exist.
+`Operation` lists supported edits. `Request` carries the target path, operation, optional edit parameters, and input content; unknown fields are rejected during deserialization. `Pending` stores a request and the file’s prior content or missing-file state.
 
 ## Imports
-- `serde`: Serializes and deserializes the defined types.
+- `serde`: Provides serialization and deserialization derives.

@@ -1,8 +1,8 @@
 ## Summary
-Creates an edit request for `file.txt` with the version of the previous contents.
+Builds an edit request for `file.txt` using the version of its prior contents.
 
 ## Behavior
-Sets the supplied operation and input, leaves the line and range fields empty, and calculates the version from `before`.
+Sets the operation and input, leaves optional edit fields empty, and computes the version from `before`.
 
 ## Imports
-- `super::*`: Imports the parent module's types and functions.
+- `super::*`: Provides the parent module's types and functions.

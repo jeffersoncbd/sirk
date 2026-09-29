@@ -44,6 +44,12 @@ pub(super) fn conversation(
             }
             let result = super::edit_request::edit_request(history, payload.trim())?;
             history.blocks.push(Block::Edit(result));
+        } else if let Some(payload) = response.trim().strip_prefix("WRITE:") {
+            if !agent.edit_tool {
+                return Err("agent requested EDIT_TOOL without permission".into());
+            }
+            let result = super::write_request::write_request(history, payload.trim())?;
+            history.blocks.push(Block::Write(result));
         } else if let Some(payload) = response.trim().strip_prefix("DELETE:") {
             if !agent.delete_tool {
                 return Err("agent requested DELETE_TOOL without permission".into());
@@ -54,11 +60,15 @@ pub(super) fn conversation(
             if tool == "TREE" && !agent.tree_tool {
                 return Err("agent requested TREE_TOOL without permission".into());
             }
-            let result = tools::execute_with_input(tool, argument, &history.snapshot.directory)?;
-            let result = if tool == "READ" && agent.edit_tool {
-                tools::read::enumerate(&result)
+            let result = if tool == "READ" {
+                let page = tools::read::page(&history.snapshot.directory, argument)?;
+                if agent.edit_tool {
+                    tools::read::enumerate_from(&page.content, page.offset)
+                } else {
+                    page.content
+                }
             } else {
-                result
+                tools::execute_with_input(tool, argument, &history.snapshot.directory)?
             };
             history.blocks.push(if tool == "TREE" {
                 Block::Tree(result)
