@@ -1,12 +1,12 @@
 ## Summary
-Converts requests into non-streaming calls to the Ollama web API and extracts the response.
+Builds non-streaming Ollama API invocations and parses their responses.
 
 ## Behavior
-`invocation` requires a model, rejects requests with event streaming, and builds a POST call with the prompt and model; it includes authentication when a key is available and resolves the configured endpoint. `response` reads the JSON `response` field or returns an error if the contents are invalid.
+`invocation` requires a model, rejects event streams, and creates a POST request with the prompt and model. It adds authorization from the configured API key when available and resolves the endpoint. `response` extracts the response text and token usage when both counts are present, or returns an error for invalid JSON.
 
 ## Imports
-- `api_key`, `default`, `dotenv`, `endpoint`, `new`, `nonempty`: Adapter configuration and construction.
-- `std::collections::BTreeMap`: Stores call environment variables.
-- `serde::Deserialize`: Deserializes the JSON response.
-- `serde_json::json`: Builds the request JSON body.
-- `crate::harness`: Types and trait for harness calls.
+- `api_key`, `endpoint`: Resolve authentication and request URL.
+- `BTreeMap`: Stores invocation environment variables.
+- `Deserialize`: Parses the API response JSON.
+- `json`: Builds the request body.
+- `crate::harness`: Adapter, invocation, response, and error types.

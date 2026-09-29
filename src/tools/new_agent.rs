@@ -85,7 +85,7 @@ pub fn create_with(
     let generated = generator
         .response(generate(&invocation)?)
         .map_err(|e| e.to_string())?;
-    let agent = Agent::parse(&name, generated.trim()).map_err(|e| {
+    let agent = Agent::parse(&name, generated.text.trim()).map_err(|e| {
         format!("generator returned an invalid agent definition; no file was saved: {e}")
     })?;
     if agent.adapter != adapter

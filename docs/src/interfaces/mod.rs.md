@@ -1,11 +1,11 @@
 ## Summary
-Collects and re-exports types shared across application modules.
+Defines shared interface types and re-exports them for use across application modules.
 
 ## Behavior
-Declares the internal `harness`, `history`, `input`, and `invocation` modules and publicly exposes selected types for shared use.
+Declares four internal modules and publicly re-exports selected types from each.
 
 ## Imports
-- `harness`: Adapter, error, and execution request.
+- `harness`: Adapter, error, response, request, and token usage types.
 - `history`: History blocks and snapshots.
-- `input`: User input.
-- `invocation`: Invocation representation.
+- `input`: User input type.
+- `invocation`: Invocation type.

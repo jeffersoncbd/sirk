@@ -70,10 +70,14 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   silently adopt provider session resumption.
 - A flow creates exactly one transcript. Before each provider call, append the
   complete rendered prompt; after it, append the complete normalized model
-  response. Do not record agent metadata, resumable state, or tool-only
-  entries. Use file and directory synchronization plus exclusive locks.
+  response and any provider-reported input and output token counts. Do not
+  record agent-definition metadata, resumable state, or tool-only entries. Use
+  file and directory synchronization plus exclusive locks.
 - Empty agent responses fail; empty READ results are valid. Flow transcripts
   are not resumed through the CLI.
+- Each flow also maintains `history/RESUME_<flow-id>.log`. It groups provider
+  invocation counts by adapter, includes token totals only when reported, and
+  lists each completed agent invocation in its adapter group in call order.
 
 ## Agent generation
 

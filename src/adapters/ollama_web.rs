@@ -10,7 +10,9 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::harness::{HarnessAdapter, HarnessError, Invocation, RunRequest};
+use crate::harness::{
+    HarnessAdapter, HarnessError, HarnessResponse, Invocation, RunRequest, TokenUsage,
+};
 
 const DEFAULT_URL: &str = "https://ollama.com/api";
 
@@ -73,13 +75,23 @@ impl HarnessAdapter for OllamaWebAdapter {
         })
     }
 
-    fn response(&self, stdout: String) -> Result<String, HarnessError> {
+    fn response(&self, stdout: String) -> Result<HarnessResponse, HarnessError> {
         #[derive(Deserialize)]
         struct GenerateResponse {
             response: String,
+            prompt_eval_count: Option<u64>,
+            eval_count: Option<u64>,
         }
         serde_json::from_str::<GenerateResponse>(&stdout)
-            .map(|response| response.response)
+            .map(|response| HarnessResponse {
+                text: response.response,
+                usage: response.prompt_eval_count.zip(response.eval_count).map(
+                    |(input_tokens, output_tokens)| TokenUsage {
+                        input_tokens,
+                        output_tokens,
+                    },
+                ),
+            })
             .map_err(|error| HarnessError::InvalidResponse {
                 adapter: self.id(),
                 message: error.to_string(),
@@ -142,9 +154,17 @@ mod tests {
         let adapter = OllamaWebAdapter::new("curl", "https://example.test", None);
         assert_eq!(
             adapter
-                .response(r#"{"response":"Done."}"#.to_owned())
+                .response(
+                    r#"{"response":"Done.","prompt_eval_count":12,"eval_count":4}"#.to_owned()
+                )
                 .unwrap(),
-            "Done."
+            HarnessResponse {
+                text: "Done.".to_owned(),
+                usage: Some(TokenUsage {
+                    input_tokens: 12,
+                    output_tokens: 4,
+                }),
+            }
         );
         assert!(adapter.response("not json".to_owned()).is_err());
     }

@@ -1,11 +1,11 @@
 ## Summary
-Adapts harness requests into non-streaming OpenRouter chat API calls and extracts response content.
+Builds non-streaming OpenRouter chat requests and extracts response text and token usage.
 
 ## Behavior
-`invocation` requires a model and rejects event streams; it then retrieves the API key and builds a POST call with the prompt, model, and authentication in the environment. Configuration errors are propagated. `response` parses the JSON and returns the first choice's content, or an error if the response is invalid or contains no choices.
+`invocation` requires a model, rejects event streams, and returns a POST invocation with the prompt, endpoint, and API key supplied through the environment; configuration errors propagate. `response` parses the JSON, returns the first choice’s content and token usage when both counts are present, and reports invalid JSON or missing choices as errors.
 
 ## Imports
-- `std::collections::BTreeMap`: Builds the call's environment variables.
-- `serde::Deserialize`: Parses the JSON response.
-- `serde_json::json`: Builds the request JSON body.
-- `crate::harness`: Provides adapter types and errors.
+- `std::collections::BTreeMap`: Stores invocation environment variables.
+- `serde::Deserialize`: Deserializes the API response.
+- `serde_json::json`: Builds the request body.
+- `crate::harness`: Provides adapter types, requests, and errors.

@@ -33,30 +33,34 @@ pub(super) fn conversation(
         let response = adapter
             .response(execute(&invocation)?)
             .map_err(|error| error.to_string())?;
-        history.record_output(&response)?;
-        if response.trim().is_empty() {
+        history.record_model_call(adapter.id(), response.usage.as_ref());
+        history.record_output(&response.text)?;
+        if let Some(usage) = response.usage.as_ref() {
+            history.record_usage(adapter.id(), usage)?;
+        }
+        if response.text.trim().is_empty() {
             return Err("agent returned an empty response; input remains pending".into());
         }
-        history.blocks.push(Block::Output(response.clone()));
-        if let Some(payload) = response.trim().strip_prefix("EDIT:") {
+        history.blocks.push(Block::Output(response.text.clone()));
+        if let Some(payload) = response.text.trim().strip_prefix("EDIT:") {
             if !agent.edit_tool {
                 return Err("agent requested EDIT_TOOL without permission".into());
             }
             let result = super::edit_request::edit_request(history, payload.trim())?;
             history.blocks.push(Block::Edit(result));
-        } else if let Some(payload) = response.trim().strip_prefix("WRITE:") {
+        } else if let Some(payload) = response.text.trim().strip_prefix("WRITE:") {
             if !agent.edit_tool {
                 return Err("agent requested EDIT_TOOL without permission".into());
             }
             let result = super::write_request::write_request(history, payload.trim())?;
             history.blocks.push(Block::Write(result));
-        } else if let Some(payload) = response.trim().strip_prefix("DELETE:") {
+        } else if let Some(payload) = response.text.trim().strip_prefix("DELETE:") {
             if !agent.delete_tool {
                 return Err("agent requested DELETE_TOOL without permission".into());
             }
             let result = super::delete_request::delete_request(history, payload.trim())?;
             history.blocks.push(Block::Delete(result));
-        } else if let Some((tool, argument)) = tools::request(&response) {
+        } else if let Some((tool, argument)) = tools::request(&response.text) {
             if tool == "TREE" && !agent.tree_tool {
                 return Err("agent requested TREE_TOOL without permission".into());
             }
@@ -75,10 +79,10 @@ pub(super) fn conversation(
             } else {
                 Block::Read(result)
             });
-        } else if response.trim_start().starts_with("ASK:") {
+        } else if response.text.trim_start().starts_with("ASK:") {
             return Err("user input is unavailable in this mode".into());
         } else {
-            return Ok(response);
+            return Ok(response.text);
         }
     }
 }

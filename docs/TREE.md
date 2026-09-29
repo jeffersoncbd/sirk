@@ -9,7 +9,7 @@ src/adapters/mod.rs - Centralizes available adapters, re-exports adapter resolut
 src/adapters/ollama.rs - Converts supported requests into `ollama run` invocations with a model, prompt, and working directory.
 src/adapters/ollama/default.rs - Creates and returns a default `OllamaAdapter` identified by the name `ollama`.
 src/adapters/ollama/new.rs - Initializes an OllamaAdapter by storing the supplied executable as text.
-src/adapters/ollama_web.rs - Adapts requests into non-streaming calls to the Ollama web API and extracts the response.
+src/adapters/ollama_web.rs - Builds non-streaming Ollama requests and extracts response text and token usage from API responses.
 src/adapters/ollama_web/api_key.rs - Gets the Ollama API key, prioritizing adapter configuration, the environment, and the dotenv file.
 src/adapters/ollama_web/default.rs - Defines default Ollama Web adapter values using `curl` with no base URL or API key.
 src/adapters/ollama_web/dotenv.rs - Gets a nonempty key value from a directory's `.env` file, returning no value when absent.
@@ -24,7 +24,7 @@ src/adapters/opencode/new.rs - Creates an OpenCodeAdapter that stores the suppli
 src/adapters/opencode/tests.rs - Declares and organizes OpenCode adapter test modules with supporting symbols and types.
 src/adapters/opencode/tests/does_not_enable_automatic_permission_approval.rs - Verifies that the OpenCode adapter does not enable automatic permission approval.
 src/adapters/opencode/tests/translates_generic_options_to_opencode_run.rs - Verifies that generic options convert to the expected OpenCode invocation.
-src/adapters/openrouter.rs - Converts harness requests into non-streaming OpenRouter API calls and extracts response content.
+src/adapters/openrouter.rs - Builds non-streaming OpenRouter chat requests and extracts response text and token usage.
 src/adapters/openrouter/api_key.rs - Gets the OpenRouter API key from available configuration or returns an error if none is found.
 src/adapters/openrouter/default.rs - Defines the OpenRouter adapter using `curl` with no base URL or API key configured.
 src/adapters/openrouter/dotenv.rs - Reads a nonempty key value from a directory's `.env` file when present.
@@ -33,12 +33,12 @@ src/adapters/openrouter/new.rs - Creates an OpenRouter adapter with an executabl
 src/adapters/openrouter/nonempty.rs - Returns the original string if it contains non-whitespace content; otherwise, returns `None`.
 src/adapters/resolve.rs - Finds a harness adapter by name and returns `None` when no match exists.
 src/agent_service.rs - Organizes internal agent execution modules and re-exports the crate’s agent execution entry point.
-src/agent_service/conversation.rs - Runs an agent conversation, records its history, executes permitted requests, and returns a final response or error.
+src/agent_service/conversation.rs - Runs an agent conversation, recording history and handling permitted tool requests until completion or error.
 src/agent_service/delete_request.rs - Validates deletion requests, prevents repeats, and performs authorized forced file deletion.
 src/agent_service/edit_request.rs - Prepares and commits edit requests while enforcing path permissions and preventing duplicate completed edits.
 src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
 src/agent_service/prompt.rs - Builds agent prompts from configured tool instructions and labeled conversation history, skipping certain follow-up inputs.
-src/agent_service/run.rs - Runs a conversation with a configured agent for the specified directory and input.
+src/agent_service/run.rs - Runs the selected agent conversation in a directory, records its history and resume state, and returns its result or error.
 src/agent_service/write_request.rs - Converts a JSON payload into a write operation and delegates it to `edit_request`.
 src/agents.rs - Validates metadata and instructions in a text definition and converts it into an agent.
 src/agents/call_prefix.rs - Deserializes `call_prefix` as an argument list, accepting a string or list and treating absence as an empty list.
@@ -56,16 +56,21 @@ src/git_service/add.rs - Adds all changes in the project associated with the sup
 src/git_service/project.rs - Resolves a Git directory and returns its root and relative prefix, converting failures into error messages.
 src/git_service/run.rs - Runs Git commands in a directory and returns stdout bytes, contextualizing execution and status failures.
 src/git_service/status.rs - Lists changed Git paths under the requested directory in order without duplicates, excluding ignored files.
-src/harness.rs - Re-exports interface types that define the harness integration contracts.
-src/history.rs - Defines `History` to store a conversation’s path, snapshot, blocks, and private lock file.
-src/history/create.rs - Creates an empty history for a valid flow, retaining its snapshot and lock.
+src/harness.rs - Re-exports harness integration types from `crate::interfaces` for backward compatibility.
+src/history.rs - Defines `History` to store conversation state, resume data, paths, and a lock file.
+src/history/create.rs - Creates an empty history for an existing flow while retaining its snapshot and lock.
 src/history/drop.rs - Releases the `History` lock when the value is dropped, ignoring unlock errors.
 src/history/flow_id.rs - Generates a process-scoped flow ID from the current timestamp and an incrementing counter.
 src/history/lock.rs - Acquires an exclusive lock on the history lock file.
 src/history/new_flow.rs - Creates a unique history flow file and returns its flow ID.
 src/history/path.rs - Constructs the canonical log path for a history flow, returning filesystem errors as strings.
 src/history/record_input.rs - Appends an input record to the history file and syncs it to storage.
+src/history/record_model_call.rs - Records each model call by adapter, tracking call counts and any available input and output token usage.
 src/history/record_output.rs - Appends marked output to the history file and syncs the file and its parent directory.
+src/history/record_resume.rs - Updates the resume file with per-adapter call and token totals plus the current agent and model.
+src/history/record_usage.rs - Appends an adapter’s input and output token counts to the history file and syncs the file and its parent directory.
+src/history/resume_call.rs - ResumeCall stores a call’s adapter, count, token totals, and usage availability.
+src/history/resume_path.rs - Builds the canonical path to a flow’s resume log, returning filesystem errors as strings.
 src/history/valid_flow_id.rs - Checks whether a string starts with `flow-` and contains only ASCII hexadecimal digits or hyphens afterward.
 src/history/validate_flow.rs - Validates a flow ID and confirms its resolved path points to a file.
 src/http.rs - Exposes the HTTP server entry point and re-exports the OpenAPI document.
@@ -101,7 +106,7 @@ src/http/schemas/responses/tree.rs - TreeResponse serializes sorted, unique path
 src/http/serve.rs - Runs the HTTP server at the supplied address on a multi-threaded Tokio runtime, returning errors as strings.
 src/http/spec.rs - Returns the OpenAPI document generated from the HTTP routes.
 src/http/swagger.rs - SWAGGER_UI embeds an HTML page that loads Swagger UI and displays the API specification at `/openapi.yaml`.
-src/http/tests.rs - Declares HTTP test modules and maps them to their files under `tests/`.
+src/http/tests.rs - Declares HTTP test modules and maps each module to its corresponding file under `tests/`.
 src/http/tests/enforces_agent_delete_permissions.rs - Tests that file deletion occurs only when both required deletion permissions are enabled.
 src/http/tests/flow.rs - Creates a flow for the specified directory and returns its flow ID.
 src/http/tests/handles_agent_edits.rs - Tests that an HTTP agent run appends text to a file and returns the expected result.
@@ -109,19 +114,20 @@ src/http/tests/handles_agent_requests.rs - Verifies that an HTTP agent run retur
 src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the specified Git repository directory.
 src/http/tests/handles_git_status_requests.rs - Tests that `/v1/git/status` excludes files ignored by `.treeignore`.
 src/http/tests/handles_tree_requests.rs - Tests that `POST /v1/tree` returns repository paths while excluding files listed in `.treeignore`.
+src/http/tests/logs_provider_token_usage.rs - The test verifies resumed agent runs log and accumulate provider token usage while omitting usage details from the HTTP response.
 src/http/tests/openapi_is_current.rs - This file contains no production behavior; it only tests the OpenAPI document.
 src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.
 src/http/tests/rejects_invalid_requests.rs - Tests HTTP routes for expected responses to valid requests, unknown paths, unsupported methods, and malformed POSTs.
 src/http/tests/request.rs - Builds a JSON HTTP request, optionally adds a flow ID header, and dispatches it through the application router.
 src/input.rs - Reads user responses and confirmations from the interactive terminal.
-src/interfaces/harness.rs - Defines the shared interface and types for adapters that run coding agents.
+src/interfaces/harness.rs - Defines the interfaces for adapting run requests into CLI invocations and wrapping output as responses.
 src/interfaces/harness/display.rs - Formats `HarnessError` variants as readable messages, including the adapter and available details.
 src/interfaces/history.rs - Defines serializable snapshot and content block types for recording agent activity and file operations.
 src/interfaces/history/marker.rs - Returns the fixed text marker associated with each history block variant.
 src/interfaces/history/text.rs - Returns a reference to the text stored in a history block.
 src/interfaces/input.rs - Defines the shared interface for asking the user questions and awaiting confirmations.
 src/interfaces/invocation.rs - Prepends a command to an invocation while preserving the original program and execution settings.
-src/interfaces/mod.rs - Centralizes and re-exports shared harness, history, user input, and invocation types.
+src/interfaces/mod.rs - Defines and re-exports shared interface types for use across application modules.
 src/lib.rs - Declares crate modules, exposing them publicly except for private `agent_service` and `git_service` modules.
 src/main.rs - Passes command arguments for execution and sets the process exit code based on the result.
 src/main/create_agent.rs - Creates an agent in the current directory using terminal input and displays the created path.
@@ -164,7 +170,7 @@ src/tools/edit/version.rs - Calculates the SHA-256 hash of a string's UTF-8 byte
 src/tools/execute_with_input.rs - Executes TREE or READ in the given directory and returns the result, reporting errors for failed or unknown operations.
 src/tools/format_paths.rs - Formats file paths as a pretty-printed JSON array, reporting conversion and serialization errors with the tool name.
 src/tools/mod.rs - Organizes agent tools and re-exports execution and request operations.
-src/tools/new_agent.rs - `create_with` gathers and validates agent settings, generates the definition, and safely saves it under `.agents`.
+src/tools/new_agent.rs - Creates and saves a validated agent definition from user input and generated runtime metadata.
 src/tools/new_agent/adapter.rs - Prompts for an available adapter and repeats the question if the input does not match.
 src/tools/new_agent/answer.rs - Repeats prompts until receiving a nonempty value and propagates interaction errors.
 src/tools/new_agent/create.rs - Generates an agent in the supplied directory and returns the saved path.

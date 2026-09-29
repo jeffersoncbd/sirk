@@ -1,9 +1,9 @@
 ## Summary
-Defines the types and interface for running coding agents through different adapters.
+Defines the request, response, error, and adapter interface for running coding-agent CLIs.
 
 ## Behavior
-`HarnessAdapter` provides an identifier and converts a request into an invocation, returning errors for invalid options or configurations. By default, `response` passes stdout through unchanged. `RunRequest` holds execution data, and `HarnessError` represents integration failures.
+`HarnessAdapter` identifies an adapter and converts a `RunRequest` into an `Invocation`, returning `HarnessError` on failure. Its default `response` wraps stdout as response text with no token usage.
 
 ## Imports
-- `crate::interfaces::Invocation`: Represents the agent call.
-- `std::path::PathBuf`: Stores the working directory.
+- `crate::interfaces::Invocation`: Represents a CLI invocation.
+- `std::path::PathBuf`: Stores the request’s working directory.

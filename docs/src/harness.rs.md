@@ -1,8 +1,8 @@
 ## Summary
-Re-exports the harness integration contracts.
+Re-exports harness integration types for backward compatibility.
 
 ## Behavior
-Exposes types from `interfaces` through this module.
+Makes the listed types from `crate::interfaces` available through this module.
 
 ## Imports
-- `crate::interfaces`: Harness types.
+- `crate::interfaces`: Provides the harness integration types.

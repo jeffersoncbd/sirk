@@ -43,7 +43,11 @@ server-visible project `directory`; agent requests also supply `agent` and
 `input`. Create a flow with `POST /v1/flows` before making agent, TREE, or Git
 requests, then send its returned `flowId` in the `X-Sirk-Flow-Id` header. One
 flow creates one transcript under `history/`, recording complete model prompts
-and responses for all agent calls in that execution. HTTP has no authentication,
+and responses for all agent calls in that execution. When an adapter reports
+token usage, its response is followed by an `==> USAGE` entry with input and
+output token counts; this is not returned by the SDK. The corresponding
+`RESUME_<flow-id>.log` groups adapter call counts, available token totals, and
+the agents invoked in that flow. HTTP has no authentication,
 so expose it only on trusted networks.
 
 The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:

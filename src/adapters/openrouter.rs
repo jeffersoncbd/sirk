@@ -10,7 +10,9 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::harness::{HarnessAdapter, HarnessError, Invocation, RunRequest};
+use crate::harness::{
+    HarnessAdapter, HarnessError, HarnessResponse, Invocation, RunRequest, TokenUsage,
+};
 
 const DEFAULT_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -74,10 +76,11 @@ impl HarnessAdapter for OpenRouterAdapter {
         })
     }
 
-    fn response(&self, stdout: String) -> Result<String, HarnessError> {
+    fn response(&self, stdout: String) -> Result<HarnessResponse, HarnessError> {
         #[derive(Deserialize)]
         struct ChatCompletion {
             choices: Vec<Choice>,
+            usage: Option<Usage>,
         }
         #[derive(Deserialize)]
         struct Choice {
@@ -87,6 +90,11 @@ impl HarnessAdapter for OpenRouterAdapter {
         struct Message {
             content: String,
         }
+        #[derive(Deserialize)]
+        struct Usage {
+            prompt_tokens: Option<u64>,
+            completion_tokens: Option<u64>,
+        }
 
         let response = serde_json::from_str::<ChatCompletion>(&stdout).map_err(|error| {
             HarnessError::InvalidResponse {
@@ -94,7 +102,16 @@ impl HarnessAdapter for OpenRouterAdapter {
                 message: error.to_string(),
             }
         })?;
-        response
+        let usage = response.usage.and_then(|usage| {
+            usage
+                .prompt_tokens
+                .zip(usage.completion_tokens)
+                .map(|(input_tokens, output_tokens)| TokenUsage {
+                    input_tokens,
+                    output_tokens,
+                })
+        });
+        let text = response
             .choices
             .into_iter()
             .next()
@@ -102,7 +119,8 @@ impl HarnessAdapter for OpenRouterAdapter {
             .ok_or_else(|| HarnessError::InvalidResponse {
                 adapter: self.id(),
                 message: "response contains no choices".to_owned(),
-            })
+            })?;
+        Ok(HarnessResponse { text, usage })
     }
 }
 
@@ -164,9 +182,15 @@ mod tests {
         let adapter = OpenRouterAdapter::new("curl", "https://example.test", Some("key".into()));
         assert_eq!(
             adapter
-                .response(r#"{"choices":[{"message":{"content":"Done."}}]}"#.to_owned())
+                .response(r#"{"choices":[{"message":{"content":"Done."}}],"usage":{"prompt_tokens":12,"completion_tokens":4}}"#.to_owned())
                 .unwrap(),
-            "Done."
+            HarnessResponse {
+                text: "Done.".to_owned(),
+                usage: Some(TokenUsage {
+                    input_tokens: 12,
+                    output_tokens: 4,
+                }),
+            }
         );
         assert!(adapter.response(r#"{"choices":[]}"#.to_owned()).is_err());
     }
