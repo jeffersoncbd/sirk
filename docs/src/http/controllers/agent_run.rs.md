@@ -1,10 +1,11 @@
 ## Summary
-Runs an agent request from an HTTP request body and returns its result.
+Runs an agent request and returns its result as an HTTP response.
 
 ## Behavior
-Rejects invalid UTF-8 or JSON with `400 Bad Request`. Runs the agent service in a blocking task, returning the result as JSON on success or a `500 Internal Server Error` with an error message if execution fails.
+Returns `400 Bad Request` if the JSON request cannot be parsed. Runs the agent service in a blocking task, returning the result on success or a `500 Internal Server Error` with an error message if execution or the task fails.
 
 ## Imports
-- `super::super::types`: Request and JSON response types
-- `axum`: HTTP body, status, and response types
-- `serde_json`: Builds JSON response bodies
+- `json_response`: Wraps response bodies as JSON
+- `schemas::requests`: Provides the agent request type
+- `schemas::responses`: Provides result and error response types
+- `axum`: Provides HTTP JSON, status, and response types

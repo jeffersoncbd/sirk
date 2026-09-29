@@ -1,14 +1,15 @@
-use super::super::types::JsonResponse;
+use super::super::{json_response::JsonResponse, schemas::responses::ErrorResponse};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde_json::json;
 
 pub(in crate::http) async fn method_not_allowed() -> Response {
     (
         StatusCode::METHOD_NOT_ALLOWED,
-        JsonResponse(json!({ "error": "Method not allowed" })),
+        JsonResponse(ErrorResponse {
+            error: "Method not allowed".to_owned(),
+        }),
     )
         .into_response()
 }

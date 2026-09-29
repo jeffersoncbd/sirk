@@ -1,8 +1,8 @@
 ## Summary
-Configures the `sirk` package, library, executable, and Rust dependencies.
+Configures the `sirk` package, library, executable, and dependencies.
 
 ## Behavior
-Sets package metadata and maps the library and binary to their source files. Declares runtime dependencies for serialization, environment loading, hashing, text comparison, the local SDK, and the Tokio-based Axum server, plus Tower utilities for development.
+Sets package metadata and source paths, declares runtime dependencies for serialization, configuration, hashing, comparison, the SDK, HTTP, async execution, and OpenAPI generation, and adds Tower utilities for development.
 
 ## Imports
 - `serde`: Serialization and deserialization.
@@ -10,8 +10,10 @@ Sets package metadata and maps the library and binary to their source files. Dec
 - `serde_json`: JSON support.
 - `dotenvy`: Environment-variable loading.
 - `sha2`: SHA-2 hashing.
-- `sirk-sdk`: Local SDK.
+- `sirk-sdk`: Local SDK dependency.
 - `similar`: Text comparison.
 - `axum`: HTTP server framework.
 - `tokio`: Async runtime and networking.
+- `utoipa`: OpenAPI generation.
+- `utoipa-axum`: Axum OpenAPI integration.
 - `tower`: Development utilities.

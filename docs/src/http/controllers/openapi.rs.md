@@ -1,11 +1,11 @@
 ## Summary
-Returns the OpenAPI document as an HTTP response.
+Serves the binary’s OpenAPI specification as plain text.
 
 ## Behavior
-Sets the response content type to `TEXT_CONTENT_TYPE` and uses `OPENAPI` as the response body.
+Builds an HTTP response with the `TEXT` content type and `OPENAPI` as its body.
 
 ## Imports
+- `super::super::content_type::TEXT`: Plain-text response content type.
 - `super::super::openapi::OPENAPI`: OpenAPI document body.
-- `super::super::types::TEXT_CONTENT_TYPE`: Response content type.
 - `axum::http::header`: Content-Type header name.
 - `axum::response::{IntoResponse, Response}`: Builds and types the response.

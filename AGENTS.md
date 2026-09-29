@@ -53,6 +53,14 @@ location. Keep `routes.rs` limited to the complete, readable route table and
 its fallback registrations; place endpoint behavior in `src/http/controllers/`
 and import those controllers into `routes.rs`.
 
+Keep every public HTTP request and response DTO under `src/http/schemas/` and
+derive its OpenAPI schema there. Keep endpoint OpenAPI annotations beside their
+controllers and assemble the generated document in `src/http/spec.rs`. Treat
+`openapi.yaml` as generated output: never edit it manually. Any change under
+`src/http/controllers/` or `src/http/schemas/`, or to `src/http/routes.rs` or
+`src/http/spec.rs`, requires running `cargo run --bin generate-openapi` and
+verifying that the generated file is current.
+
 Keep orchestration out of `main.rs` and external process execution in
 `BashService`. Build executable/argument lists through `Invocation`; never
 interpolate prompts or paths into shell code.

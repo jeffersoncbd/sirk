@@ -1,10 +1,10 @@
 ## Summary
-Builds and sends an HTTP request through the application routes, returning its response.
+Builds an HTTP request and dispatches it through the application router.
 
 ## Behavior
-Creates a request from the supplied method, path, and body, then dispatches it through `routes()` using Tower’s `oneshot` service. It unwraps both request construction and dispatch results, so failures panic.
+Sets the method, path, JSON content type, and body, then sends the request through `routes()` with `oneshot`. Panics if request construction or dispatch fails.
 
 ## Imports
-- `super::super::routes::routes`: Provides the application router.
+- `routes`: Provides the application router.
 - `axum`: Provides HTTP request, response, and body types.
-- `tower::ServiceExt`: Provides the `oneshot` dispatch method.
+- `tower::ServiceExt`: Provides the `oneshot` method.

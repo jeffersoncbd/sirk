@@ -1,10 +1,12 @@
 ## Summary
-`git_add` validates a directory request and adds that directory through the Git service.
+`git_add` stages all changes under the requested directory and returns an HTTP response.
 
 ## Behavior
-It returns `400 Bad Request` for invalid UTF-8 or JSON. It runs the Git operation on a blocking task, returning a JSON success response or a `500 Internal Server Error` with the operation or task failure.
+It returns `400 Bad Request` if the JSON request is invalid. Otherwise, it runs the Git add operation on a blocking task and returns `200 OK` on success or `500 Internal Server Error` with an error message if the operation or task fails.
 
 ## Imports
-- `DirectoryRequest`, `JsonResponse`: Request data and JSON responses.
-- `axum`: Request body, status codes, and HTTP responses.
-- `serde_json`: Builds and parses JSON.
+- `JsonResponse`: Wraps response bodies as JSON.
+- `DirectoryRequest`: Provides the directory to stage.
+- `ErrorResponse`, `StatusResponse`, `SuccessStatus`: Define response bodies.
+- `axum`: Extracts JSON and builds HTTP responses.
+- `tokio::task`: Runs the Git operation on a blocking thread.

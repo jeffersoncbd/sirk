@@ -4,5 +4,8 @@ set -euo pipefail
 repository_root=$(git rev-parse --show-toplevel)
 cd "$repository_root"
 
+printf '%s\n' 'pre-commit: updating OpenAPI specification...'
+cargo run --bin generate-openapi
+
 printf '%s\n' 'pre-commit: updating project documentation...'
 exec cargo run --bin documentation

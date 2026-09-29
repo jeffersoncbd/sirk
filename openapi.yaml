@@ -1,52 +1,12 @@
 openapi: 3.1.0
 info:
   title: S.I.R.K. HTTP API
+  description: HTTP interface for the S.I.R.K. coding-agent service. The service has no authentication or TLS. Bind it only to a trusted network. Paths supplied in `directory` identify directories as seen by the host running S.I.R.K.; they are not resolved relative to the client. Requests to an unknown path return `404` with a JSON error. A method other than the documented method returns `405` with a JSON error.
   version: 0.1.0
-  description: |
-    HTTP interface for the S.I.R.K. coding-agent service.
-
-    The service has no authentication or TLS. Bind it only to a trusted
-    network. Paths supplied in `directory` identify directories as seen by the
-    host running S.I.R.K.; they are not resolved relative to the client.
-
-    Requests to an unknown path return `404` with `{"error":"Not found"}`.
-    A method other than the documented method returns `405` with
-    `{"error":"Method not allowed"}`. JSON API responses use
-    `application/json; charset=utf-8`; the document and UI routes return plain
-    text and HTML respectively.
 servers:
-  - url: http://127.0.0.1:8080
-    description: Default address used by `sirk http`.
+- url: http://127.0.0.1:8080
+  description: Default address used by `sirk http`.
 paths:
-  /openapi.yaml:
-    get:
-      summary: Download the OpenAPI specification
-      description: Returns the complete specification served by this S.I.R.K. binary as plain UTF-8 text.
-      operationId: getOpenApiDocument
-      responses:
-        '200':
-          description: The OpenAPI document.
-          content:
-            text/plain:
-              schema:
-                type: string
-                contentMediaType: application/yaml
-        '405':
-          $ref: '#/components/responses/MethodNotAllowed'
-  /swagger:
-    get:
-      summary: Open the Swagger UI
-      description: Returns an HTML page that loads Swagger UI and configures it to display `/openapi.yaml`.
-      operationId: getSwaggerUi
-      responses:
-        '200':
-          description: The Swagger UI HTML page.
-          content:
-            text/html:
-              schema:
-                type: string
-        '405':
-          $ref: '#/components/responses/MethodNotAllowed'
   /health:
     get:
       summary: Check whether the service is available
@@ -61,27 +21,69 @@ paths:
               example:
                 status: ok
         '405':
-          $ref: '#/components/responses/MethodNotAllowed'
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
+  /openapi.yaml:
+    get:
+      summary: Download the OpenAPI specification
+      description: Returns the complete specification served by this S.I.R.K. binary as plain UTF-8 text.
+      operationId: getOpenApiDocument
+      responses:
+        '200':
+          description: The OpenAPI document.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '405':
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
+  /swagger:
+    get:
+      summary: Open the Swagger UI
+      description: Returns an HTML page that loads Swagger UI and configures it to display `/openapi.yaml`.
+      operationId: getSwaggerUi
+      responses:
+        '200':
+          description: The Swagger UI HTML page.
+          content:
+            text/html:
+              schema:
+                type: string
+        '405':
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
   /v1/agent/run:
     post:
       summary: Run a named agent
-      description: |
-        Loads the agent definition from `.agents/<agent>.md` below the supplied
-        directory and runs it with the literal `input` string. Template-like
-        content in `input`, including `{{ ... }}`, is passed through unchanged.
-        The result is the agent's final response after any enabled tool requests
-        have been handled.
+      description: Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. The result is the agent's final response after any enabled tool requests have been handled.
       operationId: runAgent
       requestBody:
-        required: true
+        description: Agent execution request.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AgentRunRequest'
             example:
-              directory: /workspace/project
               agent: code-explainer
+              directory: /workspace/project
               input: Explain src/lib.rs.
+        required: true
       responses:
         '200':
           description: The agent completed successfully.
@@ -92,61 +94,43 @@ paths:
               example:
                 result: The module exposes the public S.I.R.K. API.
         '400':
-          $ref: '#/components/responses/InvalidRequest'
-        '405':
-          $ref: '#/components/responses/MethodNotAllowed'
-        '500':
-          $ref: '#/components/responses/ExecutionError'
-  /v1/git/status:
-    post:
-      summary: List changed paths below a directory
-      description: |
-        Returns sorted, unique relative UTF-8 paths for modified, untracked,
-        and deleted regular files in the Git project below `directory`.
-        Paths hidden by `.treeignore` are excluded. The requested directory
-        must exist and be within a Git working tree visible to the server.
-      operationId: gitStatus
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DirectoryRequest'
-            example:
-              directory: /workspace/project
-      responses:
-        '200':
-          description: Changed paths were listed successfully.
+          description: The request body is invalid, incomplete, or contains an unknown field.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GitStatusResponse'
+                $ref: '#/components/schemas/ErrorResponse'
               example:
-                paths:
-                  - src/lib.rs
-                  - README.md
-        '400':
-          $ref: '#/components/responses/InvalidRequest'
+                error: Invalid request
         '405':
-          $ref: '#/components/responses/MethodNotAllowed'
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
         '500':
-          $ref: '#/components/responses/ExecutionError'
+          description: The requested agent operation could not be completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: An operation-specific error message.
   /v1/git/add:
     post:
       summary: Stage all changes below a directory
-      description: |
-        Runs Git add for every change below `directory`, including deletions.
-        The requested directory must exist and be within a Git working tree
-        visible to the server.
+      description: Runs Git add for every change below `directory`, including deletions. The requested directory must exist and be within a Git working tree visible to the server.
       operationId: gitAdd
       requestBody:
-        required: true
+        description: Server-visible Git directory.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/DirectoryRequest'
             example:
               directory: /workspace/project
+        required: true
       responses:
         '200':
           description: All changes below the requested directory were staged.
@@ -157,118 +141,162 @@ paths:
               example:
                 status: ok
         '400':
-          $ref: '#/components/responses/InvalidRequest'
+          description: The request body is invalid, incomplete, or contains an unknown field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid request
         '405':
-          $ref: '#/components/responses/MethodNotAllowed'
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
         '500':
-          $ref: '#/components/responses/ExecutionError'
+          description: The Git add operation could not be completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: An operation-specific error message.
+  /v1/git/status:
+    post:
+      summary: List changed paths below a directory
+      description: Returns sorted, unique relative UTF-8 paths for modified, untracked, and deleted regular files in the Git project below `directory`. Paths hidden by `.treeignore` are excluded. The requested directory must exist and be within a Git working tree visible to the server.
+      operationId: gitStatus
+      requestBody:
+        description: Server-visible Git directory.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectoryRequest'
+            example:
+              directory: /workspace/project
+        required: true
+      responses:
+        '200':
+          description: Changed paths were listed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitStatusResponse'
+              example:
+                paths:
+                - src/lib.rs
+                - README.md
+        '400':
+          description: The request body is invalid, incomplete, or contains an unknown field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid request
+        '405':
+          description: The endpoint does not accept the HTTP method used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Method not allowed
+        '500':
+          description: The Git status operation could not be completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: An operation-specific error message.
 components:
   schemas:
     AgentRunRequest:
       type: object
-      additionalProperties: false
       required:
-        - directory
-        - agent
-        - input
+      - directory
+      - agent
+      - input
       properties:
-        directory:
-          type: string
-          description: Absolute or otherwise server-resolvable execution directory.
-          examples:
-            - /workspace/project
         agent:
           type: string
           description: Identifier of the `.agents/<agent>.md` definition to run.
           examples:
-            - code-explainer
+          - code-explainer
+        directory:
+          type: string
+          description: Server-visible execution directory.
+          examples:
+          - /workspace/project
         input:
           type: string
           description: Literal text passed to the agent without template expansion.
           examples:
-            - Explain src/lib.rs.
-    DirectoryRequest:
-      type: object
+          - Explain src/lib.rs.
       additionalProperties: false
-      required:
-        - directory
-      properties:
-        directory:
-          type: string
-          description: Absolute or otherwise server-resolvable directory within a Git working tree.
-          examples:
-            - /workspace/project
-    HealthResponse:
-      type: object
-      additionalProperties: false
-      required:
-        - status
-      properties:
-        status:
-          type: string
-          const: ok
-          description: Fixed success indicator.
     AgentRunResponse:
       type: object
-      additionalProperties: false
       required:
-        - result
+      - result
       properties:
         result:
           type: string
           description: Final text returned by the executed agent.
-    GitStatusResponse:
-      type: object
       additionalProperties: false
-      required:
-        - paths
-      properties:
-        paths:
-          type: array
-          description: Sorted, unique paths relative to the requested directory.
-          items:
-            type: string
-    StatusResponse:
+    DirectoryRequest:
       type: object
-      additionalProperties: false
       required:
-        - status
+      - directory
       properties:
-        status:
+        directory:
           type: string
-          const: ok
-          description: Fixed success indicator.
+          description: Server-visible directory within a Git working tree.
+          examples:
+          - /workspace/project
+      additionalProperties: false
     ErrorResponse:
       type: object
-      additionalProperties: false
       required:
-        - error
+      - error
       properties:
         error:
           type: string
           description: Human-readable failure message.
-  responses:
-    InvalidRequest:
-      description: The body is unreadable, invalid JSON, missing a required field, or contains an unknown field.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            error: Invalid request
-    ExecutionError:
-      description: The requested agent or Git operation could not be completed.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            error: An operation-specific error message.
-    MethodNotAllowed:
-      description: The path exists but does not accept the HTTP method used.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            error: Method not allowed
+      additionalProperties: false
+    GitStatusResponse:
+      type: object
+      required:
+      - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+          description: Sorted, unique paths relative to the requested directory.
+      additionalProperties: false
+    HealthResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/SuccessStatus'
+          description: Fixed success indicator.
+      additionalProperties: false
+    StatusResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/SuccessStatus'
+          description: Fixed success indicator.
+      additionalProperties: false
+    SuccessStatus:
+      type: string
+      enum:
+      - ok

@@ -18,6 +18,8 @@ sirk-sdk = { git = "https://github.com/jeffersoncbd/sirk-rust-sdk", version = "0
 similar = "2"
 axum = "0.8"
 tokio = { version = "1", features = ["net", "rt-multi-thread", "time"] }
+utoipa = { version = "6", features = ["yaml"] }
+utoipa-axum = "0.3"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

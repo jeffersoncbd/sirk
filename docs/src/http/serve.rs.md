@@ -1,8 +1,8 @@
 ## Summary
-Runs the HTTP server at the supplied address using a multi-threaded Tokio runtime.
+Runs the HTTP server at the supplied address on a multi-threaded Tokio runtime.
 
 ## Behavior
-Builds the runtime, binds a TCP listener, logs the listening address, and serves the routes. Runtime, bind, or server errors are returned as strings.
+Builds the runtime, creates the router, and binds a TCP listener to `address`. It logs the listening URL, then serves the router; runtime, bind, and server errors are returned as strings.
 
 ## Imports
 - `super::routes::routes`: Provides the HTTP router.

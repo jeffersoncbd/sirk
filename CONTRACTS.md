@@ -23,6 +23,9 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   override the bind; external exposure does not imply authentication or TLS.
 - Axum serves the HTTP API. `src/http/routes.rs` is the sole route registry;
   controllers contain endpoint behavior without registering paths or methods.
+- Utoipa generates `openapi.yaml` from the route registry, annotated
+  controllers, and DTOs under `src/http/schemas/`. The versioned YAML file must
+  exactly match the generated document and must not be edited by hand.
 - HTTP exposes `GET /health`, `GET /openapi.yaml`, `GET /swagger`,
   `POST /v1/agent/run`, `POST /v1/git/status`, and `POST /v1/git/add`.
   `/openapi.yaml` returns the embedded OpenAPI document as plain text.

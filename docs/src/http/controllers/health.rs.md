@@ -1,9 +1,10 @@
 ## Summary
-Returns a JSON health status response.
+Returns a JSON response indicating that the service is healthy.
 
 ## Behavior
-The async function returns a `JsonResponse` containing `{"status":"ok"}`.
+The async function returns HTTP response data containing `HealthResponse` with status `ok`. It performs no validation or fallible operations.
 
 ## Imports
-- `JsonResponse`: Wraps the health status response.
-- `serde_json::json`: Constructs the JSON value.
+- `JsonResponse`: Wraps the health response.
+- `HealthResponse`, `SuccessStatus`: Represent the response body and status.
+- `ErrorResponse`: Documents the endpoint’s 405 response.

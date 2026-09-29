@@ -1,8 +1,9 @@
 ## Summary
-Exposes the HTTP server entry point.
+Exposes the HTTP server entry point and OpenAPI document.
 
 ## Behavior
-Declares the HTTP support modules and re-exports `serve::serve` from the module.
+Declares the HTTP support modules and re-exports `serve::serve` and `spec::document` for use outside this module.
 
 ## Imports
-- `serve`: Provides the public `serve` function.
+- `serve`: Provides the public HTTP server function.
+- `spec`: Provides the generated OpenAPI document.

@@ -1,9 +1,9 @@
 ## Summary
-Serves the Swagger UI as an HTML response.
+Serves the embedded Swagger UI as an HTML response.
 
 ## Behavior
-Returns the embedded Swagger UI content with the HTML content type header.
+Returns `SWAGGER_UI` with the `text/html` content type header.
 
 ## Imports
-- `super::super`: Provides the Swagger UI content and HTML content type.
-- `axum`: Provides HTTP headers and response types.
+- `super::super`: Provides the HTML content type and embedded UI.
+- `axum`: Provides the response types and content type header.
