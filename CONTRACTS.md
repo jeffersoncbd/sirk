@@ -57,11 +57,12 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   regular files inside the execution directory; `.readignore` controls access.
 - Recognize ordinary requests only as standalone `TREE` from agents with
   `TREE_TOOL: allow`, or one-line `READ: <path>` responses.
-- EDIT and DELETE require their explicit agent permissions. Persist an EDIT
-  preparation before mutation, protect against intervening file changes, and
-  return plain diffs without ANSI formatting. DELETE removes one regular file
-  inside the execution directory; a noninteractive request requires both
-  `DELETE_TOOL: allow` and `DELETE_WITHOUT_CONFIRM: allow` with `force: true`.
+- EDIT, WRITE, and DELETE require their explicit agent permissions. EDIT and
+  WRITE require `EDIT_TOOL: allow`; persist their preparation before mutation,
+  protect against intervening file changes, and return plain diffs without ANSI
+  formatting. DELETE removes one regular file inside the execution directory;
+  a noninteractive request requires both `DELETE_TOOL: allow` and
+  `DELETE_WITHOUT_CONFIRM: allow` with `force: true`.
 - Do not expose host-side SDK filesystem or Git helpers as agent tools.
 
 ## Conversations and history
