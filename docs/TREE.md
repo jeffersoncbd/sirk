@@ -1,11 +1,25 @@
 
-.env.example - Documents environment variables for configuring Ollama and OpenRouter service URLs and API keys.
+.env.example - Configures optional URLs and API keys for Ollama, OpenRouter, and NVIDIA adapters.
 Cargo.toml - Defines the `sirk` Rust package, its library and executable, and its runtime and development dependencies.
 openapi.yaml - Defines the S.I.R.K. HTTP API endpoints, schemas, validation, and server behavior.
 src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
 src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
 src/adapters/codex/new.rs - Creates a `CodexAdapter` that stores the supplied executable as text.
-src/adapters/mod.rs - Centralizes available adapters, re-exports adapter resolution, and lists accepted names.
+src/adapters/mod.rs - Defines and re-exports adapter modules, adapter types, a resolver, and the accepted adapter names.
+src/adapters/nvidia_api.rs - Configures the NVIDIA chat completions adapter with an executable and optional API key.
+src/adapters/nvidia_api/adapter.rs - The NVIDIA API harness adapter builds invocations and parses their stdout responses.
+src/adapters/nvidia_api/api_key.rs - api_key resolves the NVIDIA API key from adapter settings, the environment, or dotenv, returning a configuration error if absent.
+src/adapters/nvidia_api/default.rs - Provides default settings for NvidiaApiAdapter, using curl without an API key.
+src/adapters/nvidia_api/dotenv.rs - Reads a named nonempty value from a directory’s `.env` file, returning none when absent and a configuration error on read or parse failure.
+src/adapters/nvidia_api/invocation.rs - Builds a non-streaming NVIDIA API invocation from a run request, including its JSON body and authorization.
+src/adapters/nvidia_api/new.rs - Creates a `NvidiaApiAdapter` with the executable name and only a nonempty API key.
+src/adapters/nvidia_api/nonempty.rs - Returns the original string as `Some` if it contains non-whitespace characters; otherwise returns `None`.
+src/adapters/nvidia_api/response.rs - Parses NVIDIA API JSON into generated text and includes token usage when both counts are available.
+src/adapters/nvidia_api/tests.rs - Declares test modules for dotenv, invocation, options, and response.
+src/adapters/nvidia_api/tests/dotenv.rs - The file tests that NvidiaApiAdapter::invocation reads an API key from a temporary `.env` file.
+src/adapters/nvidia_api/tests/invocation.rs - Tests verify NVIDIA chat requests use the expected endpoint and payload while keeping the API key in the environment.
+src/adapters/nvidia_api/tests/options.rs - Tests verify that the NVIDIA API adapter rejects requests without a model or with event streams enabled.
+src/adapters/nvidia_api/tests/response.rs - Tests verify that `response` extracts the first choice’s content and token usage, and errors when choices are missing.
 src/adapters/ollama.rs - Converts supported requests into `ollama run` invocations with a model, prompt, and working directory.
 src/adapters/ollama/default.rs - Creates and returns a default `OllamaAdapter` identified by the name `ollama`.
 src/adapters/ollama/new.rs - Initializes an OllamaAdapter by storing the supplied executable as text.
@@ -31,7 +45,8 @@ src/adapters/openrouter/dotenv.rs - Reads a nonempty key value from a directory'
 src/adapters/openrouter/endpoint.rs - Configures the OpenRouter chat endpoint from the available URL, applying the required path and default.
 src/adapters/openrouter/new.rs - Creates an OpenRouter adapter with an executable and optional base URL and API key, discarding empty values.
 src/adapters/openrouter/nonempty.rs - Returns the original string if it contains non-whitespace content; otherwise, returns `None`.
-src/adapters/resolve.rs - Finds a harness adapter by name and returns `None` when no match exists.
+src/adapters/resolve.rs - Maps recognized harness names to their default adapter, returning `None` for unknown names.
+src/adapters/resolve/tests.rs - The tests verify that `resolve` recognizes four adapter IDs, all listed in `AVAILABLE`.
 src/agent_service.rs - Organizes internal agent execution modules and re-exports the crate’s agent execution entry point.
 src/agent_service/conversation.rs - Runs an agent conversation, recording history and handling permitted tool requests until completion or error.
 src/agent_service/delete_request.rs - Validates deletion requests, prevents repeats, and performs authorized forced file deletion.

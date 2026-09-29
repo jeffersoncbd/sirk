@@ -2,8 +2,8 @@
 Resolves a harness name to its adapter implementation.
 
 ## Behavior
-Compares `name` with known identifiers and returns the corresponding adapter in `Some`. Returns `None` for unrecognized names.
+Matches `name` against known identifiers and returns the corresponding default adapter in `Some`; returns `None` for unrecognized names.
 
 ## Imports
-- `crate::harness::HarnessAdapter`: Type of the returned interface.
-- `super`: Concrete adapters available for resolution.
+- `crate::harness::HarnessAdapter`: Trait for the returned adapter.
+- `super`: Concrete adapters returned for recognized names.

@@ -11,8 +11,8 @@ in the effort to feed billions of people worldwide.
 
 S.I.R.K. runs Markdown-defined coding agents through HTTP. Language SDKs own
 workflow control, filesystem access, and user interaction. Git operations use
-the service's HTTP API. Supported adapters are Codex, OpenCode, Ollama, Ollama
-Web, and OpenRouter. Claude Code is not implemented.
+the service's HTTP API. Supported adapters are Codex, NVIDIA API, OpenCode,
+Ollama, Ollama Web, and OpenRouter. Claude Code is not implemented.
 
 ## Setup
 
@@ -28,7 +28,10 @@ Repeat the copy after rebuilding. Install and authenticate the selected CLI
 where the service runs. OpenRouter uses `curl`, `OPENROUTER_API_KEY`, and an
 explicit model slug such as `~openai/gpt-sol-latest`; set the key in the
 execution directory's `.env` file or environment. `OPENROUTER_URL` can override
-its endpoint. Bash is required; TREE also requires Git and a working tree.
+its endpoint. NVIDIA API uses `curl`, `NVIDIA_API_KEY`, and an explicit model
+slug such as `deepseek-ai/deepseek-v4.1-flash`; set the key in the execution
+directory's `.env` file or environment. Bash is required; TREE also requires
+Git and a working tree.
 
 ## Run the service and SDK
 

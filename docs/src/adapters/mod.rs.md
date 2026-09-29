@@ -1,9 +1,9 @@
 ## Summary
-Centralizes the modules and exports for available adapters.
+Defines the available adapter modules and re-exports their adapters and resolver.
 
 ## Behavior
-Declares internal modules, re-exports the adapters and `resolve`, and lists accepted names in `AVAILABLE`.
+Declares adapter modules, publicly exposes each adapter type and `resolve`, and lists the accepted adapter names in `AVAILABLE`.
 
 ## Imports
-- `codex`, `ollama`, `ollama_web`, `opencode`, `openrouter`: Adapter modules.
-- `resolve`: Adapter resolution.
+- `codex`, `nvidia_api`, `ollama`, `ollama_web`, `opencode`, `openrouter`: Adapter modules.
+- `resolve`: Adapter resolver.
