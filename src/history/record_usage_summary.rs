@@ -2,11 +2,11 @@ use super::History;
 use std::{fs::OpenOptions, io::Write};
 
 impl History {
-    pub fn record_resume(&self) -> Result<(), String> {
-        if self.resume_calls.is_empty() {
+    pub fn record_usage_summary(&self) -> Result<(), String> {
+        if self.usage_calls.is_empty() {
             return Ok(());
         }
-        let text = std::fs::read_to_string(&self.resume_path)
+        let text = std::fs::read_to_string(&self.usage_path)
             .or_else(|error| {
                 if error.kind() == std::io::ErrorKind::NotFound {
                     Ok(String::new())
@@ -16,7 +16,7 @@ impl History {
             })
             .map_err(|error| error.to_string())?;
         let mut lines = text.lines().map(str::to_owned).collect::<Vec<_>>();
-        for call in &self.resume_calls {
+        for call in &self.usage_calls {
             let prefix = format!("{}: ", call.adapter);
             let header = lines.iter().position(|line| line.starts_with(&prefix));
             let (index, previous_calls, previous_input_tokens, previous_output_tokens, had_usage) =
@@ -78,13 +78,13 @@ impl History {
             .write(true)
             .create(true)
             .truncate(true)
-            .open(&self.resume_path)
+            .open(&self.usage_path)
             .map_err(|error| error.to_string())?;
         file.write_all(lines.join("\n").trim().as_bytes())
             .and_then(|_| file.write_all(b"\n"))
             .and_then(|_| file.sync_all())
             .map_err(|error| error.to_string())?;
-        std::fs::File::open(self.resume_path.parent().ok_or("missing flow directory")?)
+        std::fs::File::open(self.usage_path.parent().ok_or("missing flow directory")?)
             .and_then(|file| file.sync_all())
             .map_err(|error| error.to_string())
     }

@@ -1,11 +1,11 @@
 ## Summary
-Runs an agent conversation for the canonicalized directory and returns its result.
+Runs an agent conversation for a canonicalized directory and returns its result.
 
 ## Behavior
-Loads the named agent from `.agents`, verifies its adapter, creates history for the flow, and delegates to the conversation executor. It records a resume afterward; failures are returned as `String` errors.
+Loads the agent from `.agents`, checks that its adapter is available, creates conversation history, and executes the conversation. It records a usage summary before returning the conversation result; errors are returned as `String`.
 
 ## Imports
-- `adapters`: Verifies that the agent’s adapter is available.
+- `adapters`: Checks whether the agent’s adapter is available.
 - `agents::Agent`: Loads the agent definition.
-- `history::{History, Snapshot}`: Creates and records conversation history.
+- `history::{History, Snapshot}`: Creates history and records usage.
 - `std::path::Path`: Provides the directory input.

@@ -1,5 +1,7 @@
 # S.I.R.K.
 
+GitHub repository: [jeffersoncbd/sirk](https://github.com/jeffersoncbd/sirk).
+
 **S.I.R.K.** honors Alexander Shchukin, Dmitri Ivanov, Liliya Rodina, and Georgi
 Kreier, researchers at the Vavilov Institute who died of starvation during the
 Siege of Leningrad while protecting its collection of crop seeds. They chose to
@@ -49,11 +51,11 @@ flow creates one transcript under `history/`, recording complete model prompts
 and responses for all agent calls in that execution. When an adapter reports
 token usage, its response is followed by an `==> USAGE` entry with input and
 output token counts; this is not returned by the SDK. The corresponding
-`RESUME_<flow-id>.log` groups adapter call counts, available token totals, and
+`USAGE_<flow-id>.log` groups adapter call counts, available token totals, and
 the agents invoked in that flow. HTTP has no authentication,
 so expose it only on trusted networks.
 
-The [Rust SDK](sdk/rust/README.md) connects to the HTTP service:
+The [Rust SDK](https://github.com/jeffersoncbd/sirk-rust-sdk) connects to the HTTP service:
 
 ```rust
 use sirk_sdk::Sirk;

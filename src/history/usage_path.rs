@@ -2,7 +2,7 @@ use super::History;
 use std::path::Path;
 
 impl History {
-    pub(super) fn resume_path(
+    pub(super) fn usage_path(
         directory: &Path,
         flow_id: &str,
     ) -> Result<std::path::PathBuf, String> {
@@ -10,6 +10,6 @@ impl History {
             .canonicalize()
             .map_err(|error| error.to_string())?
             .join("history")
-            .join(format!("RESUME_{flow_id}.log")))
+            .join(format!("USAGE_{flow_id}.log")))
     }
 }

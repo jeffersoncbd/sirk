@@ -76,7 +76,7 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   file and directory synchronization plus exclusive locks.
 - Empty agent responses fail; empty READ results are valid. Flow transcripts
   are not resumed through the CLI.
-- Each flow also maintains `history/RESUME_<flow-id>.log`. It groups provider
+- Each flow also maintains `history/USAGE_<flow-id>.log`. It groups provider
   invocation counts by adapter, includes token totals only when reported, and
   lists each completed agent invocation in its adapter group in call order.
 

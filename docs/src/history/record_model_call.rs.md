@@ -1,9 +1,9 @@
 ## Summary
-Records a model call in the history, tracking its adapter and any token usage.
+Records a model call and accumulates its token usage by adapter.
 
 ## Behavior
-Finds or creates an entry for the adapter, increments its call count, and adds input and output tokens when usage is provided, marking usage as available.
+Finds or creates the adapter’s usage entry, increments its call count, and, when usage is provided, adds input and output tokens and marks usage as available.
 
 ## Imports
-- `History`, `ResumeCall`: Access and initialize recorded call data.
-- `TokenUsage`: Provides input and output token counts.
+- `History`, `UsageCall`: Store and initialize per-adapter call data.
+- `TokenUsage`: Supplies input and output token counts.

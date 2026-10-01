@@ -53,7 +53,7 @@ src/agent_service/delete_request.rs - Validates deletion requests, prevents repe
 src/agent_service/edit_request.rs - Prepares and commits edit requests while enforcing path permissions and preventing duplicate completed edits.
 src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
 src/agent_service/prompt.rs - Builds agent prompts from configured tool instructions and labeled conversation history, skipping certain follow-up inputs.
-src/agent_service/run.rs - Runs the selected agent conversation in a directory, records its history and resume state, and returns its result or error.
+src/agent_service/run.rs - Runs an agent conversation for a directory, records usage, and returns the result or an error.
 src/agent_service/write_request.rs - Converts a JSON payload into a write operation and delegates it to `edit_request`.
 src/agents.rs - Validates metadata and instructions in a text definition and converts it into an agent.
 src/agents/call_prefix.rs - Deserializes `call_prefix` as an argument list, accepting a string or list and treating absence as an empty list.
@@ -72,7 +72,7 @@ src/git_service/project.rs - Resolves a Git directory and returns its root and r
 src/git_service/run.rs - Runs Git commands in a directory and returns stdout bytes, contextualizing execution and status failures.
 src/git_service/status.rs - Lists changed Git paths under the requested directory in order without duplicates, excluding ignored files.
 src/harness.rs - Re-exports harness integration types from `crate::interfaces` for backward compatibility.
-src/history.rs - Defines `History` to store conversation state, resume data, paths, and a lock file.
+src/history.rs - Defines conversation history storage for snapshots, blocks, usage data, paths, and locking.
 src/history/create.rs - Creates an empty history for an existing flow while retaining its snapshot and lock.
 src/history/drop.rs - Releases the `History` lock when the value is dropped, ignoring unlock errors.
 src/history/flow_id.rs - Generates a process-scoped flow ID from the current timestamp and an incrementing counter.
@@ -80,12 +80,15 @@ src/history/lock.rs - Acquires an exclusive lock on the history lock file.
 src/history/new_flow.rs - Creates a unique history flow file and returns its flow ID.
 src/history/path.rs - Constructs the canonical log path for a history flow, returning filesystem errors as strings.
 src/history/record_input.rs - Appends an input record to the history file and syncs it to storage.
-src/history/record_model_call.rs - Records each model call by adapter, tracking call counts and any available input and output token usage.
+src/history/record_model_call.rs - Records a model call and accumulates its token usage by adapter.
 src/history/record_output.rs - Appends marked output to the history file and syncs the file and its parent directory.
 src/history/record_resume.rs - Updates the resume file with per-adapter call and token totals plus the current agent and model.
 src/history/record_usage.rs - Appends an adapter’s input and output token counts to the history file and syncs the file and its parent directory.
+src/history/record_usage_summary.rs - Updates adapter usage totals and records the current agent and model in the usage summary file.
 src/history/resume_call.rs - ResumeCall stores a call’s adapter, count, token totals, and usage availability.
 src/history/resume_path.rs - Builds the canonical path to a flow’s resume log, returning filesystem errors as strings.
+src/history/usage_call.rs - UsageCall records an adapter’s call count, token totals, and usage data availability.
+src/history/usage_path.rs - Constructs the canonical path to a flow’s usage log in the history directory.
 src/history/valid_flow_id.rs - Checks whether a string starts with `flow-` and contains only ASCII hexadecimal digits or hyphens afterward.
 src/history/validate_flow.rs - Validates a flow ID and confirms its resolved path points to a file.
 src/http.rs - Exposes the HTTP server entry point and re-exports the OpenAPI document.
@@ -129,7 +132,7 @@ src/http/tests/handles_agent_requests.rs - Verifies that an HTTP agent run retur
 src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the specified Git repository directory.
 src/http/tests/handles_git_status_requests.rs - Tests that `/v1/git/status` excludes files ignored by `.treeignore`.
 src/http/tests/handles_tree_requests.rs - Tests that `POST /v1/tree` returns repository paths while excluding files listed in `.treeignore`.
-src/http/tests/logs_provider_token_usage.rs - The test verifies resumed agent runs log and accumulate provider token usage while omitting usage details from the HTTP response.
+src/http/tests/logs_provider_token_usage.rs - The file contains only a test and has no production function to summarize.
 src/http/tests/openapi_is_current.rs - This file contains no production behavior; it only tests the OpenAPI document.
 src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.
 src/http/tests/rejects_invalid_requests.rs - Tests HTTP routes for expected responses to valid requests, unknown paths, unsupported methods, and malformed POSTs.

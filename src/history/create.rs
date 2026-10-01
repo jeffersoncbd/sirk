@@ -6,17 +6,17 @@ impl History {
             return Err("invalid flow ID".to_owned());
         }
         let path = Self::flow_path(&snapshot.directory, flow_id)?;
-        let resume_path = Self::resume_path(&snapshot.directory, flow_id)?;
+        let usage_path = Self::usage_path(&snapshot.directory, flow_id)?;
         if !path.is_file() {
             return Err(format!("unknown flow ID `{flow_id}`"));
         }
         let lock = Self::lock(&path)?;
         let history = Self {
             path,
-            resume_path,
+            usage_path,
             snapshot,
             blocks: Vec::new(),
-            resume_calls: Vec::new(),
+            usage_calls: Vec::new(),
             _lock: lock,
         };
         Ok(history)

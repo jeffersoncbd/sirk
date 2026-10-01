@@ -8,24 +8,24 @@ mod path;
 mod record_input;
 mod record_model_call;
 mod record_output;
-mod record_resume;
 mod record_usage;
-mod resume_call;
-mod resume_path;
+mod record_usage_summary;
+mod usage_call;
+mod usage_path;
 mod valid_flow_id;
 mod validate_flow;
 
 pub use crate::interfaces::{Block, Snapshot};
-use resume_call::ResumeCall;
 use std::{fs::File, path::PathBuf};
+use usage_call::UsageCall;
 pub use valid_flow_id::valid_flow_id;
 
 pub struct History {
     path: PathBuf,
-    resume_path: PathBuf,
+    usage_path: PathBuf,
     pub snapshot: Snapshot,
     pub blocks: Vec<Block>,
-    resume_calls: Vec<ResumeCall>,
+    usage_calls: Vec<UsageCall>,
     _lock: File,
 }
 

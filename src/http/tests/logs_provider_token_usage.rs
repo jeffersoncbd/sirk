@@ -69,14 +69,14 @@ async fn logs_provider_token_usage_without_returning_it_to_the_client() {
     )
     .await;
     assert_eq!(response.status(), 200);
-    let resume = fs::read_to_string(
+    let usage = fs::read_to_string(
         directory
             .join("history")
-            .join(format!("RESUME_{flow_id}.log")),
+            .join(format!("USAGE_{flow_id}.log")),
     )
     .unwrap();
     assert_eq!(
-        resume,
+        usage,
         "openrouter: 2 calls - total_input_tokens: 24 - total_output_tokens: 8\n   - token-agent (openai/gpt-5)\n   - token-agent (openai/gpt-5)\n"
     );
     fs::remove_dir_all(directory).unwrap();

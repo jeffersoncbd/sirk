@@ -19,6 +19,6 @@ pub(crate) fn run(
         .ok_or_else(|| format!("unknown adapter `{}`", agent.adapter))?;
     let mut history = History::create(Snapshot { directory, agent }, &flow_id)?;
     let result = super::conversation::conversation(&mut history, input, super::execute::execute);
-    history.record_resume()?;
+    history.record_usage_summary()?;
     result
 }

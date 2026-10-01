@@ -1,4 +1,4 @@
-pub(super) struct ResumeCall {
+pub(super) struct UsageCall {
     pub adapter: String,
     pub calls: u64,
     pub input_tokens: u64,

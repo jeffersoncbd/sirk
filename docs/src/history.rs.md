@@ -1,11 +1,11 @@
 ## Summary
-Defines `History`, which stores conversation state, flow paths, resume calls, and its lock.
+Defines `History`, which holds conversation state, usage data, paths, and a lock.
 
 ## Behavior
-`History` keeps the history and resume paths, a snapshot, conversation blocks, resume-call data, and a private lock file.
+`History` stores a snapshot and conversation blocks alongside usage calls and paths; its private file handle represents the lock. The module also re-exports related types and flow helpers.
 
 ## Imports
 - `crate::interfaces`: Provides the `Block` and `Snapshot` types.
-- `resume_call::ResumeCall`: Stores resume-call data.
-- `std::fs::File`: Holds the lock file.
-- `std::path::PathBuf`: Holds the history paths.
+- `std`: Provides the lock file and path types.
+- `usage_call::UsageCall`: Stores usage-call data.
+- `valid_flow_id`: Re-exports the flow ID validator.
