@@ -1,3 +1,25 @@
+# Development agent pipeline
+
+- Build a structured, end-to-end development pipeline from Markdown-defined
+  agents. Implement each agent and its required tools independently, with
+  explicit handoffs, narrowly scoped permissions, and verifiable outputs.
+  - Add a requirements analyst to turn a request into confirmed requirements,
+    scope boundaries, assumptions, risks, and acceptance criteria.
+  - Add a current-state analyst to inspect the repository and report the
+    existing behavior, affected code, dependencies, obsolete code, and gaps
+    between the requirements and implementation.
+  - Add a planning agent to produce an implementation plan based on the
+    requirements and current-state analysis.
+  - Add an implementation agent to make the approved, scoped code changes.
+  - Add a test author to create or update meaningful automated tests for the
+    implemented behavior.
+  - Add a test reviewer to assess test relevance, coverage, isolation, and
+    failure modes independently of the test author.
+  - Add a code reviewer to assess correctness, security, maintainability,
+    compatibility, and adherence to project conventions before delivery.
+  - Define the tools, input and output contracts, permissions, execution
+    order, review feedback loop, and completion criteria for every phase.
+
 # Product and API
 
 - Remove Git functionality from the core. Projects that need Git operations

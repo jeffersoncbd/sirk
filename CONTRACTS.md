@@ -37,6 +37,11 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   identify an existing flow for the supplied directory. Agent requests also
   contain an agent ID and literal input. TREE and Git requests otherwise
   contain only the server-visible execution directory.
+- A successful agent response contains `conversationId` and exactly one
+  outcome field: `result` for a completed run, or `ask` when an agent with
+  `ASK_TOOL: allow` requests one user answer from the caller. Omit
+  `conversationId` in a request to create a conversation; include it with the
+  user's answer to continue a conversation that is awaiting input.
 - The Rust SDK connects to HTTP without starting a CLI process. Its default
   endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
   current directory. Custom endpoints preserve supplied server-visible paths.
@@ -63,20 +68,28 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   formatting. DELETE removes one regular file inside the execution directory;
   a noninteractive request requires both `DELETE_TOOL: allow` and
   `DELETE_WITHOUT_CONFIRM: allow` with `force: true`.
+- ASK requires `ASK_TOOL: allow`. An `ASK: <question>` response ends the
+  current agent run and returns the question to the caller; the caller owns
+  collecting and submitting any answer in a later request.
 - Do not expose host-side SDK filesystem or Git helpers as agent tools.
 
 ## Conversations and history
 
-- Reconstruct explicit conversation context for each provider turn; do not
-  silently adopt provider session resumption.
-- A flow creates exactly one transcript. Before each provider call, append the
+- Reconstruct explicit conversation context from the persisted conversation
+  messages for each provider turn; do not adopt provider session resumption.
+- A flow stores `flow.log`, `usage.log`, and `conversations/` under
+  `history/<flow-id>/`. Before each provider call, append the
   complete rendered prompt; after it, append the complete normalized model
   response and any provider-reported input and output token counts. Do not
   record agent-definition metadata, resumable state, or tool-only entries. Use
   file and directory synchronization plus exclusive locks.
+- Store each conversation at
+  `history/<flow-id>/conversations/<conversation-id>.json`. Bind it to one flow
+  and agent, persist user, assistant, and tool messages atomically, and only
+  continue a conversation whose status is awaiting user input.
 - Empty agent responses fail; empty READ results are valid. Flow transcripts
   are not resumed through the CLI.
-- Each flow also maintains `history/USAGE_<flow-id>.log`. It groups provider
+- Each flow's `usage.log` groups provider
   invocation counts by adapter, includes token totals only when reported, and
   lists each completed agent invocation in its adapter group in call order.
 

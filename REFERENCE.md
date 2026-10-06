@@ -16,8 +16,9 @@ Content-Type: application/json
 {"directory":"/workspace/project"}
 ```
 
-The server returns HTTP 201 with `{"flowId":"flow-..."}` and creates an
-empty transcript under the directory's `history/` folder. Every later
+The server returns HTTP 201 with `{"flowId":"flow-..."}` and creates
+`history/<flow-id>/` with `flow.log`, `usage.log`, and `conversations/`. Every
+later
 `POST /v1/agent/run`, `POST /v1/tree`, `POST /v1/git/status`, and
 `POST /v1/git/add` request must include that value in `X-Sirk-Flow-Id`. The
 flow ID is valid only for the directory used to create it. Health, OpenAPI,
@@ -34,9 +35,10 @@ X-Sirk-Flow-Id: flow-...
 ```
 
 The directory must be visible to the server. A successful call returns HTTP
-200 with `{"result":"..."}`. Invalid requests return 400, unknown routes 404,
-unsupported methods 405, and execution errors 500 with `{"error":"..."}`.
-HTTP has no authentication or TLS; use a trusted network for external binds.
+200 with `{"conversationId":"conversation-...","result":"..."}`. Invalid
+requests return 400, unknown routes 404, unsupported methods 405, and execution
+errors 500 with `{"error":"..."}`. HTTP has no authentication or TLS; use a
+trusted network for external binds.
 
 The Rust SDK's `Sirk::connect()` checks the default HTTP service and sends the
 calling process's current directory. `Sirk::connect_to(endpoint, directory)`
@@ -74,8 +76,8 @@ Explain the requested module and cite the relevant functions.
 `adapter` is required. `model` is optional and is trimmed and lowercased;
 omitting it uses the adapter default. `call_prefix` is an optional command
 token or list of literal arguments prepended to the adapter invocation. It is
-not shell syntax. `TREE_TOOL: allow`, `EDIT_TOOL: allow`, and
-`DELETE_TOOL: allow` grant the corresponding agent requests. The optional
+not shell syntax. `TREE_TOOL: allow`, `ASK_TOOL: allow`, `EDIT_TOOL: allow`,
+and `DELETE_TOOL: allow` grant the corresponding agent requests. The optional
 `DELETE_WITHOUT_CONFIRM: allow` requires `DELETE_TOOL: allow`.
 
 `ask` is accepted as an initial question, but HTTP has no interactive answer
@@ -104,6 +106,14 @@ JSON array of sorted, unique relative paths. Git ignores apply to untracked
 files, and `.treeignore` additionally hides tracked or untracked paths. TREE
 requires a Git working tree.
 
+With `ASK_TOOL: allow`, an agent can answer with `ASK: <question>` and nothing
+else. S.I.R.K. ends the current run and returns
+`{"conversationId":"conversation-...","ask":"<question>"}`. The caller
+presents it to the user, then sends the answer in a new agent request with that
+`conversationId`. S.I.R.K. restores the saved messages and includes them in the
+next model prompt. A completed run returns the same conversation ID with
+`result`; completed conversations cannot be continued.
+
 With `EDIT_TOOL: allow`, the agent can answer with `EDIT:` followed by one JSON
 object containing `filePath`, `oldString`, `newString`, and optional
 `replaceAll`. The exact old string must occur once unless `replaceAll` is true.
@@ -127,14 +137,15 @@ an existing regular file inside the execution directory.
 
 Only one tool request is processed per agent response. A failed provider call
 or empty response ends the call with an error. No provider session is resumed;
-each turn receives the explicit conversation reconstructed from the current
-call's log.
+each turn receives explicit context reconstructed from the conversation JSON.
 
 ## Conversation logs
 
-Each flow writes one `history/<flowId>.log` transcript under its execution
-directory. Each provider call appends `==> INPUT` followed by the complete
+Each flow stores its artifacts under `history/<flowId>/`. Each provider call
+appends `==> INPUT` followed by the complete
 prompt delivered to the model and `<== OUTPUT` followed by the complete
-normalized model response. Tool-only records, agent metadata, and resumable
-state are omitted. The transcript is locked while an agent call writes to it.
-It is a diagnostic record; the CLI has no resume command.
+normalized model response to `flow.log`; `usage.log` contains aggregate model
+usage. Each `conversations/<conversationId>.json` file contains the agent,
+status, and user, assistant, and tool messages used to restore that
+conversation. The flow is locked while an agent call writes its artifacts. The
+CLI has no resume command.

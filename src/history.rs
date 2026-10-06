@@ -1,9 +1,15 @@
 //! In-memory conversation state and flow-scoped agent transcripts.
+mod conversation;
+mod conversation_blocks;
+mod conversation_id;
+mod conversation_replace_blocks;
+mod conversation_save;
 mod create;
 mod drop;
 mod flow_id;
 mod lock;
 mod new_flow;
+mod open_conversation;
 mod path;
 mod record_input;
 mod record_model_call;
@@ -12,10 +18,12 @@ mod record_usage;
 mod record_usage_summary;
 mod usage_call;
 mod usage_path;
+mod valid_conversation_id;
 mod valid_flow_id;
 mod validate_flow;
 
 pub use crate::interfaces::{Block, Snapshot};
+pub(crate) use conversation::{Conversation, ConversationMessage, ConversationStatus};
 use std::{fs::File, path::PathBuf};
 use usage_call::UsageCall;
 pub use valid_flow_id::valid_flow_id;
@@ -30,4 +38,5 @@ pub struct History {
 }
 
 pub use new_flow::new_flow;
+pub(crate) use valid_conversation_id::valid_conversation_id;
 pub use validate_flow::validate_flow;

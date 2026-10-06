@@ -17,7 +17,7 @@ use axum::{
     path = "/v1/flows",
     operation_id = "createFlow",
     summary = "Create a flow transcript",
-    description = "Creates one empty transcript in `directory` and returns its identifier. Include the returned value as the required `X-Sirk-Flow-Id` header on every later agent, TREE, and Git request for this execution. Agent calls append each complete prompt delivered to the model and each complete model response to this single transcript. The transcript contains no agent metadata, resumable state, or tool-only records.",
+    description = "Creates `history/<flow-id>/` in `directory` with an empty `flow.log`, `usage.log`, and `conversations/` directory, then returns the flow identifier. Include the returned value as the required `X-Sirk-Flow-Id` header on every later agent, TREE, and Git request for this execution. Agent calls append complete prompts and model responses to `flow.log`, aggregate provider usage in `usage.log`, and persist resumable user, assistant, and tool messages under `conversations/`.",
     request_body(
         content = DirectoryRequest,
         description = "Server-visible directory where the flow transcript is stored.",

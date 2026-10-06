@@ -1,8 +1,9 @@
 ## Summary
-Builds the canonical path to a flow’s usage log inside the history directory.
+Builds a canonical path to a flow’s usage log.
 
 ## Behavior
-Canonicalizes the supplied directory and returns any filesystem error as a `String`; on success, appends `history/USAGE_{flow_id}.log`.
+Canonicalizes `directory`, converting any filesystem error to a `String`, then appends `history/{flow_id}/usage.log` and returns the path.
 
 ## Imports
+- `super::History`: Defines the type whose implementation contains this method.
 - `std::path::Path`: Provides the directory path input.

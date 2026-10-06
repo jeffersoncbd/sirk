@@ -1,8 +1,8 @@
 ## Summary
-Builds the agent prompt from its instructions, enabled tools, and conversation history.
+Builds a prompt from agent instructions, enabled tools, and conversation history.
 
 ## Behavior
-Adds tool instructions according to the agent’s settings, then appends labeled history blocks. Skips a user input that immediately follows an EDIT, WRITE, or DELETE request.
+Adds instructions for enabled tools, always including READ, then appends labeled history blocks. Skips an input immediately following an assistant output that requests EDIT, WRITE, or DELETE.
 
 ## Imports
-- `crate::history::{Block, History}`: Reads and classifies conversation history.
+- `crate::history::{Block, History}`: Accesses and classifies conversation history.

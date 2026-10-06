@@ -2,7 +2,7 @@
 No production function is present; the file contains only a test.
 
 ## Behavior
-No production behavior is available to document because the sole function is test code.
+The test verifies that provider token usage is logged while the API response returns the result and conversation ID without exposing token counts.
 
 ## Imports
-- None: No imports are used by a production function.
+- None: The imports are used only by the test.

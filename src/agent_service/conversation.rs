@@ -1,21 +1,24 @@
 use crate::{
     adapters,
     harness::RunRequest,
-    history::{Block, History},
+    history::{Block, Conversation, History},
     services::Invocation,
     tools,
 };
 
 pub(super) fn conversation(
     history: &mut History,
+    conversation: &mut Conversation,
     input: String,
     mut execute: impl FnMut(&Invocation) -> Result<String, String>,
-) -> Result<String, String> {
+) -> Result<super::outcome::AgentOutcome, String> {
     if let Some(question) = &history.snapshot.agent.ask {
         history.blocks.push(Block::Ask(question.clone()));
         return Err("user input is unavailable in this mode".into());
     }
     history.blocks.push(Block::Input(input));
+    conversation.replace_blocks(&history.blocks);
+    conversation.save()?;
     let agent = history.snapshot.agent.clone();
     let adapter = adapters::resolve(&agent.adapter).ok_or("missing agent adapter")?;
     loop {
@@ -35,13 +38,15 @@ pub(super) fn conversation(
             .map_err(|error| error.to_string())?;
         history.record_model_call(adapter.id(), response.usage.as_ref());
         history.record_output(&response.text)?;
-        if let Some(usage) = response.usage.as_ref() {
-            history.record_usage(adapter.id(), usage)?;
-        }
         if response.text.trim().is_empty() {
             return Err("agent returned an empty response; input remains pending".into());
         }
         history.blocks.push(Block::Output(response.text.clone()));
+        conversation.replace_blocks(&history.blocks);
+        conversation.save()?;
+        if let Some(usage) = response.usage.as_ref() {
+            history.record_usage(adapter.id(), usage)?;
+        }
         if let Some(payload) = response.text.trim().strip_prefix("EDIT:") {
             if !agent.edit_tool {
                 return Err("agent requested EDIT_TOOL without permission".into());
@@ -79,10 +84,19 @@ pub(super) fn conversation(
             } else {
                 Block::Read(result)
             });
-        } else if response.text.trim_start().starts_with("ASK:") {
-            return Err("user input is unavailable in this mode".into());
+        } else if let Some(question) = response.text.trim().strip_prefix("ASK:") {
+            if !agent.ask_tool {
+                return Err("agent requested ASK_TOOL without permission".into());
+            }
+            let question = question.trim();
+            if question.is_empty() {
+                return Err("agent requested ASK_TOOL without a question".into());
+            }
+            return Ok(super::outcome::AgentOutcome::Ask(question.to_owned()));
         } else {
-            return Ok(response.text);
+            return Ok(super::outcome::AgentOutcome::Result(response.text));
         }
+        conversation.replace_blocks(&history.blocks);
+        conversation.save()?;
     }
 }

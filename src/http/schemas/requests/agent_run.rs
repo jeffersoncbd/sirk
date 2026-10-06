@@ -14,4 +14,8 @@ pub(in crate::http) struct AgentRunRequest {
     /// Literal text passed to the agent without template expansion.
     #[schema(examples("Explain src/lib.rs."))]
     pub(in crate::http) input: String,
+    /// Existing conversation to continue. Omit to start a new conversation.
+    #[serde(default, rename = "conversationId")]
+    #[schema(examples("conversation-18f-1234-0"))]
+    pub(in crate::http) conversation_id: Option<String>,
 }

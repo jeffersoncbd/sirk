@@ -11,7 +11,7 @@ impl History {
             .truncate(false)
             .read(true)
             .write(true)
-            .open(path.with_extension("log.lock"))
+            .open(path.with_file_name(".lock"))
             .map_err(|e| e.to_string())?;
         lock.try_lock()
             .map_err(|e| format!("history is already in use or cannot be locked: {e}"))?;

@@ -13,6 +13,9 @@ pub(super) fn prompt(history: &History) -> String {
     if agent.delete_tool {
         prompt.push_str("\n\nExternal tool: DELETE. To request deletion of exactly one regular file, respond only with `DELETE:` followed by a JSON object containing `path`, without code fences or other text. You may include `force: true` only when DELETE_WITHOUT_CONFIRM is allowed; otherwise it is rejected. After execution, inspect the Tool result (DELETE) before responding.");
     }
+    if agent.ask_tool {
+        prompt.push_str("\n\nExternal tool: ASK. To ask the caller one question, respond only with `ASK: <question>`. The question is returned to the caller and ends this agent run. Do not include a final answer, code fence, or other text.");
+    }
     prompt.push_str("\n\nConversation (continue from the last user message):\n");
     for (index, block) in history.blocks.iter().enumerate() {
         if matches!(block, Block::Input(_))

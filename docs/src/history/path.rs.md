@@ -1,8 +1,8 @@
 ## Summary
-Builds the canonical log file path for a history flow.
+Builds the canonical log path for a history flow.
 
 ## Behavior
-Canonicalizes the directory, returning any filesystem error as a `String`, then appends `history/<flow_id>.log` and returns the resulting path.
+Canonicalizes the directory, converting any filesystem error to a `String`, then appends `history/<flow_id>/flow.log` and returns the path.
 
 ## Imports
 - `super::History`: Provides the `History` type being extended.

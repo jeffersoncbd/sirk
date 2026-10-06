@@ -8,4 +8,4 @@ printf '%s\n' 'pre-commit: updating OpenAPI specification...'
 cargo run --bin generate-openapi
 
 printf '%s\n' 'pre-commit: updating project documentation...'
-exec cargo run --bin documentation
+exec cargo run --bin run-flow -- documentation

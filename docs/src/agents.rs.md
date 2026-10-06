@@ -1,15 +1,16 @@
 ## Summary
-`Agent::parse` validates and converts a textual definition into an agent.
+`Agent::parse` validates a YAML-front-matter definition and converts it into an `Agent`.
 
 ## Behavior
-Requires YAML metadata between `---` delimiters, validates fields such as adapter and permissions, and rejects empty instructions. On error it returns a message; otherwise, it returns an `Agent` with normalized metadata and Markdown instructions.
+Requires opening and closing `---` delimiters, valid metadata, a nonempty adapter, and nonempty Markdown instructions. It rejects unsupported JSON mode and delete-without-confirm unless delete permission is enabled; errors are returned as messages.
 
 ## Imports
-- `serde`: Metadata serialization and deserialization.
-- `serde_yaml`: YAML metadata conversion.
-- `model`: Model deserialization.
-- `call_prefix`: Call-prefix deserialization.
-- `tree_default`: Default tree permission.
-- `tree_permission`: Tree-permission deserialization.
-- `edit_permission`: Edit-permission deserialization.
-- `delete_permission`: Delete-permission deserialization.
+- `serde`: Defines metadata deserialization.
+- `serde_yaml`: Parses YAML metadata.
+- `model`: Deserializes the optional model.
+- `call_prefix`: Deserializes call prefixes.
+- `tree_permission`: Deserializes tree-tool permission.
+- `ask_permission`: Deserializes ask-tool permission.
+- `edit_permission`: Deserializes edit-tool permission.
+- `delete_permission`: Deserializes delete permissions.
+- `tree_default`: Supplies the default tree-tool setting.

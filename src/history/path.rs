@@ -7,6 +7,7 @@ impl History {
             .canonicalize()
             .map_err(|error| error.to_string())?
             .join("history")
-            .join(format!("{flow_id}.log")))
+            .join(flow_id)
+            .join("flow.log"))
     }
 }

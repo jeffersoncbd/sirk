@@ -1,8 +1,8 @@
 ## Summary
-Defines the `sirk` package, library, executable, and dependencies.
+This Cargo manifest defines the `sirk` package, library, executable, and dependencies.
 
 ## Behavior
-Sets package metadata and Rust edition, points to the library and executable source files, and declares runtime and development dependencies.
+It sets package metadata and the Rust edition, specifies the library and executable paths, and declares runtime and development dependencies.
 
 ## Imports
 - `serde`: Serialization and deserialization.

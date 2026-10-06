@@ -47,13 +47,13 @@ in a browser to view it in Swagger UI. TREE and Git requests supply the
 server-visible project `directory`; agent requests also supply `agent` and
 `input`. Create a flow with `POST /v1/flows` before making agent, TREE, or Git
 requests, then send its returned `flowId` in the `X-Sirk-Flow-Id` header. One
-flow creates one transcript under `history/`, recording complete model prompts
-and responses for all agent calls in that execution. When an adapter reports
-token usage, its response is followed by an `==> USAGE` entry with input and
-output token counts; this is not returned by the SDK. The corresponding
-`USAGE_<flow-id>.log` groups adapter call counts, available token totals, and
-the agents invoked in that flow. HTTP has no authentication,
-so expose it only on trusted networks.
+flow creates `history/<flow-id>/flow.log`, `usage.log`, and a `conversations/`
+directory. The flow log records complete model prompts and responses. When an
+adapter reports token usage, its response is followed by an `==> USAGE` entry;
+`usage.log` aggregates calls and token totals. Each agent request starts a
+conversation unless it supplies a returned `conversationId`; conversation JSON
+files preserve user, agent, and tool messages used to continue `ASK_TOOL`
+interactions. HTTP has no authentication, so expose it only on trusted networks.
 
 The [Rust SDK](https://github.com/jeffersoncbd/sirk-rust-sdk) connects to the HTTP service:
 
@@ -65,8 +65,9 @@ let explanation = sirk.agent("code-explainer", "Explain this module")?;
 ```
 
 The SDK must create a flow before its first agent, TREE, or Git request and
-send the returned ID in `X-Sirk-Flow-Id`. The flow transcript is saved under
-`history/`; there is no resume operation.
+send the returned ID in `X-Sirk-Flow-Id`. Agent responses include a
+`conversationId`; after an `ask` response, send it with the user's answer so
+the service can restore the conversation. There is no CLI resume operation.
 
 Create an agent in `.agents/<name>.md`:
 
@@ -85,7 +86,9 @@ adapter's default.
 
 The repository's Rust documentation workflow is
 [flows/documentation.rs](flows/documentation.rs). Run it with
-`cargo run --bin documentation` while the HTTP service is running. To enable
+`cargo run --bin run-flow -- documentation` while the HTTP service is running.
+Run the profile interview with
+`cargo run --bin run-flow -- profile-interviewer`. To enable
 the documentation pre-commit hook, run `git config core.hooksPath .githooks`.
 The hook requires a running service and authenticated Codex; a failure cancels
 the commit and leaves generated files in the working tree.

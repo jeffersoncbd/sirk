@@ -1,12 +1,11 @@
 ## Summary
-Creates a uniquely named history flow file and returns its flow ID.
+Creates and returns a new history flow ID with its required files and directory.
 
 ## Behavior
-Canonicalizes the directory, creates its `history` subdirectory, and repeatedly generates flow IDs until it can create a new flow file without overwriting an existing one. It syncs the file and history directory before returning the ID; filesystem and flow ID errors are returned as strings.
+Canonicalizes the given directory and creates its `history` directory. It retries when a candidate flow directory already exists; otherwise it creates the flow and usage files plus a `conversations` directory, syncs them to disk, and returns the ID. Errors are converted to strings.
 
 ## Imports
-- `super::History`: Builds the flow file path.
+- `super::History`: Builds flow and usage file paths.
 - `super::flow_id::flow_id`: Generates candidate flow IDs.
-- `std::fs`: Creates the history directory.
-- `std::fs::OpenOptions`: Creates a new flow file exclusively.
-- `std::path::Path`: Accepts the directory path.
+- `std::fs`: Creates directories and files, then syncs them.
+- `std::path::Path`: Represents the input directory path.

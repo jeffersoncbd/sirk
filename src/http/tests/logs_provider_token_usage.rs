@@ -50,9 +50,11 @@ async fn logs_provider_token_usage_without_returning_it_to_the_client() {
     .await;
     assert_eq!(response.status(), 200);
     let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    assert_eq!(response, "{\"result\":\"Done.\"}");
+    let response: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(response["result"], "Done.");
+    assert!(response["conversationId"].is_string());
     let transcript =
-        fs::read_to_string(directory.join("history").join(format!("{flow_id}.log"))).unwrap();
+        fs::read_to_string(directory.join("history").join(&flow_id).join("flow.log")).unwrap();
     assert!(
         transcript.contains("==> USAGE\nadapter: openrouter\ninput_tokens: 12\noutput_tokens: 4")
     );
@@ -69,12 +71,8 @@ async fn logs_provider_token_usage_without_returning_it_to_the_client() {
     )
     .await;
     assert_eq!(response.status(), 200);
-    let usage = fs::read_to_string(
-        directory
-            .join("history")
-            .join(format!("USAGE_{flow_id}.log")),
-    )
-    .unwrap();
+    let usage =
+        fs::read_to_string(directory.join("history").join(&flow_id).join("usage.log")).unwrap();
     assert_eq!(
         usage,
         "openrouter: 2 calls - total_input_tokens: 24 - total_output_tokens: 8\n   - token-agent (openai/gpt-5)\n   - token-agent (openai/gpt-5)\n"

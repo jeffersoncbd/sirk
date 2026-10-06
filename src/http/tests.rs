@@ -1,3 +1,5 @@
+#[path = "tests/creates_flow_directory_layout.rs"]
+mod creates_flow_directory_layout;
 #[path = "tests/enforces_agent_delete_permissions.rs"]
 mod enforces_agent_delete_permissions;
 #[path = "tests/flow.rs"]
@@ -16,10 +18,18 @@ mod handles_tree_requests;
 mod logs_provider_token_usage;
 #[path = "tests/openapi_is_current.rs"]
 mod openapi_is_current;
+#[path = "tests/persists_conversation_tool_context.rs"]
+mod persists_conversation_tool_context;
 #[path = "tests/preserves_literal_template_input.rs"]
 mod preserves_literal_template_input;
 
 #[path = "tests/rejects_invalid_requests.rs"]
 mod rejects_invalid_requests;
+#[path = "tests/rejects_unauthorized_agent_question.rs"]
+mod rejects_unauthorized_agent_question;
 #[path = "tests/request.rs"]
 mod request;
+#[path = "tests/resumes_agent_conversation.rs"]
+mod resumes_agent_conversation;
+#[path = "tests/returns_agent_question.rs"]
+mod returns_agent_question;
