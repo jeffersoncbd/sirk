@@ -2,6 +2,7 @@
 /.githooks/
 /docs/
 /flows/
+/src/bin
 
 /*.md
 /build.sh
