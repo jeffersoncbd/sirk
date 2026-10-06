@@ -1,9 +1,9 @@
 ## Summary
-This test verifies that agent definitions with malformed content or unsafe IDs are rejected.
+This test verifies that malformed agent definitions and unsafe IDs are rejected.
 
 ## Behavior
-It passes invalid definition strings to `Agent::parse` and invalid IDs to `Agent::load`, asserting each call returns an error.
+It checks that `Agent::parse` returns an error for invalid definition strings and `Agent::load` returns an error for empty, traversal, absolute, or filename-like IDs.
 
 ## Imports
-- `Agent`: Provides definition parsing and loading.
-- `std::path::Path`: Constructs the agent directory path.
+- `Agent`: Parses definitions and loads agents.
+- `std::path::Path`: Creates the agent directory path.

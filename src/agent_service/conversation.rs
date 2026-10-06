@@ -69,6 +69,9 @@ pub(super) fn conversation(
             if tool == "TREE" && !agent.tree_tool {
                 return Err("agent requested TREE_TOOL without permission".into());
             }
+            if tool == "READ" && !agent.read_tool {
+                return Err("agent requested READ_TOOL without permission".into());
+            }
             let result = if tool == "READ" {
                 let page = tools::read::page(&history.snapshot.directory, argument)?;
                 if agent.edit_tool {

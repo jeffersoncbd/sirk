@@ -48,15 +48,15 @@ src/adapters/openrouter/nonempty.rs - Returns the original string if it contains
 src/adapters/resolve.rs - Maps recognized harness names to their default adapter, returning `None` for unknown names.
 src/adapters/resolve/tests.rs - The tests verify that `resolve` recognizes four adapter IDs, all listed in `AVAILABLE`.
 src/agent_service.rs - Exposes the transport-independent agent execution API and its outcome types for crate use.
-src/agent_service/conversation.rs - Runs an agent conversation, handles permitted file operations, and records prompts, responses, and usage.
+src/agent_service/conversation.rs - Runs an agent conversation, handling user input, tool requests, adapter responses, and errors until completion or a question.
 src/agent_service/delete_request.rs - Validates deletion requests, prevents repeats, and performs authorized forced file deletion.
 src/agent_service/edit_request.rs - Prepares and commits edit requests while enforcing path permissions and preventing duplicate completed edits.
 src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
 src/agent_service/outcome.rs - Defines an agent execution record pairing a conversation ID with a string result or input request.
-src/agent_service/prompt.rs - Builds a prompt from agent instructions, enabled tools, and labeled conversation history, skipping inputs after edit requests.
+src/agent_service/prompt.rs - Constructs an agent prompt from its instructions, enabled tools, and filtered conversation history.
 src/agent_service/run.rs - Runs an agent conversation, persists its updated history and usage, and returns the conversation ID or an error.
 src/agent_service/write_request.rs - Converts a JSON payload into a write operation and delegates it to `edit_request`.
-src/agents.rs - Validates an agent’s YAML front matter and instructions, then converts them into an `Agent`.
+src/agents.rs - Agent::parse validates YAML front matter and Markdown instructions, then builds an `Agent` or returns descriptive errors.
 src/agents/ask_permission.rs - `deserialize` returns `true` for `"allow"` and a custom error for every other value.
 src/agents/call_prefix.rs - Deserializes `call_prefix` as an argument list, accepting a string or list and treating absence as an empty list.
 src/agents/delete_permission.rs - Deserializes `"allow"` as `true` and rejects other values with a descriptive error.
@@ -64,15 +64,17 @@ src/agents/edit_permission.rs - Converts the string `allow` to `true` and reject
 src/agents/id.rs - Validates that a nonempty identifier contains only ASCII letters, digits, underscores, or hyphens.
 src/agents/load.rs - Loads and validates an agent from a Markdown file, returning it or explaining the failure.
 src/agents/model.rs - Deserializes an optional model and normalizes it by trimming whitespace and converting it to lowercase.
-src/agents/tests.rs - This file groups agent tests into eight modules covering tool enablement, model normalization, call prefixes, metadata, and invalid definitions.
+src/agents/read_permission.rs - Deserializes the string `"allow"` as `true` and returns an error for any other value.
+src/agents/tests.rs - The file registers nine agent test modules by mapping each module to its source file.
 src/agents/tests/enables_ask_tool.rs - Tests that an agent configuration enables `ask_tool` and serializes it as `ASK_TOOL: true`.
 src/agents/tests/enables_delete_permissions.rs - Tests that agent configuration enables both delete permissions when explicitly set to `allow`.
 src/agents/tests/enables_edit_tool.rs - Tests that an agent with edit access enabled serializes that setting.
+src/agents/tests/enables_read_tool.rs - The test verifies that `READ_TOOL: allow` enables reading and serializes as `READ_TOOL: true`.
 src/agents/tests/enables_tree_tool.rs - Tests that an Agent enables and serializes the tree tool when explicitly allowed.
 src/agents/tests/normalizes_models.rs - The test verifies that model names are lowercased when parsing Markdown and restoring a YAML snapshot.
 src/agents/tests/reads_call_prefix.rs - Agent::parse converts call prefixes from a single string or YAML list into an ordered argument list.
-src/agents/tests/reads_metadata.rs - Parses CRLF-formatted agent metadata and Markdown instructions into an Agent with default options.
-src/agents/tests/rejects_invalid_definitions.rs - This test ensures malformed agent definitions and unsafe IDs are rejected with errors.
+src/agents/tests/reads_metadata.rs - Agent::parse builds an agent from an ID and CRLF-formatted metadata and Markdown, with defaults for unspecified options.
+src/agents/tests/rejects_invalid_definitions.rs - The test verifies that malformed agent definitions and unsafe IDs are rejected.
 src/agents/tree_default.rs - Always returns `true` to allow the TREE tool, without validation or side effects.
 src/agents/tree_permission.rs - Deserializes `allow` as `true` and rejects other values with an error stating the expected value.
 src/bin/generate-openapi.rs - Generates the OpenAPI document as YAML and writes it to `openapi.yaml`.
@@ -142,7 +144,7 @@ src/http/schemas/responses/tree.rs - TreeResponse serializes sorted, unique path
 src/http/serve.rs - Runs the HTTP server at the supplied address on a multi-threaded Tokio runtime, returning errors as strings.
 src/http/spec.rs - Returns the OpenAPI document generated from the HTTP routes.
 src/http/swagger.rs - SWAGGER_UI embeds an HTML page that loads Swagger UI and displays the API specification at `/openapi.yaml`.
-src/http/tests.rs - Declares HTTP test modules and associates each with its corresponding test file.
+src/http/tests.rs - Declares HTTP test modules and maps each module to its test file under `tests/`.
 src/http/tests/creates_flow_directory_layout.rs - The test verifies that `flow` creates the expected log files and conversations directory.
 src/http/tests/enforces_agent_delete_permissions.rs - Tests that file deletion occurs only when both required deletion permissions are enabled.
 src/http/tests/flow.rs - Creates a flow for the specified directory and returns its flow ID.
@@ -153,10 +155,11 @@ src/http/tests/handles_git_status_requests.rs - Tests that `/v1/git/status` excl
 src/http/tests/handles_tree_requests.rs - Tests that `POST /v1/tree` returns repository paths while excluding files listed in `.treeignore`.
 src/http/tests/logs_provider_token_usage.rs - The test verifies token usage logging while keeping token counts out of the API response.
 src/http/tests/openapi_is_current.rs - This file contains no production behavior; it only tests the OpenAPI document.
-src/http/tests/persists_conversation_tool_context.rs - Tests that a conversation preserves tool output between agent requests and uses it in a later response.
+src/http/tests/persists_conversation_tool_context.rs - Verifies that tool output persists and is available across requests in the same conversation.
 src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.
 src/http/tests/rejects_invalid_requests.rs - Tests HTTP routes for expected responses to valid requests, unknown paths, unsupported methods, and malformed POSTs.
 src/http/tests/rejects_unauthorized_agent_question.rs - Tests that an agent question without permission is rejected with an HTTP 500 error.
+src/http/tests/rejects_unauthorized_agent_read.rs - Tests that file-read requests without permission return HTTP 500 with the expected error.
 src/http/tests/request.rs - Builds a JSON HTTP request, optionally adds a flow ID header, and dispatches it through the application router.
 src/http/tests/resumes_agent_conversation.rs - Tests resuming an agent conversation from persisted messages.
 src/http/tests/returns_agent_question.rs - Tests that an authorized agent question is returned by the HTTP endpoint and recorded in the flow transcript and conversation history.

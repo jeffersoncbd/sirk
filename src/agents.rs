@@ -5,6 +5,7 @@ mod edit_permission;
 mod id;
 mod load;
 mod model;
+mod read_permission;
 mod tree_default;
 mod tree_permission;
 
@@ -23,6 +24,8 @@ pub struct Agent {
     pub tree_tool: bool,
     pub json: bool,
     pub ask: Option<String>,
+    #[serde(default, rename = "READ_TOOL")]
+    pub read_tool: bool,
     #[serde(default, rename = "ASK_TOOL")]
     pub ask_tool: bool,
     #[serde(default, rename = "EDIT_TOOL")]
@@ -50,6 +53,12 @@ struct Metadata {
     #[serde(default)]
     json: bool,
     ask: Option<String>,
+    #[serde(
+        default,
+        rename = "READ_TOOL",
+        deserialize_with = "read_permission::deserialize"
+    )]
+    read_tool: bool,
     #[serde(
         default,
         rename = "ASK_TOOL",
@@ -123,6 +132,7 @@ impl Agent {
             tree_tool: metadata.tree_tool,
             json: metadata.json,
             ask: metadata.ask,
+            read_tool: metadata.read_tool,
             ask_tool: metadata.ask_tool,
             edit_tool: metadata.edit_tool,
             delete_tool: metadata.delete_tool,

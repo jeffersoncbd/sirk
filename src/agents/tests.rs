@@ -4,6 +4,8 @@ mod enables_ask_tool;
 mod enables_delete_permissions;
 #[path = "tests/enables_edit_tool.rs"]
 mod enables_edit_tool;
+#[path = "tests/enables_read_tool.rs"]
+mod enables_read_tool;
 #[path = "tests/enables_tree_tool.rs"]
 mod enables_tree_tool;
 #[path = "tests/normalizes_models.rs"]

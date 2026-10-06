@@ -27,6 +27,8 @@ mod preserves_literal_template_input;
 mod rejects_invalid_requests;
 #[path = "tests/rejects_unauthorized_agent_question.rs"]
 mod rejects_unauthorized_agent_question;
+#[path = "tests/rejects_unauthorized_agent_read.rs"]
+mod rejects_unauthorized_agent_read;
 #[path = "tests/request.rs"]
 mod request;
 #[path = "tests/resumes_agent_conversation.rs"]

@@ -58,10 +58,12 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   removes matching paths, including tracked paths. Preserve path bytes during
   listing and reject non-UTF-8 paths at JSON rendering.
 - READ returns exact UTF-8 contents, including empty text. Agents with
-  `EDIT_TOOL: allow` receive line-numbered READ results. READ only accepts
+  `READ_TOOL: allow` can request it; agents with `EDIT_TOOL: allow` receive
+  line-numbered READ results. READ only accepts
   regular files inside the execution directory; `.readignore` controls access.
 - Recognize ordinary requests only as standalone `TREE` from agents with
-  `TREE_TOOL: allow`, or one-line `READ: <path>` responses.
+  `TREE_TOOL: allow`, or one-line `READ: <path>` responses from agents with
+  `READ_TOOL: allow`.
 - EDIT, WRITE, and DELETE require their explicit agent permissions. EDIT and
   WRITE require `EDIT_TOOL: allow`; persist their preparation before mutation,
   protect against intervening file changes, and return plain diffs without ANSI

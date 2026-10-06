@@ -31,7 +31,7 @@ async fn persists_tool_context_between_conversation_requests() {
     fs::write(
         directory.join(".agents/reader.md"),
         format!(
-            "---\nadapter: codex\ncall_prefix: '{}'\nASK_TOOL: allow\n---\nRead the fact, ask before using it, and then finish.",
+            "---\nadapter: codex\ncall_prefix: '{}'\nREAD_TOOL: allow\nASK_TOOL: allow\n---\nRead the fact, ask before using it, and then finish.",
             adapter.display()
         ),
     )

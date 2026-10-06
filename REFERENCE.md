@@ -76,8 +76,9 @@ Explain the requested module and cite the relevant functions.
 `adapter` is required. `model` is optional and is trimmed and lowercased;
 omitting it uses the adapter default. `call_prefix` is an optional command
 token or list of literal arguments prepended to the adapter invocation. It is
-not shell syntax. `TREE_TOOL: allow`, `ASK_TOOL: allow`, `EDIT_TOOL: allow`,
-and `DELETE_TOOL: allow` grant the corresponding agent requests. The optional
+not shell syntax. `TREE_TOOL: allow`, `READ_TOOL: allow`, `ASK_TOOL: allow`,
+`EDIT_TOOL: allow`, and `DELETE_TOOL: allow` grant the corresponding agent
+requests. The optional
 `DELETE_WITHOUT_CONFIRM: allow` requires `DELETE_TOOL: allow`.
 
 `ask` is accepted as an initial question, but HTTP has no interactive answer
@@ -92,7 +93,8 @@ generator's adapter/model. Existing definitions are never overwritten.
 
 ## Agent tool requests
 
-The agent can answer with a standalone `READ: <path>` line. READ returns the
+With `READ_TOOL: allow`, the agent can answer with a standalone `READ: <path>`
+line. READ returns the
 exact UTF-8 contents of a regular file inside the execution directory. To read
 a page, it can answer with `READ:` followed by one JSON object with `path`,
 positive one-based `offset`, and positive `limit`; omitted values default to

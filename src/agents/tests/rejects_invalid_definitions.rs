@@ -11,6 +11,7 @@ fn rejects_malformed_definitions_and_paths() {
         "---\nadapter: codex\nwrite: true\n---\nReview",
         "---\nadapter: codex\njson: true\n---\nReview",
         "---\nadapter: codex\nASK_TOOL: deny\n---\nReview",
+        "---\nadapter: codex\nREAD_TOOL: deny\n---\nReview",
         "---\nadapter: codex\nEDIT_TOOL: deny\n---\nReview",
         "---\nadapter: codex\nDELETE_TOOL: deny\n---\nReview",
         "---\nadapter: codex\nDELETE_WITHOUT_CONFIRM: allow\n---\nReview",

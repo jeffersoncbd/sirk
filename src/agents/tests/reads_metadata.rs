@@ -13,6 +13,7 @@ fn reads_metadata_and_markdown_with_crlf() {
     assert!(agent.call_prefix.is_empty());
     assert!(!agent.tree_tool);
     assert!(!agent.json);
+    assert!(!agent.read_tool);
     assert!(!agent.ask_tool);
     assert!(!agent.edit_tool);
     assert!(!agent.delete_tool);

@@ -1,8 +1,8 @@
 ## Summary
-This file groups agent tests into eight modules.
+This file registers nine agent test modules.
 
 ## Behavior
-It declares the test modules for tool enablement, model normalization, call prefixes, metadata, and invalid definitions.
+Each `#[path]` attribute maps a test module to its source file.
 
 ## Imports
-- None: the file declares modules and has no imports.
+- None: the file only declares test modules.

@@ -25,9 +25,6 @@
 - Remove Git functionality from the core. Projects that need Git operations
   should implement them independently.
 - Replace flow IDs with UUIDs.
-- Add an `ALLOW_READ: allow` permission, following the existing `EDIT_TOOL`
-  permission pattern, and document the migration from the current default
-  READ access.
 - Bind the HTTP server to `0.0.0.0` by default so devcontainers and port
   forwarding work correctly.
 - Require token-based authentication for HTTP requests. The token must be
