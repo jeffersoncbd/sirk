@@ -1,8 +1,8 @@
 ## Summary
-Verifies that an HTTP agent request returns its output and records it in the conversation transcript.
+Checks that an HTTP agent request returns output and records it in the flow transcript.
 
 ## Behavior
-Creates a temporary agent and executable adapter, sends a `POST` request to `/v1/agent/run`, and checks the status, response fields, and transcript contents. Removes the temporary directory afterward.
+Creates a temporary agent and executable adapter, sends a `POST` request to `/v1/agent/run`, and verifies the response and transcript. Removes the temporary directory afterward.
 
 ## Imports
 - `flow`, `request`: Set up a flow and send the HTTP request.

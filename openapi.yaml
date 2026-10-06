@@ -71,7 +71,7 @@ paths:
   /v1/agent/run:
     post:
       summary: Run a named agent
-      description: 'Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. Omit `conversationId` to start a conversation; when answering an `ask`, send the returned `conversationId` so the service can restore the prior messages. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. A completed run returns `result`; an agent with `ASK_TOOL: allow` can return one `ask` question for the caller to present to the user. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory; the complete prompt and each model response are appended to that flow''s transcript.'
+      description: 'Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. When an agent with `ASK_TOOL: allow` returns an `ask`, the response includes `conversationId`; send it with the user''s answer to restore the prior messages. Completed standalone runs return `result` without a `conversationId`. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory; the complete prompt and each model response are appended to that flow''s transcript.'
       operationId: runAgent
       parameters:
       - name: X-Sirk-Flow-Id
@@ -96,7 +96,7 @@ paths:
                   directory: /workspace/project
                   input: Ana
               new:
-                summary: Start a conversation
+                summary: Run an agent
                 value:
                   agent: code-explainer
                   directory: /workspace/project
@@ -116,9 +116,8 @@ paths:
                     ask: What is your name?
                     conversationId: conversation-18f-1234-0
                 result:
-                  summary: Completed run
+                  summary: Completed standalone run
                   value:
-                    conversationId: conversation-18f-1234-0
                     result: The module exposes the public S.I.R.K. API.
         '400':
           description: The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.
@@ -386,8 +385,6 @@ components:
       additionalProperties: false
     AgentRunResponse:
       type: object
-      required:
-      - conversationId
       properties:
         ask:
           type:
@@ -395,8 +392,10 @@ components:
           - 'null'
           description: Question returned when an agent requests user input.
         conversationId:
-          type: string
-          description: Conversation identifier to send when answering an `ask` response.
+          type:
+          - string
+          - 'null'
+          description: Conversation identifier to send when answering an `ask` response, when one exists.
         result:
           type:
           - string

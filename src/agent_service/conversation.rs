@@ -8,7 +8,8 @@ use crate::{
 
 pub(super) fn conversation(
     history: &mut History,
-    conversation: &mut Conversation,
+    conversation: &mut Option<Conversation>,
+    flow_id: &str,
     input: String,
     mut execute: impl FnMut(&Invocation) -> Result<String, String>,
 ) -> Result<super::outcome::AgentOutcome, String> {
@@ -17,8 +18,6 @@ pub(super) fn conversation(
         return Err("user input is unavailable in this mode".into());
     }
     history.blocks.push(Block::Input(input));
-    conversation.replace_blocks(&history.blocks);
-    conversation.save()?;
     let agent = history.snapshot.agent.clone();
     let adapter = adapters::resolve(&agent.adapter).ok_or("missing agent adapter")?;
     loop {
@@ -42,8 +41,6 @@ pub(super) fn conversation(
             return Err("agent returned an empty response; input remains pending".into());
         }
         history.blocks.push(Block::Output(response.text.clone()));
-        conversation.replace_blocks(&history.blocks);
-        conversation.save()?;
         if let Some(usage) = response.usage.as_ref() {
             history.record_usage(adapter.id(), usage)?;
         }
@@ -95,11 +92,12 @@ pub(super) fn conversation(
             if question.is_empty() {
                 return Err("agent requested ASK_TOOL without a question".into());
             }
+            if conversation.is_none() {
+                *conversation = Some(history.open_conversation(flow_id, &agent.id, None)?);
+            }
             return Ok(super::outcome::AgentOutcome::Ask(question.to_owned()));
         } else {
             return Ok(super::outcome::AgentOutcome::Result(response.text));
         }
-        conversation.replace_blocks(&history.blocks);
-        conversation.save()?;
     }
 }

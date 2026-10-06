@@ -19,44 +19,54 @@ pub(crate) fn run(
     adapters::resolve(&agent.adapter)
         .ok_or_else(|| format!("unknown adapter `{}`", agent.adapter))?;
     let mut history = History::create(Snapshot { directory, agent }, &flow_id)?;
-    let mut conversation = history.open_conversation(
-        &flow_id,
-        &history.snapshot.agent.id,
-        conversation_id.as_deref(),
-    )?;
-    if conversation_id.is_some() && conversation.data.status != ConversationStatus::AwaitingUser {
-        return Err(format!(
-            "conversation `{}` is not awaiting user input",
-            conversation.data.conversation_id
-        ));
+    let mut conversation = conversation_id
+        .as_deref()
+        .map(|conversation_id| {
+            history.open_conversation(&flow_id, &history.snapshot.agent.id, Some(conversation_id))
+        })
+        .transpose()?;
+    if let Some(conversation) = conversation.as_ref() {
+        if conversation.data.status != ConversationStatus::AwaitingUser {
+            return Err(format!(
+                "conversation `{}` is not awaiting user input",
+                conversation.data.conversation_id
+            ));
+        }
+        history.blocks = conversation.blocks();
     }
-    history.blocks = conversation.blocks();
-    conversation.data.status = ConversationStatus::Active;
     let result = super::conversation::conversation(
         &mut history,
         &mut conversation,
+        &flow_id,
         input,
         super::execute::execute,
     );
     let outcome = match result {
         Ok(outcome) => outcome,
         Err(error) => {
-            conversation.replace_blocks(&history.blocks);
-            conversation.data.status = ConversationStatus::Failed;
-            conversation.save()?;
+            if let Some(conversation) = conversation.as_mut() {
+                conversation.replace_blocks(&history.blocks);
+                conversation.data.status = ConversationStatus::Failed;
+                conversation.save()?;
+            }
             history.record_usage_summary()?;
             return Err(error);
         }
     };
-    conversation.replace_blocks(&history.blocks);
-    conversation.data.status = match &outcome {
-        super::outcome::AgentOutcome::Result(_) => ConversationStatus::Completed,
-        super::outcome::AgentOutcome::Ask(_) => ConversationStatus::AwaitingUser,
+    let conversation_id = if let Some(conversation) = conversation.as_mut() {
+        conversation.replace_blocks(&history.blocks);
+        conversation.data.status = match &outcome {
+            super::outcome::AgentOutcome::Result(_) => ConversationStatus::Completed,
+            super::outcome::AgentOutcome::Ask(_) => ConversationStatus::AwaitingUser,
+        };
+        conversation.save()?;
+        Some(conversation.data.conversation_id.clone())
+    } else {
+        None
     };
-    conversation.save()?;
     history.record_usage_summary()?;
     Ok(super::outcome::AgentExecution {
-        conversation_id: conversation.data.conversation_id,
+        conversation_id,
         outcome,
     })
 }

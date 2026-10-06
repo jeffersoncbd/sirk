@@ -2,8 +2,8 @@
 `AgentRunResponse` serializes an agent run’s conversation ID and optional result or question.
 
 ## Behavior
-The response always includes `conversationId`; `result` and `ask` are omitted when absent. Unknown fields are rejected during deserialization.
+Serialization omits `conversationId`, `result`, and `ask` when absent; `conversation_id` is renamed to `conversationId`. The type also derives OpenAPI schema support and rejects unknown fields during deserialization.
 
 ## Imports
-- `serde`: Provides serialization attributes and support.
+- `serde`: Provides serialization derives and field attributes.
 - `utoipa`: Provides OpenAPI schema support.

@@ -1,8 +1,8 @@
 ## Summary
-Runs an agent conversation until it returns a result or asks a question.
+Runs the configured agent until it returns a result, asks a question, or encounters an error.
 
 ## Behavior
-Rejects unavailable user input; otherwise records and saves it, then repeatedly invokes the configured adapter and records its responses and usage. It executes permitted edit, write, delete, read, and tree requests before continuing. Unauthorized or invalid requests and other failures return errors.
+Rejects input when a question is already pending; otherwise records the input and repeatedly invokes the adapter, saving responses and usage. Executes requested tools only when permitted, continues after tool results, and returns either the final response or a validated question. Failures return errors.
 
 ## Imports
 - `adapters`: Resolves the configured agent adapter.

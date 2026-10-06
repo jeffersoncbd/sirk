@@ -1,8 +1,8 @@
 ## Summary
-Defines the S.I.R.K. HTTP API, including endpoints, request and response schemas, and server details.
+Defines the S.I.R.K. HTTP API for agent runs, flow transcripts, Git operations, file listing, and service documentation.
 
 ## Behavior
-Documents health and API-spec access, agent execution, flow creation, Git staging and status, and file listing. It specifies request validation, flow ID requirements, success and error responses, and server-side directory paths. The service has no authentication or TLS.
+Specifies endpoints, request and response schemas, required flow headers, validation rules, and error responses. Paths are resolved on the server; the service has no authentication or TLS.
 
 ## Imports
 - None: this is an OpenAPI YAML document.

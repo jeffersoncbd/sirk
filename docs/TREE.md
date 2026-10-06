@@ -1,7 +1,7 @@
 
 .env.example - Configures optional URLs and API keys for Ollama, OpenRouter, and NVIDIA adapters.
-Cargo.toml - Defines the `sirk` Rust package, its library and executable targets, and their runtime and development dependencies.
-openapi.yaml - Documents the S.I.R.K. HTTP API endpoints, schemas, responses, and server configuration.
+Cargo.toml - Defines the `sirk` Rust package, its library and executable, and their dependencies.
+openapi.yaml - Defines the S.I.R.K. HTTP API endpoints, schemas, validation rules, and error responses.
 src/adapters/codex.rs - Configures request execution through `codex exec`, building its arguments and prompt.
 src/adapters/codex/default.rs - Defines the default CodexAdapter configuration using the `codex` command.
 src/adapters/codex/new.rs - Creates a `CodexAdapter` that stores the supplied executable as text.
@@ -48,13 +48,13 @@ src/adapters/openrouter/nonempty.rs - Returns the original string if it contains
 src/adapters/resolve.rs - Maps recognized harness names to their default adapter, returning `None` for unknown names.
 src/adapters/resolve/tests.rs - The tests verify that `resolve` recognizes four adapter IDs, all listed in `AVAILABLE`.
 src/agent_service.rs - Exposes the transport-independent agent execution API and its outcome types for crate use.
-src/agent_service/conversation.rs - Runs an agent conversation, handling user input, tool requests, adapter responses, and errors until completion or a question.
+src/agent_service/conversation.rs - Runs the configured agent through tool calls until it returns a final response, asks a validated question, or fails.
 src/agent_service/delete_request.rs - Validates deletion requests, prevents repeats, and performs authorized forced file deletion.
 src/agent_service/edit_request.rs - Prepares and commits edit requests while enforcing path permissions and preventing duplicate completed edits.
 src/agent_service/execute.rs - Executes an invocation and returns stdout only on success, converting failures into messages.
-src/agent_service/outcome.rs - Defines an agent execution record pairing a conversation ID with a string result or input request.
+src/agent_service/outcome.rs - Defines agent outcomes as results or input requests, paired with an execution record that may include a conversation ID.
 src/agent_service/prompt.rs - Constructs an agent prompt from its instructions, enabled tools, and filtered conversation history.
-src/agent_service/run.rs - Runs an agent conversation, persists its updated history and usage, and returns the conversation ID or an error.
+src/agent_service/run.rs - Runs or resumes an agent conversation, saves its outcome and usage, and returns any errors as strings.
 src/agent_service/write_request.rs - Converts a JSON payload into a write operation and delegates it to `edit_request`.
 src/agents.rs - Agent::parse validates YAML front matter and Markdown instructions, then builds an `Agent` or returns descriptive errors.
 src/agents/ask_permission.rs - `deserialize` returns `true` for `"allow"` and a custom error for every other value.
@@ -114,7 +114,7 @@ src/history/validate_flow.rs - Validates a flow ID and confirms its resolved pat
 src/http.rs - Exposes the HTTP server entry point and re-exports the OpenAPI document.
 src/http/content_type.rs - Defines shared UTF-8 media type constants for HTML, JSON, and plain text responses.
 src/http/controllers.rs - Declares HTTP controller submodules and makes them available to the parent module.
-src/http/controllers/agent_run.rs - Runs the requested agent and returns its result or question as JSON, with HTTP errors for invalid requests or failures.
+src/http/controllers/agent_run.rs - Runs an agent for a valid flow and returns its result or question as JSON.
 src/http/controllers/flow_create.rs - Creates a flow transcript in the requested directory and returns its ID.
 src/http/controllers/git_add.rs - Stages changes in a validated directory and returns an HTTP response describing the result.
 src/http/controllers/git_status.rs - git_status validates a flow ID, then returns changed Git paths for the requested directory.
@@ -133,7 +133,7 @@ src/http/schemas/requests.rs - This module exposes the agent-run and directory r
 src/http/schemas/requests/agent_run.rs - AgentRunRequest defines the execution directory, agent, input, and optional conversation ID for an agent run.
 src/http/schemas/requests/directory.rs - DirectoryRequest deserializes a server-visible directory path and documents it in the OpenAPI schema.
 src/http/schemas/responses.rs - Re-exports HTTP response schema types within `crate::http`.
-src/http/schemas/responses/agent_run.rs - AgentRunResponse serializes a conversation ID and optional result or question, rejecting unknown fields.
+src/http/schemas/responses/agent_run.rs - `AgentRunResponse` serializes an agent conversation ID with an optional result or question and supports OpenAPI schemas.
 src/http/schemas/responses/error.rs - Represents an HTTP error response with a human-readable message.
 src/http/schemas/responses/flow.rs - FlowResponse serializes a flow identifier for HTTP responses, intended for reuse in later request headers.
 src/http/schemas/responses/git_status.rs - Represents sorted, unique Git status paths relative to the requested directory in an HTTP response.
@@ -149,11 +149,11 @@ src/http/tests/creates_flow_directory_layout.rs - The test verifies that `flow` 
 src/http/tests/enforces_agent_delete_permissions.rs - Tests that file deletion occurs only when both required deletion permissions are enabled.
 src/http/tests/flow.rs - Creates a flow for the specified directory and returns its flow ID.
 src/http/tests/handles_agent_edits.rs - Tests that an HTTP agent run appends text to a file and returns the expected result.
-src/http/tests/handles_agent_requests.rs - Tests that an HTTP agent run returns output and records it in the conversation transcript.
+src/http/tests/handles_agent_requests.rs - Tests that the agent run endpoint returns output and records it in the flow transcript.
 src/http/tests/handles_git_add_requests.rs - Tests that `/v1/git/add` stages a file in the specified Git repository directory.
 src/http/tests/handles_git_status_requests.rs - Tests that `/v1/git/status` excludes files ignored by `.treeignore`.
 src/http/tests/handles_tree_requests.rs - Tests that `POST /v1/tree` returns repository paths while excluding files listed in `.treeignore`.
-src/http/tests/logs_provider_token_usage.rs - The test verifies token usage logging while keeping token counts out of the API response.
+src/http/tests/logs_provider_token_usage.rs - Tests that provider token usage is logged while API responses omit token counts and conversation IDs.
 src/http/tests/openapi_is_current.rs - This file contains no production behavior; it only tests the OpenAPI document.
 src/http/tests/persists_conversation_tool_context.rs - Verifies that tool output persists and is available across requests in the same conversation.
 src/http/tests/preserves_literal_template_input.rs - Verifies the HTTP endpoint passes template-like input to the agent unchanged.

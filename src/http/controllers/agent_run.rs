@@ -16,20 +16,20 @@ use axum::{
     path = "/v1/agent/run",
     operation_id = "runAgent",
     summary = "Run a named agent",
-    description = "Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. Omit `conversationId` to start a conversation; when answering an `ask`, send the returned `conversationId` so the service can restore the prior messages. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. A completed run returns `result`; an agent with `ASK_TOOL: allow` can return one `ask` question for the caller to present to the user. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory; the complete prompt and each model response are appended to that flow's transcript.",
+    description = "Loads the agent definition from `.agents/<agent>.md` below the supplied directory and runs it with the literal `input` string. When an agent with `ASK_TOOL: allow` returns an `ask`, the response includes `conversationId`; send it with the user's answer to restore the prior messages. Completed standalone runs return `result` without a `conversationId`. Template-like content in `input`, including `{{ ... }}`, is passed through unchanged. `X-Sirk-Flow-Id` is required and must identify a flow created for the same directory; the complete prompt and each model response are appended to that flow's transcript.",
     params(("X-Sirk-Flow-Id" = String, Header, description = "Required identifier returned by POST /v1/flows for this directory.", example = "flow-18f-1234-0")),
     request_body(
         content = AgentRunRequest,
         description = "Agent execution request.",
         content_type = "application/json",
         examples(
-            ("new" = (summary = "Start a conversation", value = json!({"directory": "/workspace/project", "agent": "code-explainer", "input": "Explain src/lib.rs."}))),
+            ("new" = (summary = "Run an agent", value = json!({"directory": "/workspace/project", "agent": "code-explainer", "input": "Explain src/lib.rs."}))),
             ("continue" = (summary = "Answer an agent question", value = json!({"directory": "/workspace/project", "agent": "profile-interviewer", "input": "Ana", "conversationId": "conversation-18f-1234-0"})))
         )
     ),
     responses(
         (status = 200, description = "The agent completed or requested user input.", body = AgentRunResponse, examples(
-            ("result" = (summary = "Completed run", value = json!({"conversationId": "conversation-18f-1234-0", "result": "The module exposes the public S.I.R.K. API."}))),
+            ("result" = (summary = "Completed standalone run", value = json!({"result": "The module exposes the public S.I.R.K. API."}))),
             ("ask" = (summary = "Question for the user", value = json!({"conversationId": "conversation-18f-1234-0", "ask": "What is your name?"})))
         )),
         (status = 400, description = "The request body or X-Sirk-Flow-Id header is invalid, incomplete, unknown, or does not belong to the supplied directory.", body = ErrorResponse, example = json!({"error": "Missing or invalid X-Sirk-Flow-Id header"})),

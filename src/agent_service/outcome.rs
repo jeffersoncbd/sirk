@@ -4,6 +4,6 @@ pub(crate) enum AgentOutcome {
 }
 
 pub(crate) struct AgentExecution {
-    pub conversation_id: String,
+    pub conversation_id: Option<String>,
     pub outcome: AgentOutcome,
 }

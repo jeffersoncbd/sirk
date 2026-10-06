@@ -44,10 +44,21 @@ async fn handles_agent_requests() {
     let response: Value = serde_json::from_slice(&response).unwrap();
     assert_eq!(response["result"], "served over HTTP", "{response}");
     assert!(response.get("ask").is_none(), "{response}");
-    assert!(response["conversationId"].is_string(), "{response}");
+    assert!(response.get("conversationId").is_none(), "{response}");
     let transcript =
         fs::read_to_string(directory.join("history").join(&flow_id).join("flow.log")).unwrap();
     assert!(transcript.contains("==> INPUT\nExplain code."));
     assert!(transcript.contains("<== OUTPUT\nserved over HTTP"));
+    assert!(
+        fs::read_dir(
+            directory
+                .join("history")
+                .join(&flow_id)
+                .join("conversations")
+        )
+        .unwrap()
+        .next()
+        .is_none()
+    );
     fs::remove_dir_all(directory).unwrap();
 }

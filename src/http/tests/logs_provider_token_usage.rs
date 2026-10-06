@@ -52,7 +52,7 @@ async fn logs_provider_token_usage_without_returning_it_to_the_client() {
     let response = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let response: serde_json::Value = serde_json::from_slice(&response).unwrap();
     assert_eq!(response["result"], "Done.");
-    assert!(response["conversationId"].is_string());
+    assert!(response.get("conversationId").is_none());
     let transcript =
         fs::read_to_string(directory.join("history").join(&flow_id).join("flow.log")).unwrap();
     assert!(

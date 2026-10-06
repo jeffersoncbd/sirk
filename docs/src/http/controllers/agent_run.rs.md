@@ -1,8 +1,8 @@
 ## Summary
-Runs the requested agent and returns its result or question as JSON.
+Runs an agent for a validated flow and returns its result or question as JSON.
 
 ## Behavior
-Rejects invalid JSON or a flow ID that is missing, invalid, unknown, or for another directory with `400 Bad Request`. Runs the agent in a blocking task, returning either its result or an `ask` question; agent or task failures return `500 Internal Server Error`.
+Rejects invalid JSON or a missing, invalid, unknown, or directory-mismatched flow ID with `400 Bad Request`. Runs the agent in a blocking task; returns its result or `ask` response on success, and `500 Internal Server Error` if the agent or task fails.
 
 ## Imports
 - `JsonResponse`: Wraps response bodies as JSON
