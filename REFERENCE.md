@@ -34,11 +34,12 @@ X-Sirk-Flow-Id: flow-...
 {"directory":"/workspace/project","agent":"code-explainer","input":"Explain this module"}
 ```
 
-The directory must be visible to the server. A successful call returns HTTP
-200 with `{"conversationId":"conversation-...","result":"..."}`. Invalid
-requests return 400, unknown routes 404, unsupported methods 405, and execution
-errors 500 with `{"error":"..."}`. HTTP has no authentication or TLS; use a
-trusted network for external binds.
+The directory must be visible to the server. A standalone successful call
+returns HTTP 200 with `{"result":"..."}`. An `ASK_TOOL` request returns a
+`conversationId` with its `ask` response. Invalid requests return 400, unknown
+routes 404, unsupported methods 405, and execution errors 500 with
+`{"error":"..."}`. HTTP has no authentication or TLS; use a trusted network
+for external binds.
 
 The Rust SDK's `Sirk::connect()` checks the default HTTP service and sends the
 calling process's current directory. `Sirk::connect_to(endpoint, directory)`
@@ -110,11 +111,12 @@ requires a Git working tree.
 
 With `ASK_TOOL: allow`, an agent can answer with `ASK: <question>` and nothing
 else. S.I.R.K. ends the current run and returns
-`{"conversationId":"conversation-...","ask":"<question>"}`. The caller
-presents it to the user, then sends the answer in a new agent request with that
-`conversationId`. S.I.R.K. restores the saved messages and includes them in the
-next model prompt. A completed run returns the same conversation ID with
-`result`; completed conversations cannot be continued.
+`{"conversationId":"conversation-...","ask":"<question>"}` and creates the
+conversation log. The caller presents it to the user, then sends the answer in
+a new agent request with that `conversationId`. S.I.R.K. restores the saved
+messages and includes them in the next model prompt. A completed continuation
+returns the same conversation ID with `result`; completed conversations cannot
+be continued.
 
 With `EDIT_TOOL: allow`, the agent can answer with `EDIT:` followed by one JSON
 object containing `filePath`, `oldString`, `newString`, and optional
@@ -147,7 +149,8 @@ Each flow stores its artifacts under `history/<flowId>/`. Each provider call
 appends `==> INPUT` followed by the complete
 prompt delivered to the model and `<== OUTPUT` followed by the complete
 normalized model response to `flow.log`; `usage.log` contains aggregate model
-usage. Each `conversations/<conversationId>.json` file contains the agent,
+usage. S.I.R.K. creates `conversations/<conversationId>.json` only when an
+agent returns an authorized `ASK:` request. Each file contains the agent,
 status, and user, assistant, and tool messages used to restore that
 conversation. The flow is locked while an agent call writes its artifacts. The
 CLI has no resume command.

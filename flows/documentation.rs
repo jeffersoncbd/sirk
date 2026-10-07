@@ -98,7 +98,6 @@ pub fn run(sirk: &Sirk) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    sirk.tools().await_confirm()?;
     sirk.tools().git().add()?;
 
     Ok(())

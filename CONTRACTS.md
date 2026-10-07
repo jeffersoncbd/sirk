@@ -37,11 +37,11 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   identify an existing flow for the supplied directory. Agent requests also
   contain an agent ID and literal input. TREE and Git requests otherwise
   contain only the server-visible execution directory.
-- A successful agent response contains `conversationId` and exactly one
-  outcome field: `result` for a completed run, or `ask` when an agent with
-  `ASK_TOOL: allow` requests one user answer from the caller. Omit
-  `conversationId` in a request to create a conversation; include it with the
-  user's answer to continue a conversation that is awaiting input.
+- A successful agent response contains exactly one outcome field: `result` for
+  a completed run, or `ask` when an agent with `ASK_TOOL: allow` requests one
+  user answer from the caller. A standalone result omits `conversationId`. An
+  `ask` response includes `conversationId`; include it with the user's answer
+  to continue the conversation while it awaits input.
 - The Rust SDK connects to HTTP without starting a CLI process. Its default
   endpoint is `http://127.0.0.1:8080`; `Sirk::connect()` sends the caller's
   current directory. Custom endpoints preserve supplied server-visible paths.
@@ -86,9 +86,10 @@ workflow and checks are in [AGENTS.md](AGENTS.md).
   record agent-definition metadata, resumable state, or tool-only entries. Use
   file and directory synchronization plus exclusive locks.
 - Store each conversation at
-  `history/<flow-id>/conversations/<conversation-id>.json`. Bind it to one flow
-  and agent, persist user, assistant, and tool messages atomically, and only
-  continue a conversation whose status is awaiting user input.
+  `history/<flow-id>/conversations/<conversation-id>.json` only after an agent
+  returns an authorized `ASK:` request. Bind it to one flow and agent, persist
+  user, assistant, and tool messages atomically, and only continue a
+  conversation whose status is awaiting user input.
 - Empty agent responses fail; empty READ results are valid. Flow transcripts
   are not resumed through the CLI.
 - Each flow's `usage.log` groups provider

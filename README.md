@@ -51,9 +51,10 @@ flow creates `history/<flow-id>/flow.log`, `usage.log`, and a `conversations/`
 directory. The flow log records complete model prompts and responses. When an
 adapter reports token usage, its response is followed by an `==> USAGE` entry;
 `usage.log` aggregates calls and token totals. Each agent request starts a
-conversation unless it supplies a returned `conversationId`; conversation JSON
-files preserve user, agent, and tool messages used to continue `ASK_TOOL`
-interactions. HTTP has no authentication, so expose it only on trusted networks.
+conversation only when an agent with `ASK_TOOL: allow` returns `ASK:`;
+conversation JSON files preserve user, agent, and tool messages used to
+continue that interaction. HTTP has no authentication, so expose it only on
+trusted networks.
 
 The [Rust SDK](https://github.com/jeffersoncbd/sirk-rust-sdk) connects to the HTTP service:
 
@@ -65,9 +66,10 @@ let explanation = sirk.agent("code-explainer", "Explain this module")?;
 ```
 
 The SDK must create a flow before its first agent, TREE, or Git request and
-send the returned ID in `X-Sirk-Flow-Id`. Agent responses include a
-`conversationId`; after an `ask` response, send it with the user's answer so
-the service can restore the conversation. There is no CLI resume operation.
+send the returned ID in `X-Sirk-Flow-Id`. A standalone agent result has no
+`conversationId`. After an `ask` response, send its `conversationId` with the
+user's answer so the service can restore the conversation. There is no CLI
+resume operation.
 
 Create an agent in `.agents/<name>.md`:
 
